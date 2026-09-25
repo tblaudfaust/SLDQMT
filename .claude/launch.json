@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "server",
+      "runtimeExecutable": "C:\\dev\\SLPHC-2026-Field-Monitor\\server\\.venv\\Scripts\\python.exe",
+      "runtimeArgs": ["-m", "uvicorn", "--app-dir", "C:\\dev\\SLPHC-2026-Field-Monitor\\server", "app.main:app", "--port", "8000"],
+      "port": 8000
+    },
+    {
+      "name": "dashboard",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "C:\\dev\\SLPHC-2026-Field-Monitor\\dashboard", "run", "dev"],
+      "port": 5173
+    }
+  ]
+}

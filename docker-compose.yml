@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-fieldmonitor}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fieldmonitor}
+      POSTGRES_DB: ${POSTGRES_DB:-fieldmonitor}
+    ports:
+      - "5432:5432"
+    volumes:
+      - fm_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fieldmonitor} -d ${POSTGRES_DB:-fieldmonitor}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    build: ./server
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-fieldmonitor}:${POSTGRES_PASSWORD:-fieldmonitor}@postgres:5432/${POSTGRES_DB:-fieldmonitor}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./server:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  dashboard:
+    image: node:22-alpine
+    working_dir: /app
+    restart: unless-stopped
+    environment:
+      VITE_API_PROXY: http://server:8000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./dashboard:/app
+      - fm_node_modules:/app/node_modules
+    command: sh -c "npm install --no-audit --no-fund && npm run dev -- --host 0.0.0.0"
+    depends_on:
+      - server
+
+volumes:
+  fm_pgdata:
+  fm_node_modules:
