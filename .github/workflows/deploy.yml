@@ -11,8 +11,14 @@ jobs:
   deploy:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    env:
+      HAS_VPS: ${{ secrets.VPS_HOST != '' }}
     steps:
+      - name: Skip until the VPS secrets are configured
+        if: ${{ env.HAS_VPS != 'true' }}
+        run: echo "VPS_HOST secret is not set; add VPS_HOST, VPS_USER and VPS_SSH_KEY under Settings > Secrets to enable deployment."
       - name: Run deploy/update.sh on the VPS
+        if: ${{ env.HAS_VPS == 'true' }}
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}

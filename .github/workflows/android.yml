@@ -32,6 +32,14 @@ jobs:
         run: |
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
           echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+      - name: Create a debug keystore (fresh runners have none; used when no release key is configured)
+        if: ${{ env.HAS_KEYSTORE != 'true' }}
+        run: |
+          for dir in "$HOME/.android" "$HOME/.config/.android"; do
+            mkdir -p "$dir"
+            [ -f "$dir/debug.keystore" ] || keytool -genkeypair -keystore "$dir/debug.keystore" -storepass android -keypass android \
+              -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          done
       - name: Build release APK and run unit tests
         env:
           API_BASE_URL: ${{ vars.API_BASE_URL }}
