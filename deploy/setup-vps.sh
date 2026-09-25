@@ -11,12 +11,18 @@ echo "== Installing Docker"
 if ! command -v docker >/dev/null 2>&1; then
   apt-get update -y
   apt-get install -y ca-certificates curl git ufw
-  install -m 0755 -d /etc/apt/keyrings
-  curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-  chmod a+r /etc/apt/keyrings/docker.asc
-  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" > /etc/apt/sources.list.d/docker.list
-  apt-get update -y
-  apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+  if apt-cache show docker-compose-v2 >/dev/null 2>&1; then
+    # Ubuntu's own packages (present on 24.04+ and needed on releases Docker's repo does not cover yet)
+    apt-get install -y docker.io docker-compose-v2 docker-buildx
+  else
+    install -m 0755 -d /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+    chmod a+r /etc/apt/keyrings/docker.asc
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" > /etc/apt/sources.list.d/docker.list
+    apt-get update -y
+    apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+  fi
+  systemctl enable --now docker
 fi
 
 echo "== Firewall: allow SSH, HTTP, HTTPS"
