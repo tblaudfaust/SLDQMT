@@ -14,7 +14,7 @@ docker image prune -f >/dev/null
 
 echo "== waiting for the API"
 for _ in $(seq 1 30); do
-  if docker compose -f docker-compose.prod.yml exec -T server python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health', timeout=3)" >/dev/null 2>&1; then
+  if docker compose -f docker-compose.prod.yml exec -T server python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=3)" >/dev/null 2>&1; then
     echo "== healthy: $(git log -1 --format='%h %s')"
     exit 0
   fi
