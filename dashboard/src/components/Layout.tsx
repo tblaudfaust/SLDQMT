@@ -25,7 +25,11 @@ export default function Layout() {
     <div className="flex min-h-screen">
       <aside className="w-60 shrink-0 bg-navy text-white flex flex-col">
         <div className="px-4 py-5">
-          <div className="text-xs uppercase tracking-wider text-slate-300">SLPHC 2026</div>
+          <div className="flex items-center gap-3">
+            <img src="/statsl-logo.png" alt="Statistics Sierra Leone" className="h-12 w-12 shrink-0 rounded-full bg-white" />
+            <div className="text-sm font-semibold leading-tight">Statistics Sierra Leone</div>
+          </div>
+          <div className="mt-3 text-xs uppercase tracking-wider text-slate-300">SLPHC 2026</div>
           <div className="text-xl font-bold leading-tight">Field Monitor Errors</div>
         </div>
         <nav className="flex-1 space-y-1 px-2">

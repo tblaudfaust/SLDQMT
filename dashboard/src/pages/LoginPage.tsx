@@ -27,8 +27,10 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-navy">
       <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-lg bg-white p-8 shadow-lg">
-        <div>
-          <div className="text-xs uppercase tracking-wider text-navy">SLPHC 2026</div>
+        <div className="flex flex-col items-center text-center">
+          <img src="/statsl-logo.png" alt="Statistics Sierra Leone" className="mb-3 h-28 w-28" />
+          <div className="text-sm font-semibold text-navy">Statistics Sierra Leone</div>
+          <div className="mt-2 text-xs uppercase tracking-wider text-slate-500">SLPHC 2026</div>
           <h1 className="text-xl font-bold">Field Monitor Error Follow-up</h1>
           <p className="text-sm text-slate-500">Dashboard and reports</p>
         </div>
