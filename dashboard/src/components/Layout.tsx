@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { BarChart3, BookOpen, ClipboardCheck, ClipboardList, Download, FileText, FolderDown, KeyRound, Lock, LogOut, Settings, Smartphone, Tablet, Users, UsersRound, ScrollText, Database } from "lucide-react";
-import { openResourceByKey } from "../api/resources";
+import { BarChart3, ClipboardCheck, ClipboardList, FileText, FolderDown, KeyRound, Lock, LogOut, Settings, Smartphone, Tablet, Users, UsersRound, ScrollText, Database } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "../auth/AuthContext";
 import AnalyticsMenu from "./AnalyticsMenu";
@@ -58,8 +57,6 @@ export default function Layout() {
             </>
           )}
           <div className="px-3 pt-5 pb-1 text-base font-bold text-white">User's manuals &amp; App</div>
-          <button type="button" className={`${link({ isActive: false })} w-full text-left`} onClick={() => void openResourceByKey("manual-pdf").catch((e) => alert(e.message))}><BookOpen size={16} /> User manual (opens in a new tab)</button>
-          <button type="button" className={`${link({ isActive: false })} w-full text-left`} onClick={() => void openResourceByKey("app-apk").catch((e) => alert(e.message))}><Download size={16} /> Tablet app (APK)</button>
           <NavLink to="/resources" className={link}><FolderDown size={16} /> All manuals &amp; app</NavLink>
           {showAdmin && (
             <>
