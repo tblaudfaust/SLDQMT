@@ -45,6 +45,7 @@ services:
       DOMAIN: ${DOMAIN}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./downloads:/srv/downloads:ro
       - fm_caddy_data:/data
       - fm_caddy_config:/config
     depends_on:

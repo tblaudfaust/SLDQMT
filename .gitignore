@@ -16,3 +16,6 @@ android/.idea/
 *.iml
 *.keystore
 *.jks
+# Published downloads live on the VPS, not in git (index.html is tracked)
+downloads/*
+!downloads/index.html
