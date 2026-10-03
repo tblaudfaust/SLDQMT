@@ -1,14 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { BookOpen, Download, ExternalLink, FileText, Smartphone } from "lucide-react";
 import { useState } from "react";
-import { api, fmt } from "../api/client";
+import { api } from "../api/client";
 import { openResource, type Resource } from "../api/resources";
 import { Card, ErrorBox, Spinner } from "../components/ui";
-
-function size(bytes?: number | null) {
-  if (!bytes) return "";
-  return bytes > 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.round(bytes / 1024)} KB`;
-}
 
 const icons: Record<string, JSX.Element> = {
   pdf: <BookOpen size={28} className="text-navy" />,
@@ -50,11 +45,7 @@ export default function ResourcesPage() {
                 <div className="shrink-0 pt-1">{icons[r.kind]}</div>
                 <div className="flex-1">
                   <h2 className="text-lg font-semibold">{r.title}</h2>
-                  <p className="mt-1 text-sm text-slate-600">{r.description}</p>
-                  <p className="mt-2 text-xs text-slate-500">
-                    {r.file_name}
-                    {r.available ? ` · ${size(r.size_bytes)} · updated ${fmt(r.updated_at)}` : " · not uploaded yet"}
-                  </p>
+                  {!r.available && <p className="mt-1 text-xs text-slate-500">Not uploaded yet</p>}
                   <div className="mt-3">
                     <button className="btn-primary" disabled={!r.available || busy === r.key} onClick={() => act(r)}>
                       {r.opens_in_tab ? <ExternalLink size={16} /> : <Download size={16} />}
