@@ -10,6 +10,8 @@ class Settings(BaseSettings):
 
     ENVIRONMENT: str = "development"
     API_V1_PREFIX: str = "/api/v1"
+    # Folder holding the downloadable user manual and tablet APK (served to signed-in users only)
+    RESOURCES_DIR: str = str((SERVER_DIR.parent / "downloads").as_posix())
 
     # Dev default: a SQLite file next to the server package, whatever the working directory.
     DATABASE_URL: str = f"sqlite:///{(SERVER_DIR / 'fieldmonitor.db').as_posix()}"

@@ -9,6 +9,7 @@ import ErrorsPage from "./pages/ErrorsPage";
 import LoginPage from "./pages/LoginPage";
 import MonitorsPage from "./pages/MonitorsPage";
 import ReportsPage from "./pages/ReportsPage";
+import ResourcesPage from "./pages/ResourcesPage";
 import TeamsPage from "./pages/TeamsPage";
 import AuditPage from "./pages/admin/AuditPage";
 import DevicesPage from "./pages/admin/DevicesPage";
@@ -55,6 +56,7 @@ export default function App() {
                 <Route path="monitors" element={<MonitorsPage />} />
                 <Route path="teams" element={<TeamsPage />} />
                 <Route path="reports" element={<ReportsPage />} />
+                <Route path="resources" element={<ResourcesPage />} />
                 <Route path="dqm/reports" element={<DqmReportsPage />} />
                 <Route path="dqm/reports/:id" element={<DqmReportFormPage />} />
                 <Route path="dqm/summary/:level" element={<DqmSummaryPage />} />

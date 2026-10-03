@@ -1,11 +1,6 @@
 {$DOMAIN} {
 	encode gzip
 
-	handle /downloads/* {
-		root * /srv
-		file_server
-	}
-
 	handle /api/* {
 		reverse_proxy server:8000
 	}

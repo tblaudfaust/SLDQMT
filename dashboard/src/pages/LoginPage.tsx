@@ -38,9 +38,7 @@ export default function LoginPage() {
         <input className="input" type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
         <ErrorBox error={error} />
         <button className="btn-primary w-full justify-center" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
-        <p className="pt-2 text-center text-xs text-slate-500">
-          Field Monitors: <a href="/downloads/" className="font-medium text-navy underline">download the tablet app and the user manual</a>
-        </p>
+        <p className="pt-2 text-center text-xs text-slate-500">The user manual and the tablet app are available after signing in.</p>
       </form>
     </div>
   );
