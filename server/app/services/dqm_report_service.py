@@ -297,7 +297,7 @@ def _accumulate(row: SummaryRow, r: DqmDailyReport, latest_by_unit: dict) -> Non
         if i.resolution_status != "RESOLVED":
             row.issues_open += 1
     row.lessons += len(_loads(r.lessons, LessonRow))
-    # Teams reviewed/certified are cumulative per officer: take each officer's latest report in the
+    # SAs reviewed/certified are cumulative per officer: take each officer's latest report in the
     # district and sum those (several DQM officers report on the same district).
     k = (r.district_id, r.created_by)
     latest = latest_by_unit.get(k)
@@ -396,7 +396,7 @@ def export_report(db: Session, user: User, report_id: int) -> report_service.Rep
         ),
         report_service.Sheet(
             "1. Executive summary", ["Reporting area", "Cumulative assessment / summary"],
-            [["Number of teams reviewed", fmt(out.teams_reviewed)], ["Number of teams certified", fmt(out.teams_certified)], ["Summary", fmt(out.executive_summary)]],
+            [["Number of SAs reviewed", fmt(out.teams_reviewed)], ["Number of SAs certified", fmt(out.teams_certified)], ["Summary", fmt(out.executive_summary)]],
         ),
         report_service.Sheet(
             "2. Re-interview and certification", ["Indicator", "Final total", "Pending", "Affected EAs / remarks"],
@@ -424,7 +424,7 @@ def export_report(db: Session, user: User, report_id: int) -> report_service.Rep
 
 
 def export_summary(s: DqmSummary) -> report_service.Report:
-    headers = ["Unit", "Reports", "Submitted", "Received", "Days", "Latest", "Teams reviewed", "Teams certified", "Reint. received", "Pending", "Reint. certified", "Pending", "Low", "Medium", "High", "Outliers", "GPS", "Sync", "Open issues", "Lessons"]
+    headers = ["Unit", "Reports", "Submitted", "Received", "Days", "Latest", "SAs reviewed", "SAs certified", "Reint. received", "Pending", "Reint. certified", "Pending", "Low", "Medium", "High", "Outliers", "GPS", "Sync", "Open issues", "Lessons"]
     def row(x: SummaryRow):
         return [x.label, x.reports, x.submitted, x.received, x.days_covered, x.latest_date.isoformat() if x.latest_date else "", x.teams_reviewed if x.teams_reviewed is not None else "", x.teams_certified if x.teams_certified is not None else "", x.reinterviews_received, x.reinterviews_received_pending, x.reinterviews_certified, x.reinterviews_certified_pending, x.errors_low, x.errors_medium, x.errors_high, x.issues_outlier, x.issues_gps, x.issues_sync, x.issues_open, x.lessons]
     title = "DQM National Summary" if s.level == "national" else f"DQM Regional Summary - {s.region}"

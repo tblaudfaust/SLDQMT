@@ -37,7 +37,7 @@ export default function DqmSummaryPage() {
         <div>
           <Link to="/dqm/reports" className="text-sm text-navy">← DQM reports</Link>
           <h1 className="text-2xl font-bold">{title}</h1>
-          <p className="text-sm text-slate-500">Roll-up of the daily DQM reports {level === "national" ? "by region" : "by district"}. Teams reviewed and certified are cumulative, so the latest report per district is used; everything else is summed over the period.</p>
+          <p className="text-sm text-slate-500">Roll-up of the daily DQM reports {level === "national" ? "by region" : "by district"}. SAs reviewed and certified are cumulative, so the latest report per district is used; everything else is summed over the period.</p>
         </div>
         {d && (
           <div className="flex gap-2">
@@ -64,7 +64,7 @@ export default function DqmSummaryPage() {
           <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
             <KpiTile label={`Districts reported today (${fmtDate(d.today)})`} value={`${d.reported_today} / ${d.expected_units}`} tone={d.reported_today === d.expected_units ? "green" : "amber"} />
             <KpiTile label="Reports in period" value={d.totals.reports} />
-            <KpiTile label="Teams certified (cumulative)" value={d.totals.teams_certified ?? "—"} tone="green" sub={d.totals.teams_reviewed != null ? `of ${d.totals.teams_reviewed} reviewed` : undefined} />
+            <KpiTile label="SAs certified (cumulative)" value={d.totals.teams_certified ?? "—"} tone="green" sub={d.totals.teams_reviewed != null ? `of ${d.totals.teams_reviewed} reviewed` : undefined} />
             <KpiTile label="Reinterviews certified" value={d.totals.reinterviews_certified} tone="green" sub={`${d.totals.reinterviews_certified_pending} pending`} />
             <KpiTile label="High-discrepancy cases" value={d.totals.errors_high} tone="red" />
             <KpiTile label="Open system issues" value={d.totals.issues_open} tone="amber" />
@@ -79,7 +79,7 @@ export default function DqmSummaryPage() {
               <table className="table">
                 <thead>
                   <tr>
-                    <th rowSpan={2}>{unit}</th><th colSpan={5}>Reporting</th><th colSpan={2}>Teams (cumulative)</th><th colSpan={4}>Re-interviews</th><th colSpan={3}>Discrepancy bands</th><th colSpan={4}>GIS / CAPI / sync issues</th><th rowSpan={2}>Lessons</th>
+                    <th rowSpan={2}>{unit}</th><th colSpan={5}>Reporting</th><th colSpan={2}>SAs (cumulative)</th><th colSpan={4}>Re-interviews</th><th colSpan={3}>Discrepancy bands</th><th colSpan={4}>GIS / CAPI / sync issues</th><th rowSpan={2}>Lessons</th>
                   </tr>
                   <tr>
                     <th>Reports</th><th>Submitted</th><th>Received</th><th>Days</th><th>Latest</th>

@@ -81,7 +81,7 @@ export default function DqmReportsPage() {
         {rows.isLoading ? <Spinner /> : rows.data?.length ? (
           <div className="overflow-x-auto">
             <table className="table">
-              <thead><tr><th>Date</th><th>District</th><th>Region</th><th>Period</th><th>Status</th><th>Teams reviewed</th><th>Certified</th><th>Reint. received</th><th>Reint. certified</th><th>High-discrepancy</th><th>Open issues</th><th>Prepared by</th><th>Submitted</th><th>Received</th></tr></thead>
+              <thead><tr><th>Date</th><th>District</th><th>Region</th><th>Period</th><th>Status</th><th>SAs reviewed</th><th>Certified</th><th>Reint. received</th><th>Reint. certified</th><th>High-discrepancy</th><th>Open issues</th><th>Prepared by</th><th>Submitted</th><th>Received</th></tr></thead>
               <tbody>
                 {rows.data.map((r) => (
                   <tr key={r.id} className="cursor-pointer hover:bg-slate-50" onClick={() => nav(`/dqm/reports/${r.id}`)}>

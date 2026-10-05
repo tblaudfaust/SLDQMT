@@ -1,6 +1,6 @@
 """Chart-ready series for the Daily DQM reporting module at district, regional
 and national level. Everything is computed from the Annex A reports in the
-date range; teams reviewed and certified are cumulative per district, so a
+date range; SAs reviewed and certified are cumulative per district, so a
 day's figure is the sum of the reports filed that day (partial when some
 districts have not reported)."""
 

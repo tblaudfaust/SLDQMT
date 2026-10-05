@@ -68,7 +68,7 @@ function RegionCards({ a, filters }: { a: Analytics; filters: { date_from?: stri
   const nav = useNavigate();
   return (
     <Card title="Regions at a glance" className="mb-4">
-      <p className="-mt-2 mb-3 text-xs text-slate-500">Click a region to open its page. Reporting is submitted reports over district-days in the period; teams are the latest cumulative figures.</p>
+      <p className="-mt-2 mb-3 text-xs text-slate-500">Click a region to open its page. Reporting is submitted reports over district-days in the period; SAs are the latest cumulative figures.</p>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
         {a.units.map((u) => {
           const ds = a.districts.filter((d) => d.region_id === u.key);
@@ -83,7 +83,7 @@ function RegionCards({ a, filters }: { a: Analytics; filters: { date_from?: stri
               <dl className="space-y-1.5 text-xs">
                 <div><dt className="text-slate-500">Reporting</dt><dd><Meter value={u.submitted} max={expected} label={`${u.submitted} / ${expected}`} /></dd></div>
                 <div><dt className="text-slate-500">Reported on {shortDay(a.date_to)}</dt><dd className="font-medium">{reportedToday} of {ds.length} districts</dd></div>
-                <div><dt className="text-slate-500">Teams certified</dt><dd><Meter value={u.teams_certified} max={u.teams_reviewed} tone={C.aqua} label={`${u.teams_certified} / ${u.teams_reviewed}`} /></dd></div>
+                <div><dt className="text-slate-500">SAs certified</dt><dd><Meter value={u.teams_certified} max={u.teams_reviewed} tone={C.aqua} label={`${u.teams_certified} / ${u.teams_reviewed}`} /></dd></div>
                 <div><dt className="text-slate-500">Re-interviews certified</dt><dd><Meter value={u.reint_certified} max={u.reint_received} tone={C.aqua} label={pct(u.reint_certified, u.reint_received)} /></dd></div>
                 <div className="flex justify-between pt-1"><span className="text-slate-500">High-discrepancy</span><span className={clsx("font-semibold", u.high && "text-red-700")}>{u.high}</span></div>
                 <div className="flex justify-between"><span className="text-slate-500">Open issues</span><span className={clsx("font-semibold", u.issues_open && "text-amber-800")}>{u.issues_open}</span></div>
@@ -111,7 +111,7 @@ function DistrictTable({ a, filters, showRegion }: { a: Analytics; filters: { da
       <p className="-mt-2 mb-3 text-xs text-slate-500">Click a column heading to sort, a row to open the district. Discrepancy cases are shown as low · medium · high.</p>
       <div className="overflow-x-auto">
         <table className="table">
-          <thead><tr>{th("name", "District")}{showRegion && <th>Region</th>}{th("reporting", "Reporting (submitted / expected)")}{th("certified", "Teams certified / reviewed")}<th>Re-interviews certified</th>{th("high", "Discrepancy cases")}<th>Open issues</th><th>Latest report</th></tr></thead>
+          <thead><tr>{th("name", "District")}{showRegion && <th>Region</th>}{th("reporting", "Reporting (submitted / expected)")}{th("certified", "SAs certified / reviewed")}<th>Re-interviews certified</th>{th("high", "Discrepancy cases")}<th>Open issues</th><th>Latest report</th></tr></thead>
           <tbody>
             {rows.map((d) => (
               <tr key={d.key} className="cursor-pointer hover:bg-slate-50" onClick={() => nav(`/dqm/analytics/district${qs({ district_id: d.key, date_from: filters.date_from, date_to: filters.date_to })}`)}>
@@ -202,7 +202,7 @@ export default function DqmAnalyticsPage() {
             {level === "district" && d && <><span className="text-slate-400">›</span><span className="text-slate-700">{d.title}</span></>}
           </nav>
           <h1 className="text-2xl font-bold">DQM analytics{d ? ` · ${d.title}` : ""}</h1>
-          <p className="text-sm text-slate-500">Charts built from the daily DQM reports{d ? `, ${fmtDate(d.date_from)} to ${fmtDate(d.date_to)}` : ""}. Teams reviewed and certified are cumulative per district.</p>
+          <p className="text-sm text-slate-500">Charts built from the daily DQM reports{d ? `, ${fmtDate(d.date_from)} to ${fmtDate(d.date_to)}` : ""}. SAs reviewed and certified are cumulative per district.</p>
         </div>
         <div className="flex gap-2">
           {levelTab("district", "District")}
@@ -234,7 +234,7 @@ export default function DqmAnalyticsPage() {
         <>
           <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
             <KpiTile label="Reports submitted" value={`${d.submitted_reports} / ${d.expected_reports}`} sub={`${pct(d.submitted_reports, d.expected_reports)} of district-days`} tone={d.submitted_reports === d.expected_reports ? "green" : "amber"} />
-            <KpiTile label="Teams certified" value={d.totals.teams_certified} sub={`${pct(d.totals.teams_certified, d.totals.teams_reviewed)} of ${d.totals.teams_reviewed} reviewed`} tone="green" />
+            <KpiTile label="SAs certified" value={d.totals.teams_certified} sub={`${pct(d.totals.teams_certified, d.totals.teams_reviewed)} of ${d.totals.teams_reviewed} reviewed`} tone="green" />
             <KpiTile label="Re-interviews certified" value={d.totals.reint_certified} sub={`${pct(d.totals.reint_certified, d.totals.reint_received)} of ${d.totals.reint_received} received`} tone="green" />
             <KpiTile label="Re-interviews pending" value={d.totals.reint_pending} tone="amber" />
             <KpiTile label="High-discrepancy cases" value={d.totals.high} sub={`${d.totals.medium} medium · ${d.totals.low} low`} tone="red" />
@@ -245,15 +245,15 @@ export default function DqmAnalyticsPage() {
           {multi && <DistrictTable a={d} filters={filters} showRegion={level === "national"} />}
 
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-            <ChartCard title="Teams reviewed and certified over time" sub="Cumulative figures as reported each day">
+            <ChartCard title="SAs reviewed and certified over time" sub="Cumulative figures as reported each day">
               <LineChart data={trend} margin={{ top: 8, right: 16, left: -8, bottom: 0 }}>
                 <CartesianGrid {...gridProps} />
                 <XAxis dataKey="day" {...axisProps} />
                 <YAxis {...axisProps} allowDecimals={false} />
                 <Tooltip {...tooltipStyle} />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
-                <Line type="monotone" dataKey="teams_reviewed" name="Teams reviewed" stroke={C.blue} strokeWidth={2} dot={{ r: 4, fill: C.blue, stroke: C.surface, strokeWidth: 2 }} isAnimationActive={false} />
-                <Line type="monotone" dataKey="teams_certified" name="Teams certified" stroke={C.aqua} strokeWidth={2} dot={{ r: 4, fill: C.aqua, stroke: C.surface, strokeWidth: 2 }} isAnimationActive={false} />
+                <Line type="monotone" dataKey="teams_reviewed" name="SAs reviewed" stroke={C.blue} strokeWidth={2} dot={{ r: 4, fill: C.blue, stroke: C.surface, strokeWidth: 2 }} isAnimationActive={false} />
+                <Line type="monotone" dataKey="teams_certified" name="SAs certified" stroke={C.aqua} strokeWidth={2} dot={{ r: 4, fill: C.aqua, stroke: C.surface, strokeWidth: 2 }} isAnimationActive={false} />
               </LineChart>
             </ChartCard>
             <ChartCard title="Re-interviews received and certified per day">
@@ -294,7 +294,7 @@ export default function DqmAnalyticsPage() {
 
             {multi && (
               <>
-                <ChartCard title={`Teams reviewed and certified by ${d.unit_label.toLowerCase()}`} sub="Latest cumulative figure per district" height={Math.max(220, 40 * d.units.length + 60)}>
+                <ChartCard title={`SAs reviewed and certified by ${d.unit_label.toLowerCase()}`} sub="Latest cumulative figure per district" height={Math.max(220, 40 * d.units.length + 60)}>
                   <BarChart data={d.units} layout="vertical" margin={{ top: 8, right: 24, left: 8, bottom: 0 }} barGap={2}>
                     <CartesianGrid stroke={C.grid} horizontal={false} />
                     <XAxis type="number" {...axisProps} allowDecimals={false} />
@@ -350,13 +350,13 @@ export default function DqmAnalyticsPage() {
             <div className="mt-4 grid grid-cols-1 gap-4">
               <Card title="Per day">
                 <div className="overflow-x-auto"><table className="table">
-                  <thead><tr><th>Day</th><th>Reports</th><th>Teams reviewed</th><th>Teams certified</th><th>Reint. received</th><th>Reint. certified</th><th>Pending</th><th>Low</th><th>Medium</th><th>High</th><th>Outliers</th><th>GPS</th><th>Sync</th><th>Open</th><th>Resolved</th></tr></thead>
+                  <thead><tr><th>Day</th><th>Reports</th><th>SAs reviewed</th><th>SAs certified</th><th>Reint. received</th><th>Reint. certified</th><th>Pending</th><th>Low</th><th>Medium</th><th>High</th><th>Outliers</th><th>GPS</th><th>Sync</th><th>Open</th><th>Resolved</th></tr></thead>
                   <tbody>{d.trend.map((t) => <tr key={t.date}><td>{fmtDate(t.date)}</td><td>{t.reports}</td><td>{t.teams_reviewed}</td><td>{t.teams_certified}</td><td>{t.reint_received}</td><td>{t.reint_certified}</td><td>{t.reint_pending}</td><td>{t.low}</td><td>{t.medium}</td><td>{t.high}</td><td>{t.outlier}</td><td>{t.gps}</td><td>{t.sync}</td><td>{t.issues_open}</td><td>{t.issues_resolved}</td></tr>)}</tbody>
                 </table></div>
               </Card>
               <Card title={`Per ${d.unit_label.toLowerCase()}`}>
                 <div className="overflow-x-auto"><table className="table">
-                  <thead><tr><th>{d.unit_label}</th><th>Reports</th><th>Submitted</th><th>Received</th><th>Days</th><th>Teams reviewed</th><th>Teams certified</th><th>Reint. received</th><th>Reint. certified</th><th>Pending</th><th>Low</th><th>Medium</th><th>High</th><th>Outliers</th><th>GPS</th><th>Sync</th><th>Open</th><th>Lessons</th></tr></thead>
+                  <thead><tr><th>{d.unit_label}</th><th>Reports</th><th>Submitted</th><th>Received</th><th>Days</th><th>SAs reviewed</th><th>SAs certified</th><th>Reint. received</th><th>Reint. certified</th><th>Pending</th><th>Low</th><th>Medium</th><th>High</th><th>Outliers</th><th>GPS</th><th>Sync</th><th>Open</th><th>Lessons</th></tr></thead>
                   <tbody>{[...d.units, d.totals].map((u) => <tr key={u.key} className={u.key === 0 ? "bg-slate-100 font-semibold" : ""}><td>{u.label}</td><td>{u.reports}</td><td>{u.submitted}</td><td>{u.received}</td><td>{u.days_covered}</td><td>{u.teams_reviewed}</td><td>{u.teams_certified}</td><td>{u.reint_received}</td><td>{u.reint_certified}</td><td>{u.reint_pending}</td><td>{u.low}</td><td>{u.medium}</td><td>{u.high}</td><td>{u.outlier}</td><td>{u.gps}</td><td>{u.sync}</td><td>{u.issues_open}</td><td>{u.lessons}</td></tr>)}</tbody>
                 </table></div>
               </Card>

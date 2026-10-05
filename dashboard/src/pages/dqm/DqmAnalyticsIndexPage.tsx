@@ -21,7 +21,7 @@ export default function DqmAnalyticsIndexPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold">DQM analytics</h1>
-      <p className="mb-4 text-sm text-slate-500">Pick a level. Every page uses the same charts: teams, re-interviews, discrepancy bands, system issues over time, and reporting compliance; regional and national pages add comparisons by district or region.</p>
+      <p className="mb-4 text-sm text-slate-500">Pick a level. Every page uses the same charts: SAs reviewed and certified, re-interviews, discrepancy bands, system issues over time, and reporting compliance; regional and national pages add comparisons by district or region.</p>
       {isNational && (
         <section className="mb-6">
           <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">National</h2>

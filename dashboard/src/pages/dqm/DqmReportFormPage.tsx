@@ -143,8 +143,8 @@ export default function DqmReportFormPage() {
 
       <Card title="1. Executive data-quality summary (cumulative)" className="mb-4">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Field label="Number of teams reviewed"><input type="number" min={0} className="input" disabled={ro} value={form.teams_reviewed ?? ""} onChange={(e) => upd({ teams_reviewed: num(e.target.value) })} /></Field>
-          <Field label="Number of teams certified"><input type="number" min={0} className="input" disabled={ro} value={form.teams_certified ?? ""} onChange={(e) => upd({ teams_certified: num(e.target.value) })} /></Field>
+          <Field label="Number of SAs reviewed"><input type="number" min={0} className="input" disabled={ro} value={form.teams_reviewed ?? ""} onChange={(e) => upd({ teams_reviewed: num(e.target.value) })} /></Field>
+          <Field label="Number of SAs certified"><input type="number" min={0} className="input" disabled={ro} value={form.teams_certified ?? ""} onChange={(e) => upd({ teams_certified: num(e.target.value) })} /></Field>
           <div className="col-span-2"><Field label="Cumulative assessment / summary"><textarea className="input" rows={2} disabled={ro} value={form.executive_summary ?? ""} onChange={(e) => upd({ executive_summary: e.target.value })} /></Field></div>
         </div>
       </Card>
