@@ -61,6 +61,7 @@ class DqmReportIn(BaseModel):
     day_number: int = Field(ge=1, le=120)
     teams_reviewed: int | None = Field(default=None, ge=0)
     teams_certified: int | None = Field(default=None, ge=0)
+    teams_pending: int | None = Field(default=None, ge=0)
     executive_summary: str | None = None
     reinterviews_received: int | None = Field(default=None, ge=0)
     reinterviews_received_pending: int | None = Field(default=None, ge=0)
@@ -87,6 +88,7 @@ class DqmReportOut(ORMModel):
     status: ReportStatus
     teams_reviewed: int | None
     teams_certified: int | None
+    teams_pending: int | None = None
     executive_summary: str | None
     reinterviews_received: int | None
     reinterviews_received_pending: int | None
@@ -122,6 +124,7 @@ class DqmReportListRow(BaseModel):
     status: ReportStatus
     teams_reviewed: int | None
     teams_certified: int | None
+    teams_pending: int | None = None
     reinterviews_received: int | None
     reinterviews_certified: int | None
     high_errors: int
@@ -151,6 +154,7 @@ class SummaryRow(BaseModel):
     latest_date: date | None
     teams_reviewed: int | None  # latest cumulative figure
     teams_certified: int | None
+    teams_pending: int | None = None
     reinterviews_received: int
     reinterviews_received_pending: int
     reinterviews_certified: int

@@ -248,7 +248,7 @@ def list_reports(
             DqmReportListRow(
                 id=r.id, district_id=r.district_id, district=d.name if d else "", region=regions[d.region_id].name if d and d.region_id in regions else "",
                 report_date=r.report_date, period=r.period, day_number=r.day_number, status=r.status,
-                teams_reviewed=r.teams_reviewed, teams_certified=r.teams_certified,
+                teams_reviewed=r.teams_reviewed, teams_certified=r.teams_certified, teams_pending=r.teams_pending,
                 reinterviews_received=r.reinterviews_received, reinterviews_certified=r.reinterviews_certified,
                 high_errors=sum(1 for e in errors if e.band == "HIGH"),
                 open_issues=sum(1 for i in issues if i.resolution_status != "RESOLVED"),
@@ -264,7 +264,7 @@ def list_reports(
 def _empty_row(key: int, label: str) -> SummaryRow:
     return SummaryRow(
         key=key, label=label, reports=0, submitted=0, received=0, days_covered=0, latest_date=None,
-        teams_reviewed=None, teams_certified=None, reinterviews_received=0, reinterviews_received_pending=0,
+        teams_reviewed=None, teams_certified=None, teams_pending=None, reinterviews_received=0, reinterviews_received_pending=0,
         reinterviews_certified=0, reinterviews_certified_pending=0, errors_low=0, errors_medium=0, errors_high=0,
         issues_outlier=0, issues_gps=0, issues_sync=0, issues_open=0, lessons=0,
     )
@@ -359,6 +359,7 @@ def summary(db: Session, user: User, level: str, region_id: int | None, date_fro
         if latest:
             row.teams_reviewed = sum(lr.teams_reviewed or 0 for lr in latest)
             row.teams_certified = sum(lr.teams_certified or 0 for lr in latest)
+            row.teams_pending = sum(lr.teams_pending or 0 for lr in latest)
 
     totals = _empty_row(0, "Total")
     for row in rows.values():
@@ -367,6 +368,7 @@ def summary(db: Session, user: User, level: str, region_id: int | None, date_fro
         if row.teams_reviewed is not None:
             totals.teams_reviewed = (totals.teams_reviewed or 0) + row.teams_reviewed
             totals.teams_certified = (totals.teams_certified or 0) + (row.teams_certified or 0)
+            totals.teams_pending = (totals.teams_pending or 0) + (row.teams_pending or 0)
     totals.days_covered = len({d for s in days.values() for d in s})
     totals.latest_date = max((r.latest_date for r in rows.values() if r.latest_date), default=None)
 
@@ -396,7 +398,7 @@ def export_report(db: Session, user: User, report_id: int) -> report_service.Rep
         ),
         report_service.Sheet(
             "1. Executive summary", ["Reporting area", "Cumulative assessment / summary"],
-            [["Number of SAs reviewed", fmt(out.teams_reviewed)], ["Number of SAs certified", fmt(out.teams_certified)], ["Summary", fmt(out.executive_summary)]],
+            [["Number of SAs reviewed", fmt(out.teams_reviewed)], ["Number of SAs certified", fmt(out.teams_certified)], ["Pending SAs", fmt(out.teams_pending)], ["Summary", fmt(out.executive_summary)]],
         ),
         report_service.Sheet(
             "2. Re-interview and certification", ["Indicator", "Final total", "Pending", "Affected EAs / remarks"],
@@ -424,9 +426,9 @@ def export_report(db: Session, user: User, report_id: int) -> report_service.Rep
 
 
 def export_summary(s: DqmSummary) -> report_service.Report:
-    headers = ["Unit", "Reports", "Submitted", "Received", "Days", "Latest", "SAs reviewed", "SAs certified", "Reint. received", "Pending", "Reint. certified", "Pending", "Low", "Medium", "High", "Outliers", "GPS", "Sync", "Open issues", "Lessons"]
+    headers = ["Unit", "Reports", "Submitted", "Received", "Days", "Latest", "SAs reviewed", "SAs certified", "Pending SAs", "Reint. received", "Pending", "Reint. certified", "Pending", "Low", "Medium", "High", "Outliers", "GPS", "Sync", "Open issues", "Lessons"]
     def row(x: SummaryRow):
-        return [x.label, x.reports, x.submitted, x.received, x.days_covered, x.latest_date.isoformat() if x.latest_date else "", x.teams_reviewed if x.teams_reviewed is not None else "", x.teams_certified if x.teams_certified is not None else "", x.reinterviews_received, x.reinterviews_received_pending, x.reinterviews_certified, x.reinterviews_certified_pending, x.errors_low, x.errors_medium, x.errors_high, x.issues_outlier, x.issues_gps, x.issues_sync, x.issues_open, x.lessons]
+        return [x.label, x.reports, x.submitted, x.received, x.days_covered, x.latest_date.isoformat() if x.latest_date else "", x.teams_reviewed if x.teams_reviewed is not None else "", x.teams_certified if x.teams_certified is not None else "", x.teams_pending if x.teams_pending is not None else "", x.reinterviews_received, x.reinterviews_received_pending, x.reinterviews_certified, x.reinterviews_certified_pending, x.errors_low, x.errors_medium, x.errors_high, x.issues_outlier, x.issues_gps, x.issues_sync, x.issues_open, x.lessons]
     title = "DQM National Summary" if s.level == "national" else f"DQM Regional Summary - {s.region}"
     sheets = [
         report_service.Sheet("Summary", headers, [row(r) for r in s.rows] + [row(s.totals)], landscape=True),

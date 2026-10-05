@@ -81,14 +81,14 @@ export default function DqmReportsPage() {
         {rows.isLoading ? <Spinner /> : rows.data?.length ? (
           <div className="overflow-x-auto">
             <table className="table">
-              <thead><tr><th>Date</th><th>District</th><th>Region</th><th>Period</th><th>Status</th><th>SAs reviewed</th><th>Certified</th><th>Reint. received</th><th>Reint. certified</th><th>High-discrepancy</th><th>Open issues</th><th>Prepared by</th><th>Submitted</th><th>Received</th></tr></thead>
+              <thead><tr><th>Date</th><th>District</th><th>Region</th><th>Period</th><th>Status</th><th>SAs reviewed</th><th>Certified</th><th>Pending SAs</th><th>Reint. received</th><th>Reint. certified</th><th>High-discrepancy</th><th>Open issues</th><th>Prepared by</th><th>Submitted</th><th>Received</th></tr></thead>
               <tbody>
                 {rows.data.map((r) => (
                   <tr key={r.id} className="cursor-pointer hover:bg-slate-50" onClick={() => nav(`/dqm/reports/${r.id}`)}>
                     <td className="whitespace-nowrap font-medium">{fmtDate(r.report_date)}</td><td>{r.district}</td><td>{r.region}</td>
                     <td>{r.period.charAt(0) + r.period.slice(1).toLowerCase()} day {r.day_number}</td>
                     <td><StatusPill status={r.status} /></td>
-                    <td>{r.teams_reviewed ?? ""}</td><td>{r.teams_certified ?? ""}</td><td>{r.reinterviews_received ?? ""}</td><td>{r.reinterviews_certified ?? ""}</td>
+                    <td>{r.teams_reviewed ?? ""}</td><td>{r.teams_certified ?? ""}</td><td>{r.teams_pending ?? ""}</td><td>{r.reinterviews_received ?? ""}</td><td>{r.reinterviews_certified ?? ""}</td>
                     <td className={r.high_errors ? "font-semibold text-red-700" : ""}>{r.high_errors}</td>
                     <td className={r.open_issues ? "font-semibold text-amber-800" : ""}>{r.open_issues}</td>
                     <td>{r.prepared_name}</td><td className="whitespace-nowrap">{fmt(r.submitted_at)}</td><td className="whitespace-nowrap">{fmt(r.received_at)}</td>

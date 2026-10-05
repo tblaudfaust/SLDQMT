@@ -239,6 +239,7 @@ export interface DqmReportIn {
   day_number: number;
   teams_reviewed: number | null;
   teams_certified: number | null;
+  teams_pending: number | null;
   executive_summary: string | null;
   reinterviews_received: number | null;
   reinterviews_received_pending: number | null;
@@ -283,6 +284,7 @@ export interface DqmReportListRow {
   status: ReportStatus;
   teams_reviewed: number | null;
   teams_certified: number | null;
+  teams_pending: number | null;
   reinterviews_received: number | null;
   reinterviews_certified: number | null;
   high_errors: number;
@@ -314,6 +316,7 @@ export interface SummaryRow {
   latest_date: string | null;
   teams_reviewed: number | null;
   teams_certified: number | null;
+  teams_pending: number | null;
   reinterviews_received: number;
   reinterviews_received_pending: number;
   reinterviews_certified: number;

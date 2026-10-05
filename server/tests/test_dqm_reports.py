@@ -34,6 +34,7 @@ def report_body(day=None, **over):
         "day_number": 1,
         "teams_reviewed": 12,
         "teams_certified": 9,
+        "teams_pending": 3,
         "executive_summary": "Good progress",
         "reinterviews_received": 30,
         "reinterviews_received_pending": 4,
@@ -60,6 +61,7 @@ def test_district_creates_submits_and_national_receives(client, users):
     rep = r.json()
     assert rep["district_id"] == users["wau_id"] and rep["status"] == "DRAFT"
     assert rep["prepared_name"] == "District DQM WAU"
+    assert rep["teams_pending"] == 3
     assert len(rep["error_profile"]) == 2 and rep["system_issues"][0]["issue_type"] == "GPS"
 
     # Same day again is rejected

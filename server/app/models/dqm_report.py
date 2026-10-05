@@ -39,6 +39,7 @@ class DqmDailyReport(TimestampMixin, Base):
     # 1. Executive data-quality summary (cumulative)
     teams_reviewed: Mapped[int | None] = mapped_column(Integer)
     teams_certified: Mapped[int | None] = mapped_column(Integer)
+    teams_pending: Mapped[int | None] = mapped_column(Integer)  # SAs reviewed but not yet certified
     executive_summary: Mapped[str | None] = mapped_column(Text)
 
     # 2. Re-interview and certification

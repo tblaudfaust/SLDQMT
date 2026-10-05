@@ -11,7 +11,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 const emptyForm = (): DqmReportIn => ({
   district_id: null, report_date: today(), period: "ENUMERATION", day_number: 1,
-  teams_reviewed: null, teams_certified: null, executive_summary: "",
+  teams_reviewed: null, teams_certified: null, teams_pending: null, executive_summary: "",
   reinterviews_received: null, reinterviews_received_pending: null, reinterviews_received_remarks: "",
   reinterviews_certified: null, reinterviews_certified_pending: null, reinterviews_certified_remarks: "",
   error_profile: [], system_issues: [], lessons: [], sa_performance: [], prepared_name: null,
@@ -142,9 +142,10 @@ export default function DqmReportFormPage() {
       </Card>
 
       <Card title="1. Executive data-quality summary (cumulative)" className="mb-4">
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
           <Field label="Number of SAs reviewed"><input type="number" min={0} className="input" disabled={ro} value={form.teams_reviewed ?? ""} onChange={(e) => upd({ teams_reviewed: num(e.target.value) })} /></Field>
           <Field label="Number of SAs certified"><input type="number" min={0} className="input" disabled={ro} value={form.teams_certified ?? ""} onChange={(e) => upd({ teams_certified: num(e.target.value) })} /></Field>
+          <Field label="Pending SAs"><input type="number" min={0} className="input" disabled={ro} value={form.teams_pending ?? ""} onChange={(e) => upd({ teams_pending: num(e.target.value) })} /></Field>
           <div className="col-span-2"><Field label="Cumulative assessment / summary"><textarea className="input" rows={2} disabled={ro} value={form.executive_summary ?? ""} onChange={(e) => upd({ executive_summary: e.target.value })} /></Field></div>
         </div>
       </Card>

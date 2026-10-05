@@ -24,7 +24,7 @@ export default function DqmSummaryPage() {
     <tr className={clsx(bold && "bg-slate-100 font-semibold")}>
       <td>{level === "region" && !bold ? <Link className="text-navy" to={`/dqm/reports${qs({ district_id: r.key, date_from: filters.date_from, date_to: filters.date_to })}`}>{r.label}</Link> : level === "national" && !bold ? <Link className="text-navy" to={`/dqm/summary/region?region_id=${r.key}${filters.date_from ? `&date_from=${filters.date_from}` : ""}${filters.date_to ? `&date_to=${filters.date_to}` : ""}`}>{r.label}</Link> : r.label}</td>
       <td>{r.reports}</td><td>{r.submitted}</td><td>{r.received}</td><td>{r.days_covered}</td><td className="whitespace-nowrap">{fmtDate(r.latest_date)}</td>
-      <td>{r.teams_reviewed ?? ""}</td><td>{r.teams_certified ?? ""}</td>
+      <td>{r.teams_reviewed ?? ""}</td><td>{r.teams_certified ?? ""}</td><td>{r.teams_pending ?? ""}</td>
       <td>{r.reinterviews_received}</td><td>{r.reinterviews_received_pending}</td><td>{r.reinterviews_certified}</td><td>{r.reinterviews_certified_pending}</td>
       <td>{r.errors_low}</td><td>{r.errors_medium}</td><td className={r.errors_high ? "text-red-700 font-semibold" : ""}>{r.errors_high}</td>
       <td>{r.issues_outlier}</td><td>{r.issues_gps}</td><td>{r.issues_sync}</td><td className={r.issues_open ? "text-amber-800 font-semibold" : ""}>{r.issues_open}</td><td>{r.lessons}</td>
@@ -79,11 +79,11 @@ export default function DqmSummaryPage() {
               <table className="table">
                 <thead>
                   <tr>
-                    <th rowSpan={2}>{unit}</th><th colSpan={5}>Reporting</th><th colSpan={2}>SAs (cumulative)</th><th colSpan={4}>Re-interviews</th><th colSpan={3}>Discrepancy bands</th><th colSpan={4}>GIS / CAPI / sync issues</th><th rowSpan={2}>Lessons</th>
+                    <th rowSpan={2}>{unit}</th><th colSpan={5}>Reporting</th><th colSpan={3}>SAs (cumulative)</th><th colSpan={4}>Re-interviews</th><th colSpan={3}>Discrepancy bands</th><th colSpan={4}>GIS / CAPI / sync issues</th><th rowSpan={2}>Lessons</th>
                   </tr>
                   <tr>
                     <th>Reports</th><th>Submitted</th><th>Received</th><th>Days</th><th>Latest</th>
-                    <th>Reviewed</th><th>Certified</th>
+                    <th>Reviewed</th><th>Certified</th><th>Pending</th>
                     <th>Received</th><th>Pending</th><th>Certified</th><th>Pending</th>
                     <th>Low</th><th>Medium</th><th>High</th>
                     <th>Outliers</th><th>GPS</th><th>Sync</th><th>Open</th>
