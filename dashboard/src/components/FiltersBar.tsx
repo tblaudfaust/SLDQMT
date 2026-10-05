@@ -48,8 +48,8 @@ export default function FiltersBar({ compact = false }: { compact?: boolean }) {
             <option value="RESOLVED">Resolved</option>
           </select>
         </Field>
-        <Field label="Received from"><input type="date" className="input" value={f.date_from ?? ""} onChange={(e) => update({ date_from: e.target.value })} /></Field>
-        <Field label="Received to"><input type="date" className="input" value={f.date_to ?? ""} onChange={(e) => update({ date_to: e.target.value })} /></Field>
+        <Field label="Received from DQM"><input type="date" className="input" title="Errors the Field Monitor received from the DQM team on this day" value={f.received_on ?? ""} onChange={(e) => update({ received_on: e.target.value })} /></Field>
+        <Field label="Date Resolved"><input type="date" className="input" title="Errors the Field Monitor resolved on this day" value={f.resolved_on ?? ""} onChange={(e) => update({ resolved_on: e.target.value })} /></Field>
         {!compact && (
           <>
             <Field label="Supervisor"><input className="input" placeholder="name contains" value={f.supervisor ?? ""} onChange={(e) => update({ supervisor: e.target.value })} /></Field>

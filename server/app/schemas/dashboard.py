@@ -13,6 +13,8 @@ class Filters(BaseModel):
     status: ErrorStatus | None = None
     date_from: date | None = None
     date_to: date | None = None
+    received_on: date | None = None  # "Received from DQM": errors whose date received is this day
+    resolved_on: date | None = None  # "Date Resolved": errors resolved on this day
     supervisor_id: int | None = None
     supervisor: str | None = None
     enumerator: str | None = None

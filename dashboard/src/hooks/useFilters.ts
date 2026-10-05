@@ -9,6 +9,8 @@ export interface Filters {
   status?: string;
   date_from?: string;
   date_to?: string;
+  received_on?: string;
+  resolved_on?: string;
   supervisor?: string;
   enumerator?: string;
   user_id?: number;
@@ -31,6 +33,8 @@ export function useFilters(): [Filters, (patch: Partial<Filters>) => void, () =>
       status: str("status"),
       date_from: str("date_from"),
       date_to: str("date_to"),
+      received_on: str("received_on"),
+      resolved_on: str("resolved_on"),
       supervisor: str("supervisor"),
       enumerator: str("enumerator"),
       user_id: num("user_id"),

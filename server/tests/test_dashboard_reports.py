@@ -90,3 +90,22 @@ def test_error_detail_report(client, admin, seeded):
     r = client.get("/api/v1/reports/error_detail", params={"format": "pdf", "error_id": page["items"][0]["id"]}, headers=admin)
     assert r.status_code == 200
     assert client.get("/api/v1/reports/error_detail", headers=admin).status_code == 400
+
+
+def test_received_on_and_resolved_on_filters(client, admin, geo, monitor):
+    now = datetime.now(timezone.utc)
+    d1, d2 = "2026-09-20", "2026-09-21"
+    resolved_day = (now - timedelta(days=3)).replace(hour=10, minute=0, second=0, microsecond=0)
+    errors = [
+        make_error(geo, date_received=d1),
+        make_error(geo, date_received=d1, status="RESOLVED", resolved_at=resolved_day.isoformat()),
+        make_error(geo, date_received=d2, status="RESOLVED"),  # resolved today
+    ]
+    r = client.post("/api/v1/sync/push", json={"device_id": monitor["device_id"], "errors": errors}, headers=monitor["headers"])
+    assert r.json()["applied"] == 3
+    summary = lambda **p: client.get("/api/v1/dashboard/summary", params=p, headers=admin).json()["total"]  # noqa: E731
+    assert summary(received_on=d1) == 2
+    assert summary(received_on=d2) == 1
+    assert summary(resolved_on=resolved_day.date().isoformat()) == 1
+    assert summary(received_on=d1, resolved_on=resolved_day.date().isoformat()) == 1
+    assert client.get("/api/v1/errors", params={"resolved_on": "2020-01-01"}, headers=admin).json()["total"] == 0

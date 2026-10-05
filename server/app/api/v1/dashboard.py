@@ -26,6 +26,8 @@ def filters(
     status: ErrorStatus | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
+    received_on: date | None = None,
+    resolved_on: date | None = None,
     supervisor_id: int | None = None,
     supervisor: str | None = None,
     enumerator: str | None = None,
@@ -36,7 +38,7 @@ def filters(
 ) -> Filters:
     return Filters(
         district_id=district_id, team_id=team_id, ea_id=ea_id, category_id=category_id, status=status,
-        date_from=date_from, date_to=date_to, supervisor_id=supervisor_id, supervisor=supervisor,
+        date_from=date_from, date_to=date_to, received_on=received_on, resolved_on=resolved_on, supervisor_id=supervisor_id, supervisor=supervisor,
         enumerator=enumerator, user_id=user_id, support_method=support_method, overdue_only=overdue_only, search=search,
     )
 

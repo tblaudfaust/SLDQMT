@@ -68,6 +68,11 @@ def base_query(db: Session, user: User, f: Filters, now: datetime | None = None,
         q = q.where(ErrorRecord.date_received >= f.date_from)
     if f.date_to:
         q = q.where(ErrorRecord.date_received <= f.date_to)
+    if f.received_on:
+        q = q.where(ErrorRecord.date_received == f.received_on)
+    if f.resolved_on:
+        day_start = datetime.combine(f.resolved_on, datetime.min.time(), tzinfo=timezone.utc)
+        q = q.where(ErrorRecord.resolved_at >= day_start, ErrorRecord.resolved_at < day_start + timedelta(days=1))
     if f.supervisor_id:
         q = q.where(ErrorRecord.supervisor_id == f.supervisor_id)
     if f.supervisor:
