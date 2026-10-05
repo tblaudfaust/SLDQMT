@@ -143,3 +143,14 @@ def test_options_reflect_role(client, users):
     o = client.get("/api/v1/dqm-reports/options", headers=users["regional"]).json()
     assert o["can_edit"] is True and o["can_create"] is False and o["can_receive"] is False
     assert client.get("/api/v1/dqm-reports/options", headers=users["national"]).json()["can_receive"] is True
+
+
+def test_duplicate_day_and_future_date_are_refused(client, users, geo):  # noqa: F811
+    from datetime import date, timedelta
+    body = {"district_id": users["wau_id"], "report_date": date.today().isoformat(), "period": "ENUMERATION", "day_number": 1, "prepared_name": "DQM WAU"}
+    first = client.post("/api/v1/dqm-reports", json=body, headers=users["wau"])
+    assert first.status_code == 201, first.text
+    dup = client.post("/api/v1/dqm-reports", json=body, headers=users["wau"])
+    assert dup.status_code == 409 and f"(id {first.json()['id']})" in dup.json()["detail"]
+    future = client.post("/api/v1/dqm-reports", json={**body, "report_date": (date.today() + timedelta(days=1)).isoformat()}, headers=users["wau"])
+    assert future.status_code == 400 and "future" in future.json()["detail"]

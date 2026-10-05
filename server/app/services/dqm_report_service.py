@@ -112,7 +112,9 @@ def create(db: Session, user: User, perms: set[str], body: DqmReportIn) -> DqmDa
         select(DqmDailyReport).where(DqmDailyReport.district_id == district_id, DqmDailyReport.report_date == body.report_date, DqmDailyReport.deleted_at.is_(None))
     ).scalars().first()
     if existing:
-        raise HTTPException(409, f"A report for this district on {body.report_date} already exists (id {existing.id})")
+        raise HTTPException(409, f"A report for this district on {body.report_date} already exists (id {existing.id}). Open that report instead of creating a new one.")
+    if body.report_date > date.today():
+        raise HTTPException(400, "The report date cannot be in the future")
     r = DqmDailyReport(district_id=district_id, created_by=user.id, status=ReportStatus.DRAFT)
     _apply(r, body)
     if not r.prepared_name:
@@ -132,6 +134,8 @@ def update(db: Session, user: User, perms: set[str], report_id: int, body: DqmRe
         raise HTTPException(409, "This report has been received by National DQM and can no longer be edited")
     if body.district_id not in (None, r.district_id):
         raise HTTPException(400, "district cannot be changed")
+    if body.report_date > date.today():
+        raise HTTPException(400, "The report date cannot be in the future")
     if body.report_date != r.report_date:
         clash = db.execute(
             select(DqmDailyReport).where(DqmDailyReport.district_id == r.district_id, DqmDailyReport.report_date == body.report_date, DqmDailyReport.id != r.id, DqmDailyReport.deleted_at.is_(None))

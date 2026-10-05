@@ -85,6 +85,8 @@ export default function DqmReportFormPage() {
   const addRow = <K extends "error_profile" | "system_issues" | "lessons" | "sa_performance">(key: K, row: DqmReportIn[K][number]) => upd({ [key]: [...(form[key] as unknown[]), row] } as Partial<DqmReportIn>);
   const delRow = (key: keyof DqmReportIn, i: number) => upd({ [key]: (form[key] as unknown[]).filter((_, j) => j !== i) } as Partial<DqmReportIn>);
   const ro = !editable;
+  const errText = error instanceof Error ? error.message : typeof error === "string" ? error : "";
+  const existingId = errText.match(/already exists \(id (\d+)\)/)?.[1];
   const cell = "input px-2 py-1";
 
   return (
@@ -106,6 +108,13 @@ export default function DqmReportFormPage() {
         <strong>Completion standard.</strong> Enter a response in every applicable field. If an item does not apply, write "Not applicable". If evidence is pending, state the source, responsible person and expected completion date.
       </p>
       <ErrorBox error={error instanceof ApiError ? error.message : error} />
+      {existingId && (
+        <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          A district has one daily report per day.{" "}
+          <button className="font-semibold underline" onClick={() => nav(`/dqm/reports/${existingId}`)}>Open the existing report</button>{" "}
+          to read it or continue it. If it has already been submitted and something must change, ask the National DQM to delete it with a reason so a new one can be entered.
+        </div>
+      )}
       {deleted && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
           <span><strong>Deleted</strong> {fmt(report!.deleted_at)}: {report!.delete_reason}. Excluded from summaries and analytics.</span>
