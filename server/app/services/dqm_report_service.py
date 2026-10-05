@@ -136,6 +136,8 @@ def update(db: Session, user: User, perms: set[str], report_id: int, body: DqmRe
         raise HTTPException(409, "This report is deleted; restore it first")
     if r.status == ReportStatus.RECEIVED:
         raise HTTPException(409, "This report has been received by National DQM and can no longer be edited")
+    if user.role == Role.DISTRICT_DQM and r.created_by != user.id:
+        raise HTTPException(403, "This report was prepared by another DQM officer. You can read it, but only edit and submit your own.")
     if body.district_id not in (None, r.district_id):
         raise HTTPException(400, "district cannot be changed")
     if body.report_date > date.today():
@@ -162,6 +164,8 @@ def submit(db: Session, user: User, perms: set[str], report_id: int) -> DqmDaily
         raise HTTPException(409, "This report is deleted")
     if r.status == ReportStatus.RECEIVED:
         raise HTTPException(409, "Already received")
+    if user.role == Role.DISTRICT_DQM and r.created_by != user.id:
+        raise HTTPException(403, "This report was prepared by another DQM officer. You can read it, but only edit and submit your own.")
     r.status = ReportStatus.SUBMITTED
     r.prepared_by = user.id
     r.prepared_name = r.prepared_name or user.full_name

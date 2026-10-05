@@ -262,6 +262,7 @@ export interface DqmReport extends DqmReportIn {
   region: string;
   status: ReportStatus;
   prepared_by: number | null;
+  created_by: number;
   submitted_at: string | null;
   received_by: number | null;
   received_name: string | null;

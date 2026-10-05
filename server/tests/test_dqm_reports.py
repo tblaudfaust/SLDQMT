@@ -165,6 +165,12 @@ def test_one_report_per_officer_per_district_per_day(client, admin, users):
     assert len([r for r in rows if r["district_id"] == users["wau_id"]]) == 2
     assert len({r["created_by"] for r in rows if r["district_id"] == users["wau_id"]}) == 2
 
+    # officers read each other's reports but edit and submit only their own
+    assert client.get(f"/api/v1/dqm-reports/{first.json()['id']}", headers=second).status_code == 200
+    assert client.put(f"/api/v1/dqm-reports/{first.json()['id']}", json=body, headers=second).status_code == 403
+    assert client.post(f"/api/v1/dqm-reports/{first.json()['id']}/submit", headers=second).status_code == 403
+    assert client.put(f"/api/v1/dqm-reports/{first.json()['id']}", json=body, headers=users["wau"]).status_code == 200
+
     # a report cannot be dated in the future
     future = client.post("/api/v1/dqm-reports", json={**body, "report_date": (date.today() + timedelta(days=1)).isoformat()}, headers=users["wau"])
     assert future.status_code == 400 and "future" in future.json()["detail"]

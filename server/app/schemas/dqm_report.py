@@ -101,6 +101,7 @@ class DqmReportOut(ORMModel):
     lessons: list[LessonRow] = []
     sa_performance: list[SaPerformanceRow] = []
     prepared_by: int | None
+    created_by: int  # the officer whose report this is; district officers edit and submit only their own
     prepared_name: str | None
     submitted_at: datetime | None
     received_by: int | None

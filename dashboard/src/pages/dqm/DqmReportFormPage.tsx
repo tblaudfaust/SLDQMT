@@ -52,7 +52,9 @@ export default function DqmReportFormPage() {
   const report = existing.data;
   const deleted = !!report?.deleted_at;
   const locked = report?.status === "RECEIVED" || deleted;
-  const editable = (isNew ? !!options.data?.can_create : !!options.data?.can_edit) && !locked;
+  // District officers read each other's reports but edit and submit only their own.
+  const mine = isNew || !report || user?.role !== "DISTRICT_DQM" || report.created_by === user.id;
+  const editable = (isNew ? !!options.data?.can_create : !!options.data?.can_edit) && !locked && mine;
   const canSubmit = !!options.data?.can_submit;
   const canReceive = !!options.data?.can_receive && report?.status === "SUBMITTED";
   const [reason, setReason] = useState("");
@@ -270,7 +272,7 @@ export default function DqmReportFormPage() {
             </>
           )}
           {report?.status === "RECEIVED" && <span className="text-sm text-green-700">Received by National DQM; this report is now read-only.</span>}
-          {!editable && !canReceive && !locked && <span className="text-sm text-slate-500">Read-only view.</span>}
+          {!editable && !canReceive && !locked && <span className="text-sm text-slate-500">{mine ? "Read-only view." : `Prepared by ${report?.prepared_name || "another DQM officer"}. Read-only: you edit and submit only your own report.`}</span>}
         </div>
       </Card>
       {!isNew && options.data?.can_delete && !deleted && (
