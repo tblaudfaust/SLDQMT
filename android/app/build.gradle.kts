@@ -17,8 +17,8 @@ android {
         applicationId = "sl.gov.statistics.fieldmonitor"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Server base URL for release builds: -PapiBaseUrl=... or the API_BASE_URL environment variable.
         val apiBaseUrl = (project.findProperty("apiBaseUrl") as String?)

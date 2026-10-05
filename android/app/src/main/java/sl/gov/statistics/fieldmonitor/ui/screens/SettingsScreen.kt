@@ -65,11 +65,11 @@ fun SettingsScreen(onBack: () -> Unit, onLoggedOut: () -> Unit, vm: SettingsView
             LabelValue("Server", BuildConfig.API_BASE_URL)
             Text("Change PIN", style = MaterialTheme.typography.titleMedium)
             OutlinedTextField(
-                newPin, { if (it.length <= 6 && it.all(Char::isDigit)) newPin = it }, label = { Text("New 6-digit PIN") }, singleLine = true,
+                newPin, { if (it.length <= 4 && it.all(Char::isDigit)) newPin = it }, label = { Text("New 4-digit PIN") }, singleLine = true,
                 visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 modifier = Modifier.fillMaxWidth(),
             )
-            Button(onClick = { if (newPin.length == 6) { vm.changePin(newPin); newPin = ""; pinSaved = true } }, enabled = newPin.length == 6) { Text("Save PIN") }
+            Button(onClick = { if (newPin.length == 4) { vm.changePin(newPin); newPin = ""; pinSaved = true } }, enabled = newPin.length == 4) { Text("Save PIN") }
             if (pinSaved) Text("PIN updated.", color = MaterialTheme.colorScheme.tertiary)
             OutlinedButton(onClick = { vm.lock() }, modifier = Modifier.fillMaxWidth()) { Text("Lock app now") }
             OutlinedButton(onClick = { confirmLogout = true }, modifier = Modifier.fillMaxWidth()) { Text("Sign out") }

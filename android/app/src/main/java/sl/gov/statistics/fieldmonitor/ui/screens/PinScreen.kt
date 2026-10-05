@@ -59,16 +59,16 @@ fun PinScreen(onUnlocked: () -> Unit, onWiped: () -> Unit, vm: PinViewModel = hi
         Column(Modifier.width(380.dp), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             CensusLogo(size = 120.dp)
             Text(vm.fullName, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-            Text(if (settingUp) "Choose a 6-digit PIN" else "Enter your PIN", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Text(if (settingUp) "Choose a 4-digit PIN" else "Enter your PIN", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             if (settingUp) Text("You will use this PIN to open the app when there is no internet.", style = MaterialTheme.typography.bodyMedium)
             OutlinedTextField(
-                value = pin, onValueChange = { if (it.length <= 6 && it.all(Char::isDigit)) pin = it }, label = { Text("PIN") },
+                value = pin, onValueChange = { if (it.length <= (if (settingUp) 4 else 6) && it.all(Char::isDigit)) pin = it }, label = { Text("PIN") },
                 singleLine = true, visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword), modifier = Modifier.fillMaxWidth(),
             )
             if (settingUp) {
                 OutlinedTextField(
-                    value = confirm, onValueChange = { if (it.length <= 6 && it.all(Char::isDigit)) confirm = it }, label = { Text("Confirm PIN") },
+                    value = confirm, onValueChange = { if (it.length <= 4 && it.all(Char::isDigit)) confirm = it }, label = { Text("Confirm PIN") },
                     singleLine = true, visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword), modifier = Modifier.fillMaxWidth(),
                 )
@@ -77,7 +77,7 @@ fun PinScreen(onUnlocked: () -> Unit, onWiped: () -> Unit, vm: PinViewModel = hi
             Button(
                 modifier = Modifier.fillMaxWidth(),
                 onClick = {
-                    if (pin.length != 6) { message = "The PIN must be 6 digits"; return@Button }
+                    if (pin.length != 4) { message = "The PIN must be 4 digits"; return@Button }
                     if (settingUp) {
                         if (pin != confirm) { message = "PINs do not match"; return@Button }
                         vm.setPin(pin)

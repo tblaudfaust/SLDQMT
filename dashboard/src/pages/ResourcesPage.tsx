@@ -63,7 +63,7 @@ export default function ResourcesPage() {
         <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-slate-700">
           <li>On the tablet, sign in to this dashboard in Chrome and tap <b>Download</b> on the tablet app above. Alternatively download it on a computer and copy the APK to the tablet by USB cable.</li>
           <li>Open the downloaded file from the notification or from the Files app. If asked, allow installation from this source, then tap <b>Install</b>.</li>
-          <li>Open the app, allow Location and Notifications, sign in once with the Field Monitor's username and password while online, then choose a 6-digit PIN.</li>
+          <li>Open the app, allow Location and Notifications, sign in once with the Field Monitor's username and password while online, then choose a 4-digit PIN.</li>
         </ol>
         <p className="mt-3 text-sm text-slate-600">Field Monitor accounts work on the tablet only, so a District DQM or administrator downloads the app and manual for the monitors in their district.</p>
       </Card>
