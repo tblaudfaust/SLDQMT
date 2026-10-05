@@ -77,7 +77,9 @@ fun PinScreen(onUnlocked: () -> Unit, onWiped: () -> Unit, vm: PinViewModel = hi
             Button(
                 modifier = Modifier.fillMaxWidth(),
                 onClick = {
-                    if (pin.length != 4) { message = "The PIN must be 4 digits"; return@Button }
+                    // New PINs are 4 digits; unlocking still accepts PINs of 4 to 6 digits chosen with earlier versions.
+                    if (settingUp && pin.length != 4) { message = "The PIN must be 4 digits"; return@Button }
+                    if (!settingUp && pin.length < 4) { message = "Enter your PIN"; return@Button }
                     if (settingUp) {
                         if (pin != confirm) { message = "PINs do not match"; return@Button }
                         vm.setPin(pin)
