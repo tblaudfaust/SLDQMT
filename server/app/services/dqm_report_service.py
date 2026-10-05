@@ -108,11 +108,15 @@ def _apply(r: DqmDailyReport, body: DqmReportIn) -> None:
 def create(db: Session, user: User, perms: set[str], body: DqmReportIn) -> DqmDailyReport:
     _need(perms, "daily_reports.create")
     district_id = resolve_district(db, user, body.district_id)
+    # Each DQM officer sends one report per district per day; other officers in the same district send their own.
     existing = db.execute(
-        select(DqmDailyReport).where(DqmDailyReport.district_id == district_id, DqmDailyReport.report_date == body.report_date, DqmDailyReport.deleted_at.is_(None))
+        select(DqmDailyReport).where(
+            DqmDailyReport.district_id == district_id, DqmDailyReport.report_date == body.report_date,
+            DqmDailyReport.created_by == user.id, DqmDailyReport.deleted_at.is_(None),
+        )
     ).scalars().first()
     if existing:
-        raise HTTPException(409, f"A report for this district on {body.report_date} already exists (id {existing.id}). Open that report instead of creating a new one.")
+        raise HTTPException(409, f"Your report for this district on {body.report_date} already exists (id {existing.id}). Open that report instead of creating a new one.")
     if body.report_date > date.today():
         raise HTTPException(400, "The report date cannot be in the future")
     r = DqmDailyReport(district_id=district_id, created_by=user.id, status=ReportStatus.DRAFT)
@@ -138,10 +142,13 @@ def update(db: Session, user: User, perms: set[str], report_id: int, body: DqmRe
         raise HTTPException(400, "The report date cannot be in the future")
     if body.report_date != r.report_date:
         clash = db.execute(
-            select(DqmDailyReport).where(DqmDailyReport.district_id == r.district_id, DqmDailyReport.report_date == body.report_date, DqmDailyReport.id != r.id, DqmDailyReport.deleted_at.is_(None))
+            select(DqmDailyReport).where(
+                DqmDailyReport.district_id == r.district_id, DqmDailyReport.report_date == body.report_date,
+                DqmDailyReport.created_by == r.created_by, DqmDailyReport.id != r.id, DqmDailyReport.deleted_at.is_(None),
+            )
         ).scalars().first()
         if clash:
-            raise HTTPException(409, f"A report for {body.report_date} already exists")
+            raise HTTPException(409, f"This officer's report for {body.report_date} already exists (id {clash.id})")
     _apply(r, body)
     db.commit()
     db.refresh(r)
@@ -245,7 +252,7 @@ def list_reports(
                 reinterviews_received=r.reinterviews_received, reinterviews_certified=r.reinterviews_certified,
                 high_errors=sum(1 for e in errors if e.band == "HIGH"),
                 open_issues=sum(1 for i in issues if i.resolution_status != "RESOLVED"),
-                prepared_name=r.prepared_name, submitted_at=r.submitted_at, received_at=r.received_at, deleted_at=r.deleted_at,
+                prepared_name=r.prepared_name, created_by=r.created_by, submitted_at=r.submitted_at, received_at=r.received_at, deleted_at=r.deleted_at,
             )
         )
     return rows
@@ -290,10 +297,12 @@ def _accumulate(row: SummaryRow, r: DqmDailyReport, latest_by_unit: dict) -> Non
         if i.resolution_status != "RESOLVED":
             row.issues_open += 1
     row.lessons += len(_loads(r.lessons, LessonRow))
-    # Teams reviewed/certified are cumulative: take the latest report per district and sum those.
-    latest = latest_by_unit.get(r.district_id)
+    # Teams reviewed/certified are cumulative per officer: take each officer's latest report in the
+    # district and sum those (several DQM officers report on the same district).
+    k = (r.district_id, r.created_by)
+    latest = latest_by_unit.get(k)
     if latest is None or r.report_date > latest.report_date:
-        latest_by_unit[r.district_id] = r
+        latest_by_unit[k] = r
 
 
 def summary(db: Session, user: User, level: str, region_id: int | None, date_from: date | None, date_to: date | None) -> DqmSummary:
@@ -332,7 +341,7 @@ def summary(db: Session, user: User, level: str, region_id: int | None, date_fro
     reports = db.execute(q).scalars().all()
 
     rows = {k: _empty_row(k, v) for k, v in sorted(units.items(), key=lambda kv: kv[1])}
-    latest_by_district: dict[int, DqmDailyReport] = {}
+    latest_by_district: dict[tuple[int, int], DqmDailyReport] = {}
     days: dict[int, set] = {k: set() for k in rows}
     for r in reports:
         d = districts.get(r.district_id)
@@ -346,7 +355,7 @@ def summary(db: Session, user: User, level: str, region_id: int | None, date_fro
     for key, row in rows.items():
         row.days_covered = len(days[key])
         row.latest_date = max(days[key]) if days[key] else None
-        latest = [lr for did, lr in latest_by_district.items() if unit_of(districts[did]) == key]
+        latest = [lr for (did, _officer), lr in latest_by_district.items() if unit_of(districts[did]) == key]
         if latest:
             row.teams_reviewed = sum(lr.teams_reviewed or 0 for lr in latest)
             row.teams_certified = sum(lr.teams_certified or 0 for lr in latest)

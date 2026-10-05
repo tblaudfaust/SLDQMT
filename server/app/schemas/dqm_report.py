@@ -127,6 +127,7 @@ class DqmReportListRow(BaseModel):
     high_errors: int
     open_issues: int
     prepared_name: str | None
+    created_by: int
     submitted_at: datetime | None
     received_at: datetime | None
     deleted_at: datetime | None = None

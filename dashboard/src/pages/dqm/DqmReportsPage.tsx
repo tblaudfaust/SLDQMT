@@ -26,14 +26,14 @@ export default function DqmReportsPage() {
   const canNational = user?.role === "NATIONAL_DQM" || user?.role === "ADMIN";
   const canRegional = canNational || user?.role === "REGIONAL";
   const today = new Date().toISOString().slice(0, 10);
-  const todayDone = rows.data?.some((r) => r.report_date === today && r.status !== "DRAFT");
+  const todayDone = rows.data?.some((r) => r.report_date === today && r.status !== "DRAFT" && r.created_by === user?.id);
 
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">DQM reports 2026 SLPHC Data Quality Management Daily Reporting Tool</h1>
-          <p className="text-sm text-slate-500">One report per district per day, submitted to the National Data Quality Manager.</p>
+          <p className="text-sm text-slate-500">Each DQM officer sends one report per district per day to the National Data Quality Manager.</p>
         </div>
         <div className="flex gap-2">
           <Link to={canNational ? "/dqm/analytics/national" : canRegional ? "/dqm/analytics/region" : "/dqm/analytics/district"} className="btn-outline">Charts</Link>
@@ -44,7 +44,7 @@ export default function DqmReportsPage() {
       </div>
       {isDistrict && !rows.isLoading && (
         <div className={clsx("mb-4 rounded-md border p-3 text-sm", todayDone ? "border-green-200 bg-green-50 text-green-800" : "border-amber/60 bg-amber/10 text-amber-900")}>
-          {todayDone ? `Today's report (${fmtDate(today)}) has been submitted.` : `Today's report (${fmtDate(today)}) has not been submitted yet.`}
+          {todayDone ? `Your report for today (${fmtDate(today)}) has been submitted.` : `Your report for today (${fmtDate(today)}) has not been submitted yet.`}
         </div>
       )}
       <div className="card mb-4 grid grid-cols-2 gap-3 md:grid-cols-5">

@@ -288,6 +288,7 @@ export interface DqmReportListRow {
   high_errors: number;
   open_issues: number;
   prepared_name: string | null;
+  created_by: number;
   submitted_at: string | null;
   received_at: string | null;
 }

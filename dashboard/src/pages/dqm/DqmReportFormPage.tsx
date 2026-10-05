@@ -110,7 +110,7 @@ export default function DqmReportFormPage() {
       <ErrorBox error={error instanceof ApiError ? error.message : error} />
       {existingId && (
         <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-          A district has one daily report per day.{" "}
+          Each DQM officer sends one report per district per day, and you already have one for this day.{" "}
           <button className="font-semibold underline" onClick={() => nav(`/dqm/reports/${existingId}`)}>Open the existing report</button>{" "}
           to read it or continue it. If it has already been submitted and something must change, ask the National DQM to delete it with a reason so a new one can be entered.
         </div>

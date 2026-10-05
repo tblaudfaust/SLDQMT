@@ -88,6 +88,8 @@ class Analytics(BaseModel):
     submitted_reports: int
 
 
+_STATUS_RANK = {"NONE": 0, "DRAFT": 1, "SUBMITTED": 2, "RECEIVED": 3}
+
 def _zero_unit(key: int, label: str) -> UnitPoint:
     return UnitPoint(key=key, label=label, reports=0, submitted=0, received=0, days_covered=0, teams_reviewed=0, teams_certified=0, reint_received=0, reint_certified=0, reint_pending=0, low=0, medium=0, high=0, outlier=0, gps=0, sync=0, issues_open=0, issues_resolved=0, lessons=0)
 
@@ -170,7 +172,7 @@ def analytics(db: Session, user: User, level: str, district_id: int | None, regi
         d.id: DistrictPoint(**_zero_unit(d.id, d.name).model_dump(), region_id=d.region_id, region=regions[d.region_id].name if d.region_id in regions else "", expected=len(days), latest_date=None)
         for d in sorted(in_scope, key=lambda x: x.name)
     }
-    latest: dict[int, DqmDailyReport] = {}
+    latest: dict[tuple[int, int], DqmDailyReport] = {}  # (district, officer) -> that officer's latest report
     unit_days: dict[int, set] = {k: set() for k in unit_points}
     district_days: dict[int, set] = {d.id: set() for d in in_scope}
     compliance: dict[int, dict[date, str]] = {d.id: {} for d in in_scope}
@@ -204,24 +206,27 @@ def analytics(db: Session, user: User, level: str, district_id: int | None, regi
             dp.received += 1
         dp.lessons += len(_loads(r.lessons, LessonRow))
         district_days[r.district_id].add(r.report_date)
-        prev = latest.get(r.district_id)
+        k = (r.district_id, r.created_by)
+        prev = latest.get(k)
         if prev is None or r.report_date > prev.report_date:
-            latest[r.district_id] = r
-        compliance[r.district_id][r.report_date] = r.status.value
+            latest[k] = r
+        # Several officers report per district per day: the day shows its most advanced status.
+        if _STATUS_RANK[r.status.value] > _STATUS_RANK[compliance[r.district_id].get(r.report_date, "NONE")]:
+            compliance[r.district_id][r.report_date] = r.status.value
 
     for key, u in unit_points.items():
         u.days_covered = len(unit_days[key])
-        for did, lr in latest.items():
+        for (did, _officer), lr in latest.items():
             if unit_of(districts[did]) == key:
                 u.teams_reviewed += lr.teams_reviewed or 0
                 u.teams_certified += lr.teams_certified or 0
     for did, dp in district_points.items():
         dp.days_covered = len(district_days[did])
         dp.latest_date = max(district_days[did]) if district_days[did] else None
-        lr = latest.get(did)
-        if lr is not None:
-            dp.teams_reviewed = lr.teams_reviewed or 0
-            dp.teams_certified = lr.teams_certified or 0
+        for (ldid, _officer), lr in latest.items():
+            if ldid == did:
+                dp.teams_reviewed += lr.teams_reviewed or 0
+                dp.teams_certified += lr.teams_certified or 0
 
     totals = _zero_unit(0, "Total")
     for u in unit_points.values():

@@ -1,5 +1,5 @@
 """Annex A: the 2026 SLPHC Data Quality Management Daily Reporting Tool,
-completed once per district per day by the District DQM officer."""
+completed by each DQM officer once per district per day."""
 
 import enum
 from datetime import date, datetime
@@ -24,8 +24,9 @@ class ReportStatus(str, enum.Enum):
 
 class DqmDailyReport(TimestampMixin, Base):
     __tablename__ = "dqm_daily_report"
-    # One live report per district per day is enforced in the service (deleted
-    # reports are kept for the audit trail, so a plain unique constraint would block re-entry).
+    # One live report per DQM officer (created_by) per district per day is enforced in the service:
+    # several officers work in the same district and each sends their own report. Deleted reports
+    # are kept for the audit trail, so a plain unique constraint would block re-entry.
     __table_args__ = (Index("ix_dqm_report_day", "district_id", "report_date"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
