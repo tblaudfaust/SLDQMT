@@ -36,6 +36,7 @@ class UserAdminOut(ORMModel):
     role: Role
     active: bool
     last_login_at: datetime | None = None
+    pin_reset_requested_at: datetime | None = None
     scopes: list[ScopeOut] = []
 
 
@@ -156,3 +157,9 @@ class UserPermissionsOut(BaseModel):
 class UserPermissionsIn(BaseModel):
     grant: list[str] = []
     revoke: list[str] = []
+
+
+class PinResetOut(BaseModel):
+    user_id: int
+    username: str
+    pin_reset_requested_at: datetime

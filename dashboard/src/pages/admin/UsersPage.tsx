@@ -73,6 +73,11 @@ export default function UsersPage() {
     onSuccess: (r) => { setResetResult(r.temporary_password ? `Temporary password: ${r.temporary_password}` : "Password changed."); setResetPassword(""); setError(null); },
     onError: setError,
   });
+  const resetPin = useMutation({
+    mutationFn: (u: User) => api.post(`/admin/users/${u.id}/reset-pin`),
+    onSuccess: () => { invalidate(); setError(null); },
+    onError: setError,
+  });
   const importUsers = useMutation({
     mutationFn: async () => { const fd = new FormData(); fd.append("file", importFile!); return api.post<UserImportResult>("/admin/users/import", fd); },
     onSuccess: (r) => { setImportResult(r); invalidate(); setError(null); },
@@ -137,11 +142,17 @@ export default function UsersPage() {
                     <td>{scopeText(u)}</td>
                     <td>{u.phone}</td>
                     <td className="whitespace-nowrap">{u.last_login_at ? fmt(u.last_login_at) : <span className="text-amber-800">never</span>}</td>
-                    <td>{u.active ? <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800">Active</span> : <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">Deactivated</span>}</td>
+                    <td>
+                      {u.active ? <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800">Active</span> : <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">Deactivated</span>}
+                      {u.pin_reset_requested_at && <div className="mt-1 text-xs text-amber-800" title={`Requested ${fmt(u.pin_reset_requested_at)}; clears when the monitor signs in again`}>PIN reset pending</div>}
+                    </td>
                     <td className="whitespace-nowrap text-sm">
                       <button className="text-navy" onClick={() => setForm({ id: u.id, username: u.username, password: "", full_name: u.full_name, phone: u.phone ?? "", role: u.role, district_ids: u.scopes.map((s) => s.district_id).filter((x): x is number => !!x), region_ids: u.scopes.map((s) => s.region_id).filter((x): x is number => !!x), active: u.active })}>Edit</button>
                       {can("roles.manage") && <button className="ml-3 text-navy" onClick={() => setRightsFor(u)}>Rights</button>}
                       <button className="ml-3 text-navy" onClick={() => { setResetFor(u); setResetResult(null); setResetPassword(""); }}>Reset password</button>
+                      {u.role === "FIELD_MONITOR" && (
+                        <button className="ml-3 text-navy" onClick={() => { if (confirm(`Reset the tablet PIN for ${u.full_name}?\n\nThe tablet forgets its PIN at its next sync. The monitor then signs in again with the password and chooses a new PIN. Records on the tablet are kept.`)) resetPin.mutate(u); }}>Reset tablet PIN</button>
+                      )}
                       <button className="ml-3 text-navy" onClick={() => setActivityFor(u)}>Activity</button>
                       {u.id !== me?.id && <button className={clsx("ml-3", u.active ? "text-red-700" : "text-green-700")} onClick={() => { if (confirm(`${u.active ? "Deactivate" : "Reactivate"} ${u.full_name}?`)) toggleActive.mutate(u); }}>{u.active ? "Deactivate" : "Reactivate"}</button>}
                     </td>

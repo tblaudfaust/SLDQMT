@@ -69,3 +69,31 @@ def test_self_service_change_password(client, users):  # noqa: F811
     assert client.post("/api/v1/auth/change-password", json={"current_password": "wrong", "new_password": "Another123"}, headers=users["war"]).status_code == 400
     assert client.post("/api/v1/auth/change-password", json={"current_password": "Password123", "new_password": "Another123"}, headers=users["war"]).status_code == 204
     assert client.post("/api/v1/auth/login", json={"username": "dqm.war", "password": "Another123"}).status_code == 200
+
+
+def test_reset_tablet_pin(client, admin, monitor, users):  # noqa: F811
+    from tests.conftest import login
+    fm = client.get("/api/v1/auth/me", headers=monitor["headers"]).json()
+    # only Field Monitor accounts have a tablet PIN
+    dqm_id = client.get("/api/v1/auth/me", headers=users["wau"]).json()["id"]
+    assert client.post(f"/api/v1/admin/users/{dqm_id}/reset-pin", headers=admin).status_code == 400
+
+    r = client.post(f"/api/v1/admin/users/{fm['id']}/reset-pin", headers=admin)
+    assert r.status_code == 200 and r.json()["pin_reset_requested_at"]
+    listed = {u["username"]: u for u in client.get("/api/v1/admin/users", headers=admin).json()}
+    assert listed["fm.wau"]["pin_reset_requested_at"]
+
+    # the tablet learns about it at its next sync; its refresh tokens are revoked
+    pull = client.get("/api/v1/sync/pull", params={"device_id": monitor["device_id"]}, headers=monitor["headers"]).json()
+    assert pull["pin_reset"] is True
+    assert client.post("/api/v1/auth/refresh", json={"refresh_token": monitor["refresh"]}).status_code == 401
+
+    # signing in again clears the request
+    fresh = login(client, "fm.wau", "Password123", monitor["device_id"])
+    headers = {"Authorization": f"Bearer {fresh['access_token']}"}
+    pull = client.get("/api/v1/sync/pull", params={"device_id": monitor["device_id"]}, headers=headers).json()
+    assert pull["pin_reset"] is False
+    listed = {u["username"]: u for u in client.get("/api/v1/admin/users", headers=admin).json()}
+    assert listed["fm.wau"]["pin_reset_requested_at"] is None
+    log = client.get("/api/v1/admin/audit", params={"action": "user.reset_pin"}, headers=admin).json()
+    assert log and log[0]["entity_id"] == str(fm["id"])

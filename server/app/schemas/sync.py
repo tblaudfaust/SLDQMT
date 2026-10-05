@@ -161,3 +161,4 @@ class PullResponse(BaseModel):
     settings: dict[str, str]
     server_time: datetime
     more: bool
+    pin_reset: bool = False  # an administrator asked this monitor's tablet to forget its PIN and sign in again

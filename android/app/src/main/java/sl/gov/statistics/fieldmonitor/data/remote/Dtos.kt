@@ -164,4 +164,5 @@ data class PullResponse(
     @SerialName("reference_version") val referenceVersion: String,
     val settings: Map<String, String> = emptyMap(),
     val more: Boolean = false,
+    @SerialName("pin_reset") val pinReset: Boolean = false,
 )

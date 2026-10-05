@@ -35,7 +35,7 @@ from app.schemas.admin import (
     DeviceStatusUpdate,
     ImportResult,
     PasswordResetIn,
-    PasswordResetOut,
+    PasswordResetOut, PinResetOut,
     PermissionInfo,
     RoleMatrix,
     RolePermissionsIn,
@@ -207,6 +207,27 @@ async def import_users(request: Request, file: UploadFile = File(...), db: Sessi
     audit(db, admin, "user.import", "file", file.filename, {"created": created, "skipped": skipped, "errors": len(errors), "users": names}, request)
     db.commit()
     return UserImportResult(created=created, skipped=skipped, errors=errors[:100], created_users=names)
+
+
+@router.post("/users/{user_id}/reset-pin", response_model=PinResetOut)
+def reset_pin(user_id: int, request: Request, db: Session = Depends(get_db), admin: User = Depends(manage_users)):
+    """Ask a Field Monitor's tablet to forget its PIN.
+
+    The tablet picks the request up at its next sync (or as soon as its session token can no
+    longer be refreshed), wipes the PIN and the session, keeps the records, and shows the
+    sign-in screen. The monitor signs in again with the password and chooses a new PIN, which
+    clears the request. Reset the password first if the monitor has forgotten that too."""
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(404, "User not found")
+    if user.role != Role.FIELD_MONITOR:
+        raise HTTPException(400, "Only Field Monitor accounts use a tablet PIN")
+    user.pin_reset_requested_at = datetime.now(timezone.utc)
+    for t in db.execute(select(RefreshToken).where(RefreshToken.user_id == user.id, RefreshToken.revoked.is_(False))).scalars():
+        t.revoked = True  # the tablet must sign in again even if it misses the sync flag
+    audit(db, admin, "user.reset_pin", "user", user.id, {"username": user.username}, request)
+    db.commit()
+    return PinResetOut(user_id=user.id, username=user.username, pin_reset_requested_at=user.pin_reset_requested_at)
 
 
 @router.post("/users/{user_id}/reset-password", response_model=PasswordResetOut)

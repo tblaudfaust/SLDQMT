@@ -34,6 +34,8 @@ class User(TimestampMixin, Base):
     failed_logins: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Set by an administrator; the tablet wipes its PIN at the next sync and the flag clears at the next sign-in
+    pin_reset_requested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     scopes: Mapped[list["UserScope"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 

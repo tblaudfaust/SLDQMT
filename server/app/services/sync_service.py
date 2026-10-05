@@ -223,4 +223,5 @@ def pull(
         settings=reference_service.current_settings(db),
         server_time=_now(),
         more=more,
+        pin_reset=user.pin_reset_requested_at is not None,
     )

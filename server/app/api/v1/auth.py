@@ -65,6 +65,7 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
     user.failed_logins = 0
     user.locked_until = None
     user.last_login_at = now
+    user.pin_reset_requested_at = None  # the monitor is signing in again and will choose a new PIN
     if body.device_id:
         device = db.get(Device, body.device_id)
         if device and device.user_id == user.id:

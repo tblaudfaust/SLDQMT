@@ -42,7 +42,11 @@ class TokenAuthenticator @Inject constructor(
             if (current != null && current != sentToken) {
                 return@synchronized null
             }
-            runCatching { kotlinx.coroutines.runBlocking { api.get().refresh(RefreshRequest(refresh)) } }.getOrNull()
+            val result = runCatching { kotlinx.coroutines.runBlocking { api.get().refresh(RefreshRequest(refresh)) } }
+            // A revoked refresh token (password or PIN reset by an administrator) ends the offline session:
+            // the monitor must sign in again online. Network failures keep the session.
+            if ((result.exceptionOrNull() as? retrofit2.HttpException)?.code() == 401) session.clearSession()
+            result.getOrNull()
         }
         if (pair != null) session.saveTokens(pair.accessToken, pair.refreshToken)
         val token = session.accessToken ?: return null

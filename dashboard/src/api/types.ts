@@ -9,6 +9,7 @@ export interface User {
   role: Role;
   active: boolean;
   last_login_at?: string | null;
+  pin_reset_requested_at?: string | null;
   district_ids?: number[] | null;
   scopes: { region_id: number | null; district_id: number | null }[];
   permissions: string[];

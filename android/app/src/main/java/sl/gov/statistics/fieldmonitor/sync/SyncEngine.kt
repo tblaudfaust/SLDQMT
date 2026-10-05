@@ -94,6 +94,13 @@ class SyncEngine @Inject constructor(
             var more = true
             while (more) {
                 val res = api.pull(deviceId, current.cursor, current.referenceVersion)
+                if (res.pinReset) {
+                    // An administrator reset this tablet's PIN: forget the PIN and the session, keep the
+                    // records, and send the monitor back to the online sign-in (which clears the flag).
+                    state.upsert(current.copy(lastSyncAt = Time.nowIso(), lastResult = "PIN_RESET", lastError = "The tablet PIN was reset by an administrator. Sign in again and choose a new PIN."))
+                    session.clearSession()
+                    return SyncOutcome.NotSignedIn
+                }
                 res.reference?.let { reference.apply(it) }
                 reference.applySettings(res.settings)
                 db.withTransaction {
