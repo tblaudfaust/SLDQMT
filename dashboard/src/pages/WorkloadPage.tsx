@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ApiError, api, qs } from "../api/client";
-import type { CreatedAccount, Officer, WorkloadAccountsOut, WorkloadRow } from "../api/types";
+import type { Officer, WorkloadAccountsOut, WorkloadRow } from "../api/types";
+import CreatedAccountsCard from "../components/CreatedAccounts";
 import { useAuth } from "../auth/AuthContext";
 import { useReference } from "../components/FiltersBar";
 import { Card, Empty, ErrorBox, Field, Spinner } from "../components/ui";
@@ -102,7 +103,7 @@ export default function WorkloadPage() {
       </div>
       <ErrorBox error={rows.error} />
       <ErrorBox error={createError instanceof ApiError ? createError.message : createError} />
-      {created && <CreatedAccountsCard result={created} onClose={() => setCreated(null)} />}
+      {created && <CreatedAccountsCard created={created.created} existing={created.existing} onClose={() => setCreated(null)} />}
       {rows.isLoading ? <Spinner /> : (
         <>
           <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -214,35 +215,5 @@ function ReassignDialog({ rows, onClose, onDone }: { rows: WorkloadRow[]; onClos
         </div>
       </div>
     </div>
-  );
-}
-
-function CreatedAccountsCard({ result, onClose }: { result: WorkloadAccountsOut; onClose: () => void }) {
-  const download = () => {
-    const lines = ["username,staff_code,role,district,password", ...result.created.map((c: CreatedAccount) => [c.username, c.staff_code, c.role, c.district, c.password].join(","))];
-    const blob = new Blob([lines.join("\n")], { type: "text/csv" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `officer-accounts-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  };
-  return (
-    <Card title={`${result.created.length} accounts created`} className="mb-4" action={<button className="text-sm text-slate-500" onClick={onClose}>Close</button>}>
-      <p className="text-sm text-slate-700">
-        {result.existing} officers already had an account. The initial passwords below are shown only now: download the file and hand each officer their password. Officers sign in with the staff code as username and then choose a tablet PIN (Field Monitors) or change the password (DQM).
-      </p>
-      {result.created.length > 0 && (
-        <>
-          <button className="btn-primary mt-3" onClick={download}>Download passwords (CSV)</button>
-          <div className="mt-3 max-h-72 overflow-auto">
-            <table className="table">
-              <thead><tr><th>Username / staff code</th><th>Role</th><th>District</th><th>Initial password</th></tr></thead>
-              <tbody>{result.created.map((c) => <tr key={c.username}><td className="font-medium">{c.staff_code}</td><td>{c.role === "FIELD_MONITOR" ? "Field Monitor" : "District DQM"}</td><td>{c.district}</td><td className="font-mono">{c.password}</td></tr>)}</tbody>
-            </table>
-          </div>
-        </>
-      )}
-    </Card>
   );
 }

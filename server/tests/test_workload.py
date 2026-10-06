@@ -149,3 +149,28 @@ def test_create_accounts_from_workload(client, admin, geo):
     assert again["created"] == [] and again["existing"] == 6
     offs = {o["staff_code"]: o for o in client.get(f"/api/v1/admin/reference/officers?district_id={geo['districts']['WAU']['id']}", headers=admin).json()}
     assert offs["DQM-WAU-002"]["user_id"] is not None
+
+
+def test_create_officer_pair(client, admin, geo):
+    """User management creates a linked Field Monitor + DQM pair: same number, staff code = username, district scope."""
+    _import_workload(client, admin)  # WAU already has officers 001 and 002 on its SAs
+    wau = geo["districts"]["WAU"]["id"]
+    r = client.post("/api/v1/admin/users/officer-pair", json={"district_id": wau}, headers=admin)
+    assert r.status_code == 201, r.text
+    pair = r.json()
+    assert pair["field_monitor"]["staff_code"] == "FM-WAU-003" and pair["dqm"]["staff_code"] == "DQM-WAU-003"
+    assert pair["field_monitor"]["username"] == "fm-wau-003" and pair["sa_count"] == 0
+    # signs in with the code in any case; role and district come from the code and the choice
+    fm = login(client, "FM-WAU-003", pair["field_monitor"]["password"])
+    assert fm["user"]["role"] == "FIELD_MONITOR" and fm["user"]["district_ids"] == [wau] and fm["user"]["full_name"] == "FM-WAU-003"
+    dqm = login(client, "dqm-wau-003", pair["dqm"]["password"])
+    assert dqm["user"]["role"] == "DISTRICT_DQM" and dqm["user"]["staff_code"] == "DQM-WAU-003"
+    # a chosen number that is taken is refused; names and phones are optional and kept when given
+    assert client.post("/api/v1/admin/users/officer-pair", json={"district_id": wau, "number": 3}, headers=admin).status_code == 409
+    r = client.post("/api/v1/admin/users/officer-pair", json={"district_id": wau, "number": 10, "fm_full_name": "Aminata Sesay", "dqm_phone": "076123456"}, headers=admin)
+    assert r.status_code == 201, r.text
+    users = {u["username"]: u for u in client.get("/api/v1/admin/users", headers=admin).json()}
+    assert users["fm-wau-010"]["full_name"] == "Aminata Sesay" and users["dqm-wau-010"]["phone"] == "076123456"
+    # the pair now appears in the district's officer list, so SAs can be reassigned to it
+    offs = {o["staff_code"] for o in client.get(f"/api/v1/admin/reference/officers?district_id={wau}", headers=admin).json()}
+    assert {"FM-WAU-003", "DQM-WAU-003", "FM-WAU-010", "DQM-WAU-010"} <= offs

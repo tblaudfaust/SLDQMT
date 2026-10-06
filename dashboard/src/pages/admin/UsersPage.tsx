@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import clsx from "clsx";
 import { ApiError, api, fmt, qs, tokens } from "../../api/client";
-import type { District, Named, Role, User, UserActivity, UserImportResult, UserStats } from "../../api/types";
+import type { CreatedAccount, District, Named, Officer, OfficerPairOut, Role, User, UserActivity, UserImportResult, UserStats, WorkloadAccountsOut } from "../../api/types";
 import { useAuth } from "../../auth/AuthContext";
+import CreatedAccountsCard from "../../components/CreatedAccounts";
+import { useReference } from "../../components/FiltersBar";
 import { Card, Empty, ErrorBox, Field, KpiTile, Spinner } from "../../components/ui";
 import UserRightsDialog from "./UserRightsDialog";
 
@@ -43,6 +45,8 @@ export default function UsersPage() {
   const districts = useQuery({ queryKey: ["ref", "districts"], queryFn: () => api.get<District[]>("/admin/reference/districts"), staleTime: 300_000 });
   const regions = useQuery({ queryKey: ["ref", "regions"], queryFn: () => api.get<Named[]>("/admin/reference/regions"), staleTime: 300_000 });
   const [form, setForm] = useState<Form | null>(null);
+  const [pairOpen, setPairOpen] = useState(false);
+  const [createdAccounts, setCreatedAccounts] = useState<{ created: CreatedAccount[]; existing?: number; title?: string; note?: string } | null>(null);
   const [rightsFor, setRightsFor] = useState<User | null>(null);
   const [resetFor, setResetFor] = useState<User | null>(null);
   const [resetPassword, setResetPassword] = useState("");
@@ -78,6 +82,11 @@ export default function UsersPage() {
     onSuccess: () => { invalidate(); setError(null); },
     onError: setError,
   });
+  const createFromWorkload = useMutation({
+    mutationFn: () => api.post<WorkloadAccountsOut>("/admin/reference/workload/accounts"),
+    onSuccess: (res) => { invalidate(); setError(null); setCreatedAccounts({ created: res.created, existing: res.existing, title: `${res.created.length} officer accounts created from the workload` }); },
+    onError: setError,
+  });
   const importUsers = useMutation({
     mutationFn: async () => { const fd = new FormData(); fd.append("file", importFile!); return api.post<UserImportResult>("/admin/users/import", fd); },
     onSuccess: (r) => { setImportResult(r); invalidate(); setError(null); },
@@ -105,7 +114,12 @@ export default function UsersPage() {
         </div>
         <div className="flex gap-2">
           <button className="btn-outline" onClick={() => { setShowImport(true); setImportResult(null); }}>Import from CSV</button>
-          <button className="btn-primary" onClick={() => setForm(empty)}>New user</button>
+          <button className="btn-outline" disabled={createFromWorkload.isPending} title="Create an account for every Field Monitor and DQM officer named in the workload who has none yet"
+            onClick={() => { if (confirm("Create accounts for every Field Monitor and DQM officer of the workload who has none yet?\n\nUsername and name = the staff code (FM-Bo-001, DQM-Bo-001), role from the code, scope = the district. The initial passwords are shown once afterwards: download them.")) createFromWorkload.mutate(); }}>
+            {createFromWorkload.isPending ? "Creating…" : "Create accounts from workload"}
+          </button>
+          <button className="btn-primary" onClick={() => setPairOpen(true)}>New officer pair</button>
+          <button className="btn-outline" onClick={() => setForm(empty)}>New user</button>
         </div>
       </div>
       {s && (
@@ -128,6 +142,13 @@ export default function UsersPage() {
         <Field label="Status"><select className="input" value={filters.active ?? ""} onChange={(e) => set("active", e.target.value)}><option value="">All</option><option value="true">Active</option><option value="false">Deactivated</option></select></Field>
       </div>
       <ErrorBox error={error instanceof ApiError ? error.message : error} />
+      {createdAccounts && <CreatedAccountsCard title={createdAccounts.title} created={createdAccounts.created} existing={createdAccounts.existing} note={createdAccounts.note} onClose={() => setCreatedAccounts(null)} />}
+      {pairOpen && (
+        <OfficerPairDialog onClose={() => setPairOpen(false)} onDone={(r) => {
+          setPairOpen(false); invalidate();
+          setCreatedAccounts({ created: [r.field_monitor, r.dqm], title: `Officer pair created: ${r.field_monitor.staff_code} and ${r.dqm.staff_code}`, note: r.sa_count ? `They share the ${r.sa_count} SAs that carry these codes.` : "No SAs carry these codes yet: assign SAs to the pair on the Workload page." });
+        }} />
+      )}
 
       <Card title={`${users.data?.length ?? 0} users`}>
         {users.isLoading ? <Spinner /> : users.data?.length ? (
@@ -266,5 +287,60 @@ export default function UsersPage() {
 
       {rightsFor && <UserRightsDialog user={rightsFor} onClose={() => setRightsFor(null)} />}
     </div>
+  );
+}
+
+function OfficerPairDialog({ onClose, onDone }: { onClose: () => void; onDone: (r: OfficerPairOut) => void }) {
+  const { districts } = useReference();
+  const [districtId, setDistrictId] = useState<string>("");
+  const [number, setNumber] = useState<string>("");
+  const [fm, setFm] = useState({ full_name: "", phone: "" });
+  const [dqm, setDqm] = useState({ full_name: "", phone: "" });
+  const [error, setError] = useState<unknown>(null);
+  const officers = useQuery({ queryKey: ["officers", districtId], queryFn: () => api.get<Officer[]>(`/admin/reference/officers${qs({ district_id: districtId })}`), enabled: !!districtId });
+  const district = districts.find((d) => String(d.id) === districtId);
+  const abbr = district?.abbreviation ?? "…";
+  // next free number in the district (accounts and SA codes carrying this district's abbreviation), unless the administrator types one
+  const nextNumber = useMemo(() => {
+    const used = (officers.data ?? [])
+      .map((o) => o.staff_code.split("-"))
+      .filter((p) => p.length === 3 && p[1].toLowerCase() === abbr.toLowerCase())
+      .map((p) => Number(p[2]))
+      .filter((n) => !Number.isNaN(n));
+    return used.length ? Math.max(...used) + 1 : 1;
+  }, [officers.data, abbr]);
+  const n = number ? Number(number) : nextNumber;
+  const preview = district ? `FM-${abbr}-${String(n).padStart(3, "0")} and DQM-${abbr}-${String(n).padStart(3, "0")}` : "";
+  const save = useMutation({
+    mutationFn: () => api.post<OfficerPairOut>("/admin/users/officer-pair", {
+      district_id: Number(districtId), number: number ? Number(number) : null,
+      fm_full_name: fm.full_name || null, fm_phone: fm.phone || null, dqm_full_name: dqm.full_name || null, dqm_phone: dqm.phone || null,
+    }),
+    onSuccess: onDone,
+    onError: setError,
+  });
+  return (
+    <Modal title="New officer pair (Field Monitor + DQM)" onClose={onClose}>
+      <p className="mb-3 text-sm text-slate-600">Creates two linked accounts of one district with the same number: the Field Monitor and the DQM officer who share the same SAs. The staff code is the username and stands in as the name until you enter the real names.</p>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <Field label="District">
+          <select className="input" value={districtId} onChange={(e) => { setDistrictId(e.target.value); setNumber(""); }}>
+            <option value="">Choose…</option>
+            {districts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+          </select>
+        </Field>
+        <Field label={`Number (next free: ${districtId ? nextNumber : "…"})`}><input className="input" type="number" min={1} max={9999} placeholder={districtId ? String(nextNumber) : ""} value={number} onChange={(e) => setNumber(e.target.value)} /></Field>
+        <Field label="Field Monitor name (optional)"><input className="input" value={fm.full_name} onChange={(e) => setFm({ ...fm, full_name: e.target.value })} /></Field>
+        <Field label="Field Monitor phone (optional)"><input className="input" value={fm.phone} onChange={(e) => setFm({ ...fm, phone: e.target.value })} /></Field>
+        <Field label="DQM officer name (optional)"><input className="input" value={dqm.full_name} onChange={(e) => setDqm({ ...dqm, full_name: e.target.value })} /></Field>
+        <Field label="DQM officer phone (optional)"><input className="input" value={dqm.phone} onChange={(e) => setDqm({ ...dqm, phone: e.target.value })} /></Field>
+      </div>
+      {preview && <p className="mt-3 text-sm">Accounts to create: <b>{preview}</b>. Passwords are generated and shown once.</p>}
+      <ErrorBox error={error instanceof ApiError ? error.message : error} />
+      <div className="mt-4 flex justify-end gap-2">
+        <button className="btn-outline" onClick={onClose}>Cancel</button>
+        <button className="btn-primary" disabled={!districtId || save.isPending} onClick={() => save.mutate()}>{save.isPending ? "Creating…" : "Create pair"}</button>
+      </div>
+    </Modal>
   );
 }

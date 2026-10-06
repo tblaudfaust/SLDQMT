@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from app.models.device import DeviceStatus
 from app.models.user import Role
 from app.schemas.auth import ScopeOut
+from app.schemas.reference import CreatedAccount
 from app.schemas.common import ORMModel
 
 
@@ -73,6 +74,25 @@ class PasswordResetOut(BaseModel):
 class ChangePasswordIn(BaseModel):
     current_password: str
     new_password: str = Field(min_length=8, max_length=256)
+
+
+class OfficerPairIn(BaseModel):
+    """A linked Field Monitor + DQM pair of one district: FM-Bo-048 and DQM-Bo-048 (next free number when omitted)."""
+
+    district_id: int
+    number: int | None = Field(default=None, ge=1, le=9999)
+    fm_full_name: str | None = Field(default=None, max_length=160)
+    dqm_full_name: str | None = Field(default=None, max_length=160)
+    fm_phone: str | None = Field(default=None, max_length=32)
+    dqm_phone: str | None = Field(default=None, max_length=32)
+    fm_password: str | None = Field(default=None, min_length=8, max_length=256)
+    dqm_password: str | None = Field(default=None, min_length=8, max_length=256)
+
+
+class OfficerPairOut(BaseModel):
+    field_monitor: CreatedAccount
+    dqm: CreatedAccount
+    sa_count: int  # SAs already carrying this pair's codes (0 = assign them on the Workload page)
 
 
 class UserImportResult(BaseModel):

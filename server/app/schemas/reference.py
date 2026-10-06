@@ -1,5 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
 
+from app.core.districts import district_abbreviation
 from app.schemas.common import ORMModel
 
 
@@ -14,6 +15,12 @@ class DistrictOut(ORMModel):
     region_id: int
     code: str
     name: str
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def abbreviation(self) -> str:
+        """The district token of its officers' staff codes: FM-Bo-001 -> 'Bo'."""
+        return district_abbreviation(self.code)
 
 
 class TeamOut(ORMModel):

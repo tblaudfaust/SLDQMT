@@ -185,6 +185,7 @@ export interface Named {
 
 export interface District extends Named {
   region_id: number;
+  abbreviation?: string; // district token of its officers' staff codes: FM-Bo-001 -> "Bo"
 }
 
 export interface Team extends Named {
@@ -222,6 +223,7 @@ export interface Officer {
 
 export interface CreatedAccount { username: string; staff_code: string; role: string; district: string; password: string }
 export interface WorkloadAccountsOut { created: CreatedAccount[]; existing: number }
+export interface OfficerPairOut { field_monitor: CreatedAccount; dqm: CreatedAccount; sa_count: number }
 
 export interface PickList extends Named {
   active: boolean;

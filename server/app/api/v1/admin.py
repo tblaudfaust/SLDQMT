@@ -36,6 +36,8 @@ from app.schemas.admin import (
     DeviceOut,
     DeviceStatusUpdate,
     ImportResult,
+    OfficerPairIn,
+    OfficerPairOut,
     PasswordResetIn,
     PasswordResetOut, PinResetOut,
     PermissionInfo,
@@ -313,6 +315,57 @@ def _staff_code(value: str | None) -> str | None:
     return canonical_staff_code(value)
 
 
+def _initial_password() -> str:
+    """10 readable characters (no look-alikes): easy to read out and type on a tablet."""
+    alphabet = [c for c in string.ascii_letters + string.digits if c not in "0O1lI"]
+    return "".join(secrets.choice(alphabet) for _ in range(10))
+
+
+def _next_officer_number(db: Session, district: District, abbr: str) -> int:
+    """One more than the highest number used by this district's officers, on accounts or on SAs."""
+    highest = 0
+    codes = list(db.execute(select(User.staff_code).where(User.staff_code.ilike(f"%-{abbr}-%"))).scalars())
+    for mc, dc in db.execute(select(Team.monitor_code, Team.dqm_code).where(Team.district_id == district.id)):
+        codes += [mc, dc]
+    for code in codes:
+        parts = (code or "").split("-")
+        if len(parts) == 3 and parts[1].lower() == abbr.lower() and parts[2].isdigit():
+            highest = max(highest, int(parts[2]))
+    return highest + 1
+
+
+@router.post("/users/officer-pair", response_model=OfficerPairOut, status_code=201)
+def create_officer_pair(body: OfficerPairIn, request: Request, db: Session = Depends(get_db), admin: User = Depends(manage_users)):
+    """Create a Field Monitor and the DQM officer linked to them, in one district: FM-Bo-048 and DQM-Bo-048.
+    The staff code is the username (sign-in ignores case) and stands in as the name until edited.
+    The pair shares the SAs that carry these codes; assign SAs on the Workload page if none do yet."""
+    district = db.get(District, body.district_id)
+    if district is None:
+        raise HTTPException(404, "District not found")
+    abbr = district_abbreviation(district.code)
+    number = body.number or _next_officer_number(db, district, abbr)
+    fm_code, dqm_code = f"FM-{abbr}-{number:03d}", f"DQM-{abbr}-{number:03d}"
+    for code in (fm_code, dqm_code):
+        clash = db.execute(select(User).where(or_(User.staff_code == code, User.username == code.lower()))).scalars().first()
+        if clash:
+            raise HTTPException(409, f"{code} already exists ({clash.full_name}); choose another number")
+    out = []
+    for code, role, name, phone, password in (
+        (fm_code, Role.FIELD_MONITOR, body.fm_full_name, body.fm_phone, body.fm_password),
+        (dqm_code, Role.DISTRICT_DQM, body.dqm_full_name, body.dqm_phone, body.dqm_password),
+    ):
+        password = password or _initial_password()
+        user = User(username=code.lower(), password_hash=hash_password(password), full_name=(name or "").strip() or code, phone=(phone or "").strip() or None, role=role, staff_code=code)
+        user.scopes.append(UserScope(district_id=district.id))
+        db.add(user)
+        out.append(CreatedAccount(username=code.lower(), staff_code=code, role=role.value, district=district.name, password=password))
+    db.flush()
+    sa_count = db.execute(select(func.count()).select_from(Team).where(Team.active.is_(True), or_(Team.monitor_code == fm_code, Team.dqm_code == dqm_code))).scalar_one()
+    audit(db, admin, "user.create_pair", "district", district.id, {"district": district.name, "usernames": [o.username for o in out], "sa_count": sa_count}, request)
+    db.commit()
+    return OfficerPairOut(field_monitor=out[0], dqm=out[1], sa_count=sa_count)
+
+
 @router.post("/users", response_model=UserAdminOut, status_code=201)
 def create_user(body: UserCreate, request: Request, db: Session = Depends(get_db), admin: User = Depends(manage_users)):
     username = body.username.strip().lower()
@@ -550,7 +603,6 @@ def create_workload_accounts(request: Request, district_id: int | None = None, d
     taken = set(db.execute(select(User.username).where(User.username.in_([c.lower() for c in wanted]))).scalars().all())
     districts = {d.id: d for d in db.execute(select(District)).scalars()}
     created: list[CreatedAccount] = []
-    alphabet = [c for c in string.ascii_letters + string.digits if c not in "0O1lI"]
     for code in sorted(wanted):
         if code in have:
             continue
@@ -558,7 +610,7 @@ def create_workload_accounts(request: Request, district_id: int | None = None, d
         username = code.lower()
         if role is None or username in taken:
             continue
-        password = "".join(secrets.choice(alphabet) for _ in range(10))
+        password = _initial_password()
         user = User(username=username, password_hash=hash_password(password), full_name=code, role=Role(role), staff_code=code)
         user.scopes.append(UserScope(district_id=wanted[code]))
         db.add(user)
