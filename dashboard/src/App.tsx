@@ -48,6 +48,13 @@ function Home() {
   return <Navigate to="/resources" replace />;
 }
 
+/** Pages that are not for Monitoring & Evaluation accounts (they work only with training evaluations). */
+function NotForMe() {
+  const { user } = useAuth();
+  if (user?.role === "ME") return <Navigate to="/me/evaluations" replace />;
+  return <Outlet />;
+}
+
 function RequirePerm({ code }: { code: string }) {
   const { can } = useAuth();
   if (!can(code)) return <Navigate to="/" replace />;
@@ -71,7 +78,7 @@ export default function App() {
                 <Route path="teams" element={<TeamsPage />} />
                 <Route element={<RequirePerm code="workload.assign" />}><Route path="workload" element={<WorkloadPage />} /></Route>
                 <Route path="reports" element={<ReportsPage />} />
-                <Route path="resources" element={<ResourcesPage />} />
+                <Route element={<NotForMe />}><Route path="resources" element={<ResourcesPage />} /></Route>
                 <Route path="dqm/reports" element={<DqmReportsPage />} />
                 <Route path="dqm/reports/:id" element={<DqmReportFormPage />} />
                 <Route path="dqm/summary/:level" element={<DqmSummaryPage />} />

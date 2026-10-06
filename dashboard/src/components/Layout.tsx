@@ -19,6 +19,8 @@ export default function Layout() {
   const [changePw, setChangePw] = useState(false);
   const isNational = user?.role === "NATIONAL_DQM" || user?.role === "ADMIN";
   const isRegionalUp = isNational || user?.role === "REGIONAL";
+  // M&E staff work only with training evaluations: the field-monitoring manuals and the tablet app are not for them
+  const showManuals = user?.role !== "ME";
   const showAdmin = can("users.manage") || can("roles.manage") || can("devices.manage") || can("reference.manage") || can("settings.manage") || can("audit.view");
   const link = ({ isActive }: { isActive: boolean }) =>
     clsx("flex items-center gap-2 rounded-md px-3 py-2 text-sm", isActive ? "bg-white/15 text-white" : "text-slate-200 hover:bg-white/10");
@@ -64,8 +66,12 @@ export default function Layout() {
               <NavLink to="/me/evaluations" className={link}><GraduationCap size={16} /> Training evaluations</NavLink>
             </>
           )}
-          <div className="px-3 pt-5 pb-1 text-base font-bold text-white">User's manuals &amp; App</div>
-          <NavLink to="/resources" className={link}><FolderDown size={16} /> All manuals &amp; app</NavLink>
+          {showManuals && (
+            <>
+              <div className="px-3 pt-5 pb-1 text-base font-bold text-white">User's manuals &amp; App</div>
+              <NavLink to="/resources" className={link}><FolderDown size={16} /> All manuals &amp; app</NavLink>
+            </>
+          )}
           {showAdmin && (
             <>
               <div className="px-3 pt-5 pb-1 text-base font-bold text-white">Administration</div>
