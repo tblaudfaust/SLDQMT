@@ -35,6 +35,8 @@ PERMISSIONS: dict[str, tuple[str, str]] = {
     "settings.manage": ("Administration", "Change follow-up and session settings"),
     "audit.view": ("Administration", "View the audit log"),
     "sync.use": ("Tablet", "Synchronise a tablet (Field Monitor app)"),
+    "me.view": ("Monitoring & Evaluation", "View training evaluations, respondents and results"),
+    "me.manage": ("Monitoring & Evaluation", "Create, edit and close training evaluations; remove responses"),
 }
 
 _DISTRICT = [
@@ -59,5 +61,6 @@ DEFAULT_ROLE_PERMISSIONS: dict[Role, list[str]] = {
     Role.DISTRICT_DQM: _DISTRICT,
     Role.REGIONAL: _REGIONAL,
     Role.NATIONAL_DQM: _NATIONAL,
+    Role.ME: ["me.view", "me.manage"],
     Role.ADMIN: [code for code in PERMISSIONS if code != "sync.use"],
 }

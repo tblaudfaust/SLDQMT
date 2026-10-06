@@ -26,6 +26,9 @@ import DqmSummaryPage from "./pages/dqm/DqmSummaryPage";
 import ExitCheckoutFormPage from "./pages/exit/ExitCheckoutFormPage";
 import ExitCheckoutsPage from "./pages/exit/ExitCheckoutsPage";
 import ExitSummaryPage from "./pages/exit/ExitSummaryPage";
+import MeEvaluationsPage from "./pages/me/MeEvaluationsPage";
+import MeResultsPage from "./pages/me/MeResultsPage";
+import EvaluatePage from "./pages/public/EvaluatePage";
 
 const client = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 30_000 } } });
 
@@ -34,6 +37,15 @@ function RequireAuth() {
   if (loading) return <Spinner />;
   if (!user) return <Navigate to="/login" replace />;
   return <Outlet />;
+}
+
+/** The first page after sign-in: the error dashboard for most roles, the M&E pages for M&E staff. */
+function Home() {
+  const { can } = useAuth();
+  if (can("dashboard.view")) return <DashboardPage />;
+  if (can("me.view")) return <Navigate to="/me/evaluations" replace />;
+  if (can("daily_reports.view")) return <Navigate to="/dqm/reports" replace />;
+  return <Navigate to="/resources" replace />;
 }
 
 function RequirePerm({ code }: { code: string }) {
@@ -49,9 +61,10 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/evaluate/:token" element={<EvaluatePage />} />
             <Route element={<RequireAuth />}>
               <Route element={<Layout />}>
-                <Route index element={<DashboardPage />} />
+                <Route index element={<Home />} />
                 <Route path="errors" element={<ErrorsPage />} />
                 <Route path="errors/:id" element={<ErrorDetailPage />} />
                 <Route path="monitors" element={<MonitorsPage />} />
@@ -67,6 +80,10 @@ export default function App() {
                 <Route path="dqm/exit" element={<ExitCheckoutsPage />} />
                 <Route path="dqm/exit/summary/:level" element={<ExitSummaryPage />} />
                 <Route path="dqm/exit/:id" element={<ExitCheckoutFormPage />} />
+                <Route element={<RequirePerm code="me.view" />}>
+                  <Route path="me/evaluations" element={<MeEvaluationsPage />} />
+                  <Route path="me/evaluations/:id" element={<MeResultsPage />} />
+                </Route>
                 <Route element={<RequirePerm code="users.manage" />}><Route path="admin/users" element={<UsersPage />} /></Route>
                 <Route element={<RequirePerm code="roles.manage" />}><Route path="admin/roles" element={<RolesPage />} /></Route>
                 <Route element={<RequirePerm code="devices.manage" />}><Route path="admin/devices" element={<DevicesPage />} /></Route>

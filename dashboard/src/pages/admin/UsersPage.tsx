@@ -16,6 +16,7 @@ export const ROLES: { value: Role; label: string; scope: "district" | "region" |
   { value: "REGIONAL", label: "Regional staff", scope: "region", level: "Region" },
   { value: "NATIONAL_DQM", label: "National DQM", scope: "none", level: "National" },
   { value: "ADMIN", label: "Administrator", scope: "none", level: "National" },
+  { value: "ME", label: "Monitoring & Evaluation", scope: "none", level: "National" },
 ];
 const roleLabel = (r: Role) => ROLES.find((x) => x.value === r)?.label ?? r;
 

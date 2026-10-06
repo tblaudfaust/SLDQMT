@@ -22,7 +22,7 @@ export const tokens = {
 };
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(public status: number, message: string, public body?: unknown) {
     super(message);
   }
 }
@@ -70,8 +70,10 @@ export async function request<T>(path: string, init: RequestInit = {}, retry = t
   if (res.status === 401 && retry && (await tryRefresh())) return request<T>(path, init, false);
   if (!res.ok) {
     let message = res.statusText;
+    let payload: unknown;
     try {
       const body = await res.json();
+      payload = body;
       message = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail ?? body);
     } catch {
       /* keep statusText */
@@ -80,7 +82,7 @@ export async function request<T>(path: string, init: RequestInit = {}, retry = t
       tokens.clear();
       window.dispatchEvent(new Event("fm:logout"));
     }
-    throw new ApiError(res.status, message);
+    throw new ApiError(res.status, message, payload);
   }
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { BarChart3, ClipboardCheck, ClipboardList, FileText, FolderDown, KeyRound, Lock, LogOut, Settings, Smartphone, Tablet, Users, UsersRound, ScrollText, Database, Map } from "lucide-react";
+import { BarChart3, ClipboardCheck, ClipboardList, FileText, FolderDown, KeyRound, Lock, LogOut, Settings, Smartphone, Tablet, Users, UsersRound, ScrollText, Database, Map, GraduationCap } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "../auth/AuthContext";
 import AnalyticsMenu from "./AnalyticsMenu";
@@ -11,6 +11,7 @@ const roleLabel: Record<string, string> = {
   REGIONAL: "Regional staff",
   NATIONAL_DQM: "National DQM",
   ADMIN: "Administrator",
+  ME: "Monitoring & Evaluation",
 };
 
 export default function Layout() {
@@ -55,6 +56,12 @@ export default function Layout() {
               <div className="px-3 pt-5 pb-1 text-base font-bold text-white">Field exit protocol</div>
               <NavLink to="/dqm/exit" end className={link}><ClipboardCheck size={16} /> Check-outs</NavLink>
               <NavLink to={isNational ? "/dqm/exit/summary/national" : isRegionalUp ? "/dqm/exit/summary/region" : "/dqm/exit/summary/district"} className={link}><BarChart3 size={16} /> Exit summary</NavLink>
+            </>
+          )}
+          {can("me.view") && (
+            <>
+              <div className="px-3 pt-5 pb-1 text-base font-bold text-white">Monitoring &amp; Evaluation</div>
+              <NavLink to="/me/evaluations" className={link}><GraduationCap size={16} /> Training evaluations</NavLink>
             </>
           )}
           <div className="px-3 pt-5 pb-1 text-base font-bold text-white">User's manuals &amp; App</div>

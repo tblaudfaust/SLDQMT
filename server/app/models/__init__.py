@@ -14,11 +14,15 @@ from app.models.reference import (
     Supervisor,
     Team,
 )
+from app.models.me import MeEvaluation, MeRespondent, MeResponse
 from app.models.setting import DEFAULT_SETTINGS, Setting
 from app.models.user import RefreshToken, Role, User, UserScope
 
 __all__ = [
     "AuditLog",
+    "MeEvaluation",
+    "MeRespondent",
+    "MeResponse",
     "Device",
     "DeviceStatus",
     "SyncLog",

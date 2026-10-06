@@ -1,4 +1,4 @@
-export type Role = "FIELD_MONITOR" | "DISTRICT_DQM" | "REGIONAL" | "NATIONAL_DQM" | "ADMIN";
+export type Role = "FIELD_MONITOR" | "DISTRICT_DQM" | "REGIONAL" | "NATIONAL_DQM" | "ADMIN" | "ME";
 export type Status = "UNRESOLVED" | "RESOLVED";
 
 export interface User {
@@ -500,4 +500,54 @@ export interface AuditRow {
   entity_id: string | null;
   detail: string | null;
   ip: string | null;
+}
+
+// ---- Monitoring & Evaluation ------------------------------------------------
+export interface MeEvaluation {
+  id: number;
+  title: string;
+  training_mode: "ONLINE" | "IN_PERSON";
+  period_start: string | null;
+  period_end: string | null;
+  description: string | null;
+  token: string;
+  status: "OPEN" | "CLOSED";
+  created_at: string;
+  registered: number;
+  submitted: number;
+  trainees: number;
+  trainers: number;
+}
+export interface MeRespondent {
+  id: number;
+  full_name: string;
+  email: string;
+  phone: string;
+  registered_at: string;
+  role: "TRAINER" | "TRAINEE" | "NEITHER" | null;
+  submitted_at: string | null;
+  response_id: number | null;
+  district: string | null;
+}
+export interface MeItem { code: string; text: string; n: number; na: number; mean: number | null; pct_favourable: number | null; flag: boolean }
+export interface MeDomain { code: string; label: string; n_respondents: number; mean: number | null; pct_favourable: number | null; flag: boolean; threshold: number; items: MeItem[] }
+export interface MeBreakdown { label: string; count: number; pct: number }
+export interface MeOpenAnswer { code: string; text: string; role: string; district: string | null }
+export interface MeResults {
+  evaluation: MeEvaluation;
+  registered: number;
+  submitted: number;
+  trainees: number;
+  trainers: number;
+  neither: number;
+  response_rate: number | null;
+  profile: Record<string, MeBreakdown[]>;
+  completion: Record<string, MeBreakdown[]>;
+  domains: MeDomain[];
+  knowledge: { before: number | null; after: number | null; gain: number | null; pct_positive: number | null };
+  overall: Record<string, MeBreakdown[]>;
+  reinforcement: { trainees: MeBreakdown[]; trainers: MeBreakdown[] };
+  strengths: MeItem[];
+  weaknesses: MeItem[];
+  open_feedback: MeOpenAnswer[];
 }

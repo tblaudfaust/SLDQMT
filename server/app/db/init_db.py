@@ -52,9 +52,20 @@ def add_missing_columns() -> None:
                 conn.execute(text(f'ALTER TABLE "{table.name}" ADD COLUMN "{col.name}" {ddl_type}'))
 
 
+def add_missing_enum_values() -> None:
+    """PostgreSQL stores Role as the enum type user_role; a value added to the Python enum
+    (such as ME) must be added to the type too. SQLite stores plain strings."""
+    if engine.dialect.name != "postgresql":
+        return
+    with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+        for role in Role:
+            conn.execute(text(f"ALTER TYPE user_role ADD VALUE IF NOT EXISTS '{role.value}'"))
+
+
 def init_db(db: Session) -> None:
     Base.metadata.create_all(bind=engine)
     add_missing_columns()
+    add_missing_enum_values()
 
     for key, value in DEFAULT_SETTINGS.items():
         if db.get(Setting, key) is None:

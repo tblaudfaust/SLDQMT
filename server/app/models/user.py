@@ -14,11 +14,12 @@ class Role(str, enum.Enum):
     REGIONAL = "REGIONAL"
     NATIONAL_DQM = "NATIONAL_DQM"
     ADMIN = "ADMIN"
+    ME = "ME"  # Monitoring & Evaluation: training evaluations only
 
 
 # Roles that see every district; a scope row never narrows them.
-UNSCOPED_ROLES = {Role.NATIONAL_DQM, Role.ADMIN}
-WEB_ROLES = {Role.DISTRICT_DQM, Role.REGIONAL, Role.NATIONAL_DQM, Role.ADMIN}
+UNSCOPED_ROLES = {Role.NATIONAL_DQM, Role.ADMIN, Role.ME}
+WEB_ROLES = {Role.DISTRICT_DQM, Role.REGIONAL, Role.NATIONAL_DQM, Role.ADMIN, Role.ME}
 
 
 class User(TimestampMixin, Base):
