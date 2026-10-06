@@ -31,6 +31,7 @@ PERMISSIONS: dict[str, tuple[str, str]] = {
     "roles.manage": ("Administration", "Change what each role and user may do"),
     "devices.manage": ("Administration", "Block and unblock tablets"),
     "reference.manage": ("Administration", "Import and edit reference lists"),
+    "workload.assign": ("Administration", "Reassign supervisory areas between Field Monitors and DQM officers of a district"),
     "settings.manage": ("Administration", "Change follow-up and session settings"),
     "audit.view": ("Administration", "View the audit log"),
     "sync.use": ("Tablet", "Synchronise a tablet (Field Monitor app)"),
@@ -50,7 +51,7 @@ _NATIONAL = [
     "dashboard.view", "errors.edit", "errors.delete", "reports.export",
     "daily_reports.view", "daily_reports.create", "daily_reports.edit", "daily_reports.submit", "daily_reports.receive", "daily_reports.delete", "analytics.view",
     "exit_checkouts.view", "exit_checkouts.create", "exit_checkouts.edit", "exit_checkouts.submit", "exit_checkouts.sign", "exit_checkouts.clear", "exit_checkouts.delete",
-    "devices.manage", "audit.view",
+    "devices.manage", "audit.view", "workload.assign",
 ]
 
 DEFAULT_ROLE_PERMISSIONS: dict[Role, list[str]] = {

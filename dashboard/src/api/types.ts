@@ -211,6 +211,15 @@ export interface WorkloadRow {
   dqm_name: string | null;
 }
 
+export interface Officer {
+  staff_code: string;
+  role: "FIELD_MONITOR" | "DISTRICT_DQM";
+  district_id: number;
+  full_name: string | null;
+  user_id: number | null;
+  sa_count: number;
+}
+
 export interface PickList extends Named {
   active: boolean;
   sort_order: number;

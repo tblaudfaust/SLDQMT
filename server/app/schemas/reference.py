@@ -45,6 +45,25 @@ class WorkloadRow(BaseModel):
     dqm_name: str | None = None
 
 
+class OfficerOut(BaseModel):
+    """A Field Monitor or DQM officer of a district, by staff code (with the account when it exists)."""
+
+    staff_code: str
+    role: str  # FIELD_MONITOR or DISTRICT_DQM
+    district_id: int
+    full_name: str | None = None
+    user_id: int | None = None
+    sa_count: int = 0
+
+
+class WorkloadAssignIn(BaseModel):
+    """Give the listed SAs to another officer. None keeps the current officer; "" clears it."""
+
+    team_ids: list[int]
+    monitor_code: str | None = None
+    dqm_code: str | None = None
+
+
 class SupervisorOut(ORMModel):
     id: int
     team_id: int

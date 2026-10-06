@@ -4,8 +4,9 @@
 
 Reads the FIELD_MONITOR sheet (one row per SA with Field monitor ID and DQM ID) and
 writes one account per officer: username = the staff code in lower case (fm-11-001,
-dqm-11-001), role FIELD_MONITOR or DISTRICT_DQM, the officer's district, the staff
-code (which links the account to its SAs) and a generated initial password.
+dqm-11-001), a unique name linked to the district ("Kailahun FM 001", "Kailahun DQM 001"),
+role FIELD_MONITOR or DISTRICT_DQM, the officer's district, the staff code (which links
+the account to its SAs) and a generated initial password.
 
 The CSV is imported on the dashboard: User management > Import CSV. Keep the file
 private: it holds the initial passwords to hand to each officer. Accounts that
@@ -39,13 +40,14 @@ def main(workbook: str, out: str) -> None:
     for row in it:
         if not row or not row[fm_i]:
             continue
-        district = str(row[dist_i]).strip().title().replace("Western Urban", "Western Urban")
+        district = str(row[dist_i]).strip().title()
         for code, role in ((str(row[fm_i]).strip().upper(), "FIELD_MONITOR"), (str(row[dqm_i]).strip().upper(), "DISTRICT_DQM")):
             if code not in officers:
                 officers[code] = {
                     "username": code.lower(),
                     "password": password(),
-                    "full_name": f"{'Field Monitor' if role == 'FIELD_MONITOR' else 'DQM'} {code} ({district})",
+                    # unique, district-linked name: "Kailahun FM 001", "Kailahun DQM 001"
+                    "full_name": f"{district} {'FM' if role == 'FIELD_MONITOR' else 'DQM'} {code.rsplit('-', 1)[-1]}",
                     "phone": "",
                     "role": role,
                     "districts": district,

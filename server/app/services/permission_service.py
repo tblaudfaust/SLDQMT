@@ -73,7 +73,15 @@ def effective_permissions(db: Session, user: User) -> set[str]:
 
 
 def seed_defaults(db: Session) -> None:
-    if db.execute(select(RolePermission.id).limit(1)).first():
+    known = set(db.execute(select(RolePermission.code).distinct()).scalars().all())
+    if known:
+        # Already seeded: only grant rights that did not exist when the table was seeded
+        # (a new feature's permission), never re-add one an administrator revoked.
+        for role, codes in DEFAULT_ROLE_PERMISSIONS.items():
+            for code in codes:
+                if code not in known:
+                    db.add(RolePermission(role=role, code=code))
+        db.flush()
         return
     for role, codes in DEFAULT_ROLE_PERMISSIONS.items():
         for code in codes:

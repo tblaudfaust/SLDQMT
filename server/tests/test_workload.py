@@ -81,3 +81,47 @@ def test_dqm_dashboard_defaults_to_own_sas(client, admin, geo, monitor):
     assert own["total"] == 1 and own["items"][0]["team"].startswith("WAU-SA01")
     whole = client.get("/api/v1/errors?own_sas=false", headers=dqm).json()
     assert whole["total"] == 2
+
+
+def test_reassign_sas_within_district(client, admin, geo):
+    """SAs can be moved to another officer of the same district; other districts are refused; tablets refresh."""
+    _import_workload(client, admin)
+    wau = geo["districts"]["WAU"]["id"]
+    teams = {t["code"]: t for t in client.get("/api/v1/admin/reference/teams", headers=admin).json()}
+    for code, role in (("FM-51-001", "FIELD_MONITOR"), ("FM-51-002", "FIELD_MONITOR"), ("DQM-51-002", "DISTRICT_DQM")):
+        r = client.post("/api/v1/admin/users", json={"username": code.lower(), "password": "Password123", "full_name": f"Western Urban {code.split('-')[0]} {code[-3:]}", "role": role, "district_ids": [wau], "staff_code": code}, headers=admin)
+        assert r.status_code == 201, r.text
+    offs = client.get(f"/api/v1/admin/reference/officers?district_id={wau}", headers=admin).json()
+    by = {o["staff_code"]: o for o in offs}
+    assert by["FM-51-001"]["sa_count"] == 1 and by["FM-51-001"]["full_name"] == "Western Urban FM 001"
+    assert by["DQM-51-001"]["user_id"] is None and by["DQM-51-001"]["sa_count"] == 1  # code on an SA, no account yet
+
+    # the tablet of FM-51-001 sees one SA before the move
+    device = str(uuid.uuid4())
+    data = login(client, "fm-51-001", "Password123", device)
+    headers = auth(data["access_token"])
+    assert client.post("/api/v1/devices/register", json={"device_id": device, "model": "T", "android_version": "13", "app_version": "0.3.0"}, headers=headers).status_code == 200
+    pull = client.get(f"/api/v1/sync/pull?device_id={device}", headers=headers).json()
+    assert {t["code"] for t in pull["reference"]["teams"]} == {"WAU-SA01"}
+
+    # move WAU-SA02 (FM-51-002 / DQM-51-002) to FM-51-001, DQM kept
+    r = client.patch("/api/v1/admin/reference/workload/assign", json={"team_ids": [teams["WAU-SA02"]["id"]], "monitor_code": "fm-51-001"}, headers=admin)
+    assert r.status_code == 200, r.text
+    assert r.json()[0]["monitor_code"] == "FM-51-001" and r.json()[0]["dqm_code"] == "DQM-51-002"
+    pull2 = client.get(f"/api/v1/sync/pull?device_id={device}&reference_version={pull['reference_version']}", headers=headers).json()
+    assert pull2["reference"] is not None and {t["code"] for t in pull2["reference"]["teams"]} == {"WAU-SA01", "WAU-SA02"}
+
+    # another district's officer is refused, so is a DQM code in the Field Monitor slot, and mixed districts
+    r = client.patch("/api/v1/admin/reference/workload/assign", json={"team_ids": [teams["WAU-SA01"]["id"]], "monitor_code": "FM-52-001"}, headers=admin)
+    assert r.status_code == 400 and "district" in r.json()["detail"].lower(), r.text
+    r = client.patch("/api/v1/admin/reference/workload/assign", json={"team_ids": [teams["WAU-SA01"]["id"]], "monitor_code": "DQM-51-002"}, headers=admin)
+    assert r.status_code == 400
+    r = client.patch("/api/v1/admin/reference/workload/assign", json={"team_ids": [teams["WAU-SA01"]["id"], teams["WAR-SA01"]["id"]], "dqm_code": "DQM-51-002"}, headers=admin)
+    assert r.status_code == 400 and "one district" in r.json()["detail"]
+
+    # a district DQM has no right to reassign; the audit log records the change
+    dqm = auth(login(client, "dqm-51-002", "Password123")["access_token"])
+    assert client.patch("/api/v1/admin/reference/workload/assign", json={"team_ids": [teams["WAU-SA01"]["id"]], "dqm_code": "DQM-51-002"}, headers=dqm).status_code == 403
+    log = client.get("/api/v1/admin/audit?action=workload.assign", headers=admin).json()
+    entries = log["items"] if isinstance(log, dict) else log
+    assert entries and entries[0]["action"] == "workload.assign"

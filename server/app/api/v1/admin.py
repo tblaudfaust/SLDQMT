@@ -57,7 +57,8 @@ from app.schemas.reference import (
     PickListIn,
     PickListOut,
     RegionOut,
-    SupervisorOut, WorkloadRow,
+    OfficerOut,
+    SupervisorOut, WorkloadAssignIn, WorkloadRow,
     TeamOut,
 )
 from app.services import import_service, permission_service
@@ -497,6 +498,91 @@ def workload(district_id: int | None = None, search: str | None = None, db: Sess
         )
         for t in teams_rows
     ]
+
+
+def _district_of_code(code: str) -> str | None:
+    """FM-11-001 / DQM-52-044 -> district code 11 / 52 (how the workload frame numbers officers)."""
+    parts = code.split("-")
+    return parts[1] if len(parts) == 3 and parts[1].isdigit() else None
+
+
+@router.get("/reference/officers", response_model=list[OfficerOut])
+def officers(district_id: int, db: Session = Depends(get_db), user: User = Depends(require_web)):
+    """Field Monitors and DQM officers of one district: accounts with a staff code, plus codes that
+    appear on the district's SAs without an account yet. Used to pick the new officer when reassigning."""
+    scope = district_ids_for(db, user)
+    if scope is not None and district_id not in scope:
+        raise HTTPException(403, "District outside your scope")
+    counts: dict[str, int] = {}
+    for mc, dc in db.execute(select(Team.monitor_code, Team.dqm_code).where(Team.district_id == district_id, Team.active.is_(True))):
+        for c in (mc, dc):
+            if c:
+                counts[c] = counts.get(c, 0) + 1
+    out: dict[str, OfficerOut] = {}
+    q = (
+        select(User).join(UserScope, UserScope.user_id == User.id)
+        .where(User.staff_code.is_not(None), User.active.is_(True), UserScope.district_id == district_id, User.role.in_([Role.FIELD_MONITOR, Role.DISTRICT_DQM]))
+    )
+    for u in db.execute(q).scalars():
+        out[u.staff_code] = OfficerOut(staff_code=u.staff_code, role=u.role.value, district_id=district_id, full_name=u.full_name, user_id=u.id, sa_count=counts.get(u.staff_code, 0))
+    for code, n in counts.items():
+        if code not in out:
+            out[code] = OfficerOut(staff_code=code, role="FIELD_MONITOR" if code.startswith("FM") else "DISTRICT_DQM", district_id=district_id, sa_count=n)
+    return sorted(out.values(), key=lambda o: (o.role, o.staff_code))
+
+
+@router.patch("/reference/workload/assign", response_model=list[WorkloadRow])
+def assign_workload(body: WorkloadAssignIn, request: Request, db: Session = Depends(get_db), admin: User = Depends(require_perm("workload.assign"))):
+    """Reassign SAs to another Field Monitor and/or DQM officer of the same district, for example to
+    share a heavy workload. The tablets concerned refresh their SAs at the next sync."""
+    if not body.team_ids:
+        raise HTTPException(400, "Choose at least one SA")
+    teams_rows = db.execute(select(Team).where(Team.id.in_(body.team_ids))).scalars().all()
+    if len(teams_rows) != len(set(body.team_ids)):
+        raise HTTPException(404, "Some SAs were not found")
+    district_ids = {t.district_id for t in teams_rows}
+    if len(district_ids) != 1:
+        raise HTTPException(400, "Choose SAs of one district at a time")
+    district = db.get(District, district_ids.pop())
+    scope = district_ids_for(db, admin)
+    if scope is not None and district.id not in scope:
+        raise HTTPException(403, "District outside your scope")
+
+    def check(code: str | None, prefix: str, role: Role, label: str) -> str | None:
+        if code is None:
+            return None
+        code = code.strip().upper()
+        if code == "":
+            return ""
+        if not code.startswith(prefix + "-"):
+            raise HTTPException(400, f"{code} is not a {label} code (expected {prefix}-{district.code}-nnn)")
+        account = db.execute(select(User).where(User.staff_code == code, User.active.is_(True))).scalars().first()
+        if account is not None:
+            if account.role != role:
+                raise HTTPException(400, f"{code} belongs to {account.full_name}, who is not a {label}")
+            if district.id not in (district_ids_for(db, account) or []):
+                raise HTTPException(400, f"{account.full_name} ({code}) is not assigned to {district.name}; SAs stay within their district")
+        elif _district_of_code(code) != district.code:
+            raise HTTPException(400, f"{code} is numbered for district {_district_of_code(code)}, not {district.name} ({district.code}); SAs stay within their district")
+        return code
+
+    new_fm = check(body.monitor_code, "FM", Role.FIELD_MONITOR, "Field Monitor")
+    new_dqm = check(body.dqm_code, "DQM", Role.DISTRICT_DQM, "DQM officer")
+    if new_fm is None and new_dqm is None:
+        raise HTTPException(400, "Choose a Field Monitor and/or a DQM officer")
+    changes = []
+    for t in teams_rows:
+        before = (t.monitor_code, t.dqm_code)
+        if new_fm is not None:
+            t.monitor_code = new_fm or None
+        if new_dqm is not None:
+            t.dqm_code = new_dqm or None
+        if before != (t.monitor_code, t.dqm_code):
+            changes.append({"sa": t.code, "from": list(before), "to": [t.monitor_code, t.dqm_code]})
+    audit(db, admin, "workload.assign", "district", district.id, {"district": district.name, "monitor_code": new_fm, "dqm_code": new_dqm, "sas": [t.code for t in teams_rows], "changes": changes[:200]}, request)
+    db.commit()
+    ids = [t.id for t in teams_rows]
+    return [r for r in workload(district_id=district.id, search=None, db=db, user=admin) if r.team_id in ids]
 
 
 @router.get("/reference/supervisors", response_model=list[SupervisorOut])
