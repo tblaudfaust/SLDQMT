@@ -63,6 +63,15 @@ def update_evaluation(evaluation_id: int, body: EvaluationUpdate, request: Reque
     return me_service.to_out(db, e)
 
 
+@router.delete("/me/evaluations/{evaluation_id}", status_code=204)
+def delete_evaluation(evaluation_id: int, request: Request, db: Session = Depends(get_db), user: User = Depends(manage)):
+    e = me_service.get_evaluation(db, evaluation_id)
+    audit(db, user, "me_evaluation.delete", "me_evaluation", e.id, {"title": e.title, "registered": len(e.respondents)}, request)
+    me_service.delete_evaluation(db, e)
+    db.commit()
+    return Response(status_code=204)
+
+
 @router.get("/me/evaluations/{evaluation_id}/respondents", response_model=list[RespondentOut])
 def respondents(evaluation_id: int, db: Session = Depends(get_db), _: User = Depends(view)):
     me_service.get_evaluation(db, evaluation_id)

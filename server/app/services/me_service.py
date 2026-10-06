@@ -74,6 +74,9 @@ def get_evaluation(db: Session, evaluation_id: int) -> MeEvaluation:
 def create_evaluation(db: Session, user: User, body: EvaluationIn) -> MeEvaluation:
     if body.period_start and body.period_end and body.period_end < body.period_start:
         raise HTTPException(400, "The period ends before it starts")
+    dup = db.execute(select(MeEvaluation).where(func.lower(MeEvaluation.title) == body.title.strip().lower())).scalars().first()
+    if dup:
+        raise HTTPException(409, f"An evaluation called '{dup.title}' already exists (created {dup.created_at:%d %b %Y}). Give each training round a distinct title, or reopen the existing one.")
     e = MeEvaluation(
         title=body.title.strip(), training_mode=body.training_mode, period_start=body.period_start, period_end=body.period_end,
         description=(body.description or "").strip() or None, token=secrets.token_urlsafe(18), status="OPEN", created_by=user.id,
@@ -91,6 +94,14 @@ def update_evaluation(db: Session, e: MeEvaluation, body: EvaluationUpdate) -> M
         raise HTTPException(400, "The period ends before it starts")
     db.flush()
     return e
+
+
+def delete_evaluation(db: Session, e: MeEvaluation) -> None:
+    """Remove an evaluation that received no submissions (a duplicate or a test); one with responses is closed instead."""
+    if _counts(db, e.id)["submitted"]:
+        raise HTTPException(409, "This evaluation has responses; close it instead of deleting it")
+    db.delete(e)
+    db.flush()
 
 
 def respondents(db: Session, evaluation_id: int) -> list[RespondentOut]:

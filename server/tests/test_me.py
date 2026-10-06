@@ -133,3 +133,18 @@ def test_in_person_mode_skips_digital_access_and_routing_rules(client, admin):
     # a district DQM has no M&E access; an administrator has
     dqm_hdr = auth(login(client, "admin", "adminpass123")["access_token"])
     assert client.get("/api/v1/me/evaluations", headers=dqm_hdr).status_code == 200
+
+
+def test_duplicate_titles_refused_and_empty_evaluations_deletable(client, admin):
+    me, _ = me_user(client, admin)
+    first = client.post("/api/v1/me/evaluations", json={"title": "Testing", "training_mode": "ONLINE"}, headers=me)
+    assert first.status_code == 201
+    dup = client.post("/api/v1/me/evaluations", json={"title": "testing", "training_mode": "ONLINE"}, headers=me)
+    assert dup.status_code == 409 and "already exists" in dup.json()["detail"]
+    # an evaluation without responses can be deleted; one with a response cannot
+    assert client.delete(f"/api/v1/me/evaluations/{first.json()['id']}", headers=me).status_code == 204
+    assert client.get("/api/v1/me/evaluations", headers=me).json() == []
+    ev = client.post("/api/v1/me/evaluations", json={"title": "Testing", "training_mode": "ONLINE"}, headers=me).json()
+    reg = client.post(f"/api/v1/public/evaluations/{ev['token']}/register", json={"full_name": "Observer", "email": "o@example.com", "phone": "076000001"}).json()
+    assert client.post(f"/api/v1/public/evaluations/{ev['token']}/submit", json={"respondent_id": reg["respondent_id"], "resume_token": reg["resume_token"], "answers": {"A00": "3"}}).status_code == 200
+    assert client.delete(f"/api/v1/me/evaluations/{ev['id']}", headers=me).status_code == 409

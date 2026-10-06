@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import clsx from "clsx";
-import { BarChart3, Copy, ExternalLink, Link2, Lock, Plus, Unlock } from "lucide-react";
+import { BarChart3, Copy, ExternalLink, Link2, Lock, Plus, Trash2, Unlock } from "lucide-react";
 import { ApiError, api, fmtDate } from "../../api/client";
 import type { MeEvaluation } from "../../api/types";
 import { useAuth } from "../../auth/AuthContext";
@@ -33,6 +33,11 @@ export default function MeEvaluationsPage() {
   });
   const toggle = useMutation({
     mutationFn: (e: MeEvaluation) => api.patch<MeEvaluation>(`/me/evaluations/${e.id}`, { status: e.status === "OPEN" ? "CLOSED" : "OPEN" }),
+    onSuccess: invalidate,
+    onError: setError,
+  });
+  const remove = useMutation({
+    mutationFn: (e: MeEvaluation) => api.delete(`/me/evaluations/${e.id}`),
     onSuccess: invalidate,
     onError: setError,
   });
@@ -98,6 +103,7 @@ export default function MeEvaluationsPage() {
                     <button className="btn-outline" onClick={() => { if (confirm(`${e.status === "OPEN" ? "Close" : "Reopen"} "${e.title}"?${e.status === "OPEN" ? " Nobody can register or submit while it is closed." : ""}`)) toggle.mutate(e); }}>
                       {e.status === "OPEN" ? <><Lock size={16} /> Close</> : <><Unlock size={16} /> Reopen</>}
                     </button>
+                    {e.submitted === 0 && <button className="btn-outline text-red-700" onClick={() => { if (confirm(`Delete "${e.title}"? It has no responses; its link will stop working.`)) remove.mutate(e); }}><Trash2 size={16} /> Delete</button>}
                   </>
                 )}
               </div>
