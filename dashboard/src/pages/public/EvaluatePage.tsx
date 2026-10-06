@@ -56,8 +56,9 @@ export default function EvaluatePage() {
   useEffect(() => { try { if (saved) localStorage.setItem(key, JSON.stringify(saved)); } catch { /* private mode */ } }, [saved, key]);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_left,_#2a6aa6_0%,_#1F4E79_45%,_#0f3557_100%)] px-3 py-6 text-slate-800 sm:px-6 sm:py-10">
-      <div className="mx-auto max-w-2xl">
+    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top_left,_#2a6aa6_0%,_#1F4E79_45%,_#0f3557_100%)] px-3 py-6 text-slate-800 sm:px-6 sm:py-10">
+      <PageWatermark />
+      <div className="relative mx-auto max-w-2xl">
         <header className="mb-5 flex items-center gap-3 text-white">
           <img src="/statsl-logo.png" alt="Statistics Sierra Leone" className="h-12 w-12 rounded-full bg-white p-0.5 shadow" />
           <div>
@@ -397,5 +398,76 @@ function ThankYou({ ev, name }: { ev: Evaluation; name: string }) {
       <p className="mt-2 text-slate-600">Your evaluation of <b>{ev.title}</b> has been received. Your feedback helps Statistics Sierra Leone improve the 2026 census training.</p>
       <p className="mt-4 text-xs text-slate-400">You can close this page. Each person can submit once per evaluation.</p>
     </Card>
+  );
+}
+
+/** Faint repeating background around the card: the census emblem and small M&E motifs
+ *  (a checklist, a bar chart, a graduation cap, a group of trainees). Decorative only. */
+function PageWatermark() {
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 select-none">
+      <svg className="absolute inset-0 h-full w-full text-white" fill="currentColor">
+        <defs>
+          <pattern id="me-watermark" width="460" height="400" patternUnits="userSpaceOnUse">
+            <image href="/census-logo.png" x="20" y="24" width="96" height="96" opacity="0.07" />
+            <g transform="translate(200 30)" opacity="0.08"><Clipboard /></g>
+            <g transform="translate(330 44)" opacity="0.08"><BarChart /></g>
+            <g transform="translate(40 230)" opacity="0.08"><GraduationCap /></g>
+            <g transform="translate(180 220)" opacity="0.08"><Trainees /></g>
+            <image href="/census-logo.png" x="340" y="240" width="80" height="80" opacity="0.06" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#me-watermark)" />
+      </svg>
+    </div>
+  );
+}
+
+/* motifs, each about 90 x 100 units */
+function Clipboard() {
+  return (
+    <>
+      <rect x="0" y="12" width="80" height="100" rx="8" />
+      <rect x="22" y="0" width="36" height="22" rx="5" />
+      <g fill="#1F4E79">
+        <rect x="12" y="38" width="12" height="12" rx="2" /><rect x="30" y="41" width="40" height="6" rx="3" />
+        <rect x="12" y="60" width="12" height="12" rx="2" /><rect x="30" y="63" width="40" height="6" rx="3" />
+        <rect x="12" y="82" width="12" height="12" rx="2" /><rect x="30" y="85" width="40" height="6" rx="3" />
+      </g>
+      <g fill="#ffffff"><path d="M14 44l3 3 6-7-2-2-4 5-1-1z" /><path d="M14 66l3 3 6-7-2-2-4 5-1-1z" /></g>
+    </>
+  );
+}
+
+function BarChart() {
+  return (
+    <>
+      <rect x="0" y="96" width="100" height="5" rx="2" />
+      <rect x="8" y="56" width="16" height="38" rx="3" />
+      <rect x="32" y="30" width="16" height="64" rx="3" />
+      <rect x="56" y="44" width="16" height="50" rx="3" />
+      <rect x="80" y="10" width="16" height="84" rx="3" />
+    </>
+  );
+}
+
+function GraduationCap() {
+  return (
+    <>
+      <path d="M50 0 100 26 50 52 0 26z" />
+      <path d="M22 38v22c0 8 14 16 28 16s28-8 28-16V38L50 52z" />
+      <rect x="96" y="26" width="5" height="32" rx="2" />
+      <circle cx="98" cy="62" r="5" />
+    </>
+  );
+}
+
+function Trainees() {
+  return (
+    <>
+      <circle cx="22" cy="14" r="12" /><rect x="6" y="30" width="32" height="46" rx="14" />
+      <circle cx="64" cy="10" r="13" /><rect x="46" y="28" width="36" height="52" rx="16" />
+      <circle cx="104" cy="16" r="12" /><rect x="88" y="32" width="32" height="44" rx="14" />
+    </>
   );
 }
