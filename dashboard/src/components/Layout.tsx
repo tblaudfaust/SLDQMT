@@ -39,7 +39,7 @@ export default function Layout() {
               <NavLink to="/errors" className={link}><ClipboardList size={16} /> Errors</NavLink>
               <NavLink to="/monitors" className={link}><Tablet size={16} /> Field Monitors</NavLink>
               <NavLink to="/teams" className={link}><UsersRound size={16} /> Teams</NavLink>
-              <NavLink to="/workload" className={link}><Map size={16} /> Workload (SAs)</NavLink>
+              {can("workload.assign") && <NavLink to="/workload" className={link}><Map size={16} /> Workload (SAs)</NavLink>}
             </>
           )}
           {can("reports.export") && <NavLink to="/reports" className={link}><FileText size={16} /> Reports</NavLink>}

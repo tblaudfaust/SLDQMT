@@ -56,7 +56,7 @@ export default function App() {
                 <Route path="errors/:id" element={<ErrorDetailPage />} />
                 <Route path="monitors" element={<MonitorsPage />} />
                 <Route path="teams" element={<TeamsPage />} />
-                <Route path="workload" element={<WorkloadPage />} />
+                <Route element={<RequirePerm code="workload.assign" />}><Route path="workload" element={<WorkloadPage />} /></Route>
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="resources" element={<ResourcesPage />} />
                 <Route path="dqm/reports" element={<DqmReportsPage />} />
