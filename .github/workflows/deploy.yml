@@ -17,14 +17,37 @@ jobs:
       - name: Skip until the VPS secrets are configured
         if: ${{ env.HAS_VPS != 'true' }}
         run: echo "VPS_HOST secret is not set; add VPS_HOST, VPS_USER and VPS_SSH_KEY under Settings > Secrets to enable deployment."
+      # The runner occasionally cannot reach the VPS within the 30 s connection timeout
+      # (no attempt even reaches sshd); a second attempt a minute later has always worked.
       - name: Run deploy/update.sh on the VPS
+        id: deploy
         if: ${{ env.HAS_VPS == 'true' }}
+        continue-on-error: true
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
+          timeout: 60s
+          command_timeout: 20m
+          script_stop: true
+          script: |
+            cd /opt/sldqmt
+            bash deploy/update.sh
+      - name: Wait a minute before retrying
+        if: ${{ env.HAS_VPS == 'true' && steps.deploy.outcome == 'failure' }}
+        run: sleep 60
+      - name: Retry once if the VPS could not be reached
+        if: ${{ env.HAS_VPS == 'true' && steps.deploy.outcome == 'failure' }}
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          timeout: 60s
+          command_timeout: 20m
           script_stop: true
           script: |
             cd /opt/sldqmt
