@@ -220,6 +220,9 @@ export interface Officer {
   sa_count: number;
 }
 
+export interface CreatedAccount { username: string; staff_code: string; role: string; district: string; password: string }
+export interface WorkloadAccountsOut { created: CreatedAccount[]; existing: number }
+
 export interface PickList extends Named {
   active: boolean;
   sort_order: number;

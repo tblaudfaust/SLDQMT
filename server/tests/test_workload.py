@@ -125,3 +125,27 @@ def test_reassign_sas_within_district(client, admin, geo):
     log = client.get("/api/v1/admin/audit?action=workload.assign", headers=admin).json()
     entries = log["items"] if isinstance(log, dict) else log
     assert entries and entries[0]["action"] == "workload.assign"
+
+
+def test_create_accounts_from_workload(client, admin, geo):
+    """One click creates every officer account the workload names, with the role from the code and the district scope."""
+    r = client.post("/api/v1/admin/reference/workload/accounts", headers=admin)
+    assert r.status_code == 400  # nothing loaded yet
+    _import_workload(client, admin)
+    r = client.post("/api/v1/admin/reference/workload/accounts", headers=admin)
+    assert r.status_code == 200, r.text
+    res = r.json()
+    assert res["existing"] == 0 and len(res["created"]) == 6
+    by = {c["staff_code"]: c for c in res["created"]}
+    assert by["FM-WAU-001"]["role"] == "FIELD_MONITOR" and by["FM-WAU-001"]["district"] == "Western Area Urban" and by["FM-WAU-001"]["username"] == "fm-wau-001"
+    assert by["DQM-WAR-001"]["role"] == "DISTRICT_DQM" and len(by["DQM-WAR-001"]["password"]) == 10
+    # the Field Monitor can sign in with the code (any case) and gets only their SA; the DQM has the district rights
+    data = login(client, "FM-WAU-001", by["FM-WAU-001"]["password"])
+    assert data["user"]["assigned_sas"] == 1 and "sync.use" in data["user"]["permissions"]
+    dqm = login(client, "dqm-wau-001", by["DQM-WAU-001"]["password"])
+    assert dqm["user"]["district_ids"] == [geo["districts"]["WAU"]["id"]] and "daily_reports.create" in dqm["user"]["permissions"]
+    # repeating creates nothing new; the officers list now shows the accounts
+    again = client.post("/api/v1/admin/reference/workload/accounts", headers=admin).json()
+    assert again["created"] == [] and again["existing"] == 6
+    offs = {o["staff_code"]: o for o in client.get(f"/api/v1/admin/reference/officers?district_id={geo['districts']['WAU']['id']}", headers=admin).json()}
+    assert offs["DQM-WAU-002"]["user_id"] is not None

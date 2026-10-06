@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ApiError, api, qs } from "../api/client";
-import type { Officer, WorkloadRow } from "../api/types";
+import type { CreatedAccount, Officer, WorkloadAccountsOut, WorkloadRow } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import { useReference } from "../components/FiltersBar";
 import { Card, Empty, ErrorBox, Field, Spinner } from "../components/ui";
@@ -17,6 +17,9 @@ export default function WorkloadPage() {
   const qc = useQueryClient();
   const { districts } = useReference();
   const canAssign = can("workload.assign");
+  const canCreate = can("users.manage");
+  const [created, setCreated] = useState<WorkloadAccountsOut | null>(null);
+  const [createError, setCreateError] = useState<unknown>(null);
   const [districtId, setDistrictId] = useState<string>("");
   const [search, setSearch] = useState("");
   const [mine, setMine] = useState(true);
@@ -51,6 +54,11 @@ export default function WorkloadPage() {
   const selectedDistricts = new Set(selectedRows.map((r) => r.district_id));
   const allShownSelected = data.length > 0 && data.every((r) => selected.has(r.team_id));
 
+  const createAccounts = useMutation({
+    mutationFn: () => api.post<WorkloadAccountsOut>(`/admin/reference/workload/accounts${qs({ district_id: districtId || undefined })}`),
+    onSuccess: (res) => { setCreated(res); setCreateError(null); qc.invalidateQueries({ queryKey: ["workload"] }); qc.invalidateQueries({ queryKey: ["officers"] }); qc.invalidateQueries({ queryKey: ["admin", "users"] }); },
+    onError: setCreateError,
+  });
   const toggle = (id: number) => setSelected((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const toggleAll = () => setSelected(allShownSelected ? new Set() : new Set(data.map((r) => r.team_id)));
 
@@ -74,6 +82,15 @@ export default function WorkloadPage() {
         {user?.staff_code && (
           <label className="flex items-end gap-2 pb-2 text-sm text-slate-700"><input type="checkbox" checked={mine} onChange={(e) => setMine(e.target.checked)} /> My SAs only ({user.staff_code})</label>
         )}
+        {canCreate && (
+          <div className="flex items-end">
+            <button className="btn-outline" disabled={createAccounts.isPending || noAccount === 0}
+              title={noAccount === 0 ? "Every officer of the workload shown already has an account" : "Create an account for every Field Monitor and DQM officer of the workload who has none yet"}
+              onClick={() => { if (confirm(`Create accounts for the officers of the workload${districtId ? " in this district" : ""} who have none yet?\n\nUsername and name = the staff code, role from the code, scope = the district. The initial passwords are shown once afterwards: download them.`)) createAccounts.mutate(); }}>
+              {createAccounts.isPending ? "Creating…" : "Create missing accounts"}
+            </button>
+          </div>
+        )}
         {canAssign && (
           <div className="flex items-end gap-2">
             <button className="btn-primary" disabled={selected.size === 0 || selectedDistricts.size !== 1} onClick={() => setDialog(true)} title={selectedDistricts.size > 1 ? "Choose SAs of one district at a time" : undefined}>
@@ -84,6 +101,8 @@ export default function WorkloadPage() {
         )}
       </div>
       <ErrorBox error={rows.error} />
+      <ErrorBox error={createError instanceof ApiError ? createError.message : createError} />
+      {created && <CreatedAccountsCard result={created} onClose={() => setCreated(null)} />}
       {rows.isLoading ? <Spinner /> : (
         <>
           <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -149,6 +168,13 @@ function ReassignDialog({ rows, onClose, onDone }: { rows: WorkloadRow[]; onClos
   const [fm, setFm] = useState(KEEP);
   const [dqm, setDqm] = useState(KEEP);
   const [error, setError] = useState<unknown>(null);
+  // The frame pairs FM-Kai-003 with DQM-Kai-003: choosing one side selects its partner so the pair stays matched.
+  const partner = (code: string, role: Officer["role"]) => {
+    const tail = code.split("-").slice(1).join("-"); // "Kai-004": same district and number, other prefix
+    return (officers.data ?? []).find((o) => o.role === role && o.staff_code.split("-").slice(1).join("-") === tail)?.staff_code;
+  };
+  const chooseFm = (v: string) => { setFm(v); if (v !== KEEP && v !== NONE) { const p = partner(v, "DISTRICT_DQM"); if (p) setDqm(p); } };
+  const chooseDqm = (v: string) => { setDqm(v); if (v !== KEEP && v !== NONE) { const p = partner(v, "FIELD_MONITOR"); if (p) setFm(p); } };
   const currentFms = new Set(rows.map((r) => r.monitor_code));
   const currentDqms = new Set(rows.map((r) => r.dqm_code));
   const save = useMutation({
@@ -177,8 +203,8 @@ function ReassignDialog({ rows, onClose, onDone }: { rows: WorkloadRow[]; onClos
         </p>
         {officers.isLoading ? <Spinner /> : (
           <div className="grid gap-3">
-            <Field label="Field Monitor">{pick("FIELD_MONITOR", fm, setFm, currentFms)}</Field>
-            <Field label="DQM officer">{pick("DISTRICT_DQM", dqm, setDqm, currentDqms)}</Field>
+            <Field label="Field Monitor">{pick("FIELD_MONITOR", fm, chooseFm, currentFms)}</Field>
+            <Field label="DQM officer (linked to the Field Monitor's pair; change it only to bring in support)">{pick("DISTRICT_DQM", dqm, chooseDqm, currentDqms)}</Field>
           </div>
         )}
         <ErrorBox error={error instanceof ApiError ? error.message : error} />
@@ -188,5 +214,35 @@ function ReassignDialog({ rows, onClose, onDone }: { rows: WorkloadRow[]; onClos
         </div>
       </div>
     </div>
+  );
+}
+
+function CreatedAccountsCard({ result, onClose }: { result: WorkloadAccountsOut; onClose: () => void }) {
+  const download = () => {
+    const lines = ["username,staff_code,role,district,password", ...result.created.map((c: CreatedAccount) => [c.username, c.staff_code, c.role, c.district, c.password].join(","))];
+    const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `officer-accounts-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+  return (
+    <Card title={`${result.created.length} accounts created`} className="mb-4" action={<button className="text-sm text-slate-500" onClick={onClose}>Close</button>}>
+      <p className="text-sm text-slate-700">
+        {result.existing} officers already had an account. The initial passwords below are shown only now: download the file and hand each officer their password. Officers sign in with the staff code as username and then choose a tablet PIN (Field Monitors) or change the password (DQM).
+      </p>
+      {result.created.length > 0 && (
+        <>
+          <button className="btn-primary mt-3" onClick={download}>Download passwords (CSV)</button>
+          <div className="mt-3 max-h-72 overflow-auto">
+            <table className="table">
+              <thead><tr><th>Username / staff code</th><th>Role</th><th>District</th><th>Initial password</th></tr></thead>
+              <tbody>{result.created.map((c) => <tr key={c.username}><td className="font-medium">{c.staff_code}</td><td>{c.role === "FIELD_MONITOR" ? "Field Monitor" : "District DQM"}</td><td>{c.district}</td><td className="font-mono">{c.password}</td></tr>)}</tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </Card>
   );
 }

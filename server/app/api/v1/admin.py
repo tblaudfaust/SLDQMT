@@ -1,4 +1,5 @@
 import secrets
+import string
 from datetime import date, datetime, time, timezone
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
@@ -58,8 +59,9 @@ from app.schemas.reference import (
     PickListIn,
     PickListOut,
     RegionOut,
+    CreatedAccount,
     OfficerOut,
-    SupervisorOut, WorkloadAssignIn, WorkloadRow,
+    SupervisorOut, WorkloadAccountsOut, WorkloadAssignIn, WorkloadRow,
     TeamOut,
 )
 from app.services import import_service, permission_service
@@ -523,6 +525,48 @@ def officers(district_id: int, db: Session = Depends(get_db), user: User = Depen
         if code not in out:
             out[code] = OfficerOut(staff_code=code, role=staff_code_role(code) or "FIELD_MONITOR", district_id=district_id, sa_count=n)
     return sorted(out.values(), key=lambda o: (o.role, o.staff_code))
+
+
+@router.post("/reference/workload/accounts", response_model=WorkloadAccountsOut)
+def create_workload_accounts(request: Request, district_id: int | None = None, db: Session = Depends(get_db), admin: User = Depends(manage_users)):
+    """Create an account for every Field Monitor and DQM officer named in the workload who has none yet:
+    username and name = the staff code, role from the code, scope = the SA's district, a generated
+    initial password (returned once). Field Monitors get the tablet right, DQM officers the district
+    dashboard rights, through their roles. Safe to repeat: existing accounts are left alone."""
+    q = select(Team.district_id, Team.monitor_code, Team.dqm_code).where(Team.active.is_(True))
+    scope = district_ids_for(db, admin)
+    if scope is not None:
+        q = q.where(Team.district_id.in_(scope))
+    if district_id:
+        q = q.where(Team.district_id == district_id)
+    wanted: dict[str, int] = {}  # staff code -> district id
+    for did, mc, dc in db.execute(q):
+        for code in (mc, dc):
+            if code:
+                wanted.setdefault(code, did)
+    if not wanted:
+        raise HTTPException(400, "No workload loaded yet: import the workload frame on the Reference lists page first")
+    have = set(db.execute(select(User.staff_code).where(User.staff_code.in_(list(wanted)))).scalars().all())
+    taken = set(db.execute(select(User.username).where(User.username.in_([c.lower() for c in wanted]))).scalars().all())
+    districts = {d.id: d for d in db.execute(select(District)).scalars()}
+    created: list[CreatedAccount] = []
+    alphabet = [c for c in string.ascii_letters + string.digits if c not in "0O1lI"]
+    for code in sorted(wanted):
+        if code in have:
+            continue
+        role = staff_code_role(code)
+        username = code.lower()
+        if role is None or username in taken:
+            continue
+        password = "".join(secrets.choice(alphabet) for _ in range(10))
+        user = User(username=username, password_hash=hash_password(password), full_name=code, role=Role(role), staff_code=code)
+        user.scopes.append(UserScope(district_id=wanted[code]))
+        db.add(user)
+        created.append(CreatedAccount(username=username, staff_code=code, role=role, district=districts[wanted[code]].name, password=password))
+    db.flush()
+    audit(db, admin, "workload.accounts", "district", district_id, {"created": [c.username for c in created], "existing": len(have)}, request)
+    db.commit()
+    return WorkloadAccountsOut(created=created, existing=len(have))
 
 
 @router.patch("/reference/workload/assign", response_model=list[WorkloadRow])

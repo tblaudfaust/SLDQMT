@@ -56,6 +56,19 @@ class OfficerOut(BaseModel):
     sa_count: int = 0
 
 
+class CreatedAccount(BaseModel):
+    username: str
+    staff_code: str
+    role: str
+    district: str
+    password: str  # shown once, in the response that created it
+
+
+class WorkloadAccountsOut(BaseModel):
+    created: list[CreatedAccount]
+    existing: int  # officers of the workload that already had an account
+
+
 class WorkloadAssignIn(BaseModel):
     """Give the listed SAs to another officer. None keeps the current officer; "" clears it."""
 
