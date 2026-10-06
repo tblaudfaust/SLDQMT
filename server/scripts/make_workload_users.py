@@ -3,10 +3,11 @@
     python -m scripts.make_workload_users "C:\\...\\FIELD_MONITOR-NATIONAL_MASTER_FRAME.xlsx" out.csv
 
 Reads the FIELD_MONITOR sheet (one row per SA with Field monitor ID and DQM ID) and
-writes one account per officer: username = the staff code in lower case (fm-11-001,
-dqm-11-001), a unique name linked to the district ("Kailahun FM 001", "Kailahun DQM 001"),
-role FIELD_MONITOR or DISTRICT_DQM, the officer's district, the staff code (which links
-the account to its SAs) and a generated initial password.
+writes one account per officer: the staff code in the district-abbreviation style
+(FM-Bo-001, DQM-Bo-001) as both username and staff code (sign-in ignores case), the
+code again as the full name until an administrator enters the officer's real name,
+role FIELD_MONITOR or DISTRICT_DQM, the officer's district and a generated initial
+password.
 
 The CSV is imported on the dashboard: User management > Import CSV. Keep the file
 private: it holds the initial passwords to hand to each officer. Accounts that
@@ -19,6 +20,8 @@ import sys
 from collections import OrderedDict
 
 from openpyxl import load_workbook
+
+from app.core.districts import canonical_staff_code
 
 ALPHABET = string.ascii_uppercase + string.ascii_lowercase + string.digits
 
@@ -41,13 +44,14 @@ def main(workbook: str, out: str) -> None:
         if not row or not row[fm_i]:
             continue
         district = str(row[dist_i]).strip().title()
-        for code, role in ((str(row[fm_i]).strip().upper(), "FIELD_MONITOR"), (str(row[dqm_i]).strip().upper(), "DISTRICT_DQM")):
+        for raw, role in ((row[fm_i], "FIELD_MONITOR"), (row[dqm_i], "DISTRICT_DQM")):
+            code = canonical_staff_code(str(raw))  # FM-41-001 -> FM-Bo-001
             if code not in officers:
                 officers[code] = {
-                    "username": code.lower(),
+                    "username": code,  # the staff code is the username (sign-in ignores case)
                     "password": password(),
-                    # unique, district-linked name: "Kailahun FM 001", "Kailahun DQM 001"
-                    "full_name": f"{district} {'FM' if role == 'FIELD_MONITOR' else 'DQM'} {code.rsplit('-', 1)[-1]}",
+                    # the real name is not known yet: the code stands in until an administrator edits it
+                    "full_name": code,
                     "phone": "",
                     "role": role,
                     "districts": district,

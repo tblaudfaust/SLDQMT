@@ -6,6 +6,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.api.deps import audit, diff, require_perm, require_web, snapshot
+from app.core.districts import canonical_staff_code, district_abbreviation, staff_code_district, staff_code_role
 from app.core.permissions import DEFAULT_ROLE_PERMISSIONS, PERMISSIONS
 from app.core.security import hash_password
 from app.db.session import get_db
@@ -306,9 +307,8 @@ def user_activity(user_id: int, db: Session = Depends(get_db), _: User = Depends
 
 
 def _staff_code(value: str | None) -> str | None:
-    """FM-11-001 / DQM-11-001 as written in the workload frame; blank clears it."""
-    value = (value or "").strip().upper()
-    return value or None
+    """FM-Bo-001 / DQM-Bo-001 (the frame's FM-41-001 is accepted and converted); blank clears it."""
+    return canonical_staff_code(value)
 
 
 @router.post("/users", response_model=UserAdminOut, status_code=201)
@@ -500,12 +500,6 @@ def workload(district_id: int | None = None, search: str | None = None, db: Sess
     ]
 
 
-def _district_of_code(code: str) -> str | None:
-    """FM-11-001 / DQM-52-044 -> district code 11 / 52 (how the workload frame numbers officers)."""
-    parts = code.split("-")
-    return parts[1] if len(parts) == 3 and parts[1].isdigit() else None
-
-
 @router.get("/reference/officers", response_model=list[OfficerOut])
 def officers(district_id: int, db: Session = Depends(get_db), user: User = Depends(require_web)):
     """Field Monitors and DQM officers of one district: accounts with a staff code, plus codes that
@@ -527,7 +521,7 @@ def officers(district_id: int, db: Session = Depends(get_db), user: User = Depen
         out[u.staff_code] = OfficerOut(staff_code=u.staff_code, role=u.role.value, district_id=district_id, full_name=u.full_name, user_id=u.id, sa_count=counts.get(u.staff_code, 0))
     for code, n in counts.items():
         if code not in out:
-            out[code] = OfficerOut(staff_code=code, role="FIELD_MONITOR" if code.startswith("FM") else "DISTRICT_DQM", district_id=district_id, sa_count=n)
+            out[code] = OfficerOut(staff_code=code, role=staff_code_role(code) or "FIELD_MONITOR", district_id=district_id, sa_count=n)
     return sorted(out.values(), key=lambda o: (o.role, o.staff_code))
 
 
@@ -551,19 +545,19 @@ def assign_workload(body: WorkloadAssignIn, request: Request, db: Session = Depe
     def check(code: str | None, prefix: str, role: Role, label: str) -> str | None:
         if code is None:
             return None
-        code = code.strip().upper()
-        if code == "":
+        if code.strip() == "":
             return ""
-        if not code.startswith(prefix + "-"):
-            raise HTTPException(400, f"{code} is not a {label} code (expected {prefix}-{district.code}-nnn)")
+        code = canonical_staff_code(code)
+        if staff_code_role(code) != role.value:
+            raise HTTPException(400, f"{code} is not a {label} code (expected {prefix}-{district_abbreviation(district.code)}-nnn)")
         account = db.execute(select(User).where(User.staff_code == code, User.active.is_(True))).scalars().first()
         if account is not None:
             if account.role != role:
                 raise HTTPException(400, f"{code} belongs to {account.full_name}, who is not a {label}")
             if district.id not in (district_ids_for(db, account) or []):
                 raise HTTPException(400, f"{account.full_name} ({code}) is not assigned to {district.name}; SAs stay within their district")
-        elif _district_of_code(code) != district.code:
-            raise HTTPException(400, f"{code} is numbered for district {_district_of_code(code)}, not {district.name} ({district.code}); SAs stay within their district")
+        elif staff_code_district(code) != district.code:
+            raise HTTPException(400, f"{code} is a code of another district, not {district.name} ({district_abbreviation(district.code)}); SAs stay within their district")
         return code
 
     new_fm = check(body.monitor_code, "FM", Role.FIELD_MONITOR, "Field Monitor")

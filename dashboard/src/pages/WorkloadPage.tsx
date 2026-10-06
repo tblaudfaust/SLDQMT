@@ -70,7 +70,7 @@ export default function WorkloadPage() {
             {districts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
         </Field>
-        <Field label="Search"><input className="input" placeholder="SA code, SA name, chiefdom, FM-11-001, DQM-11-001" value={search} onChange={(e) => setSearch(e.target.value)} /></Field>
+        <Field label="Search"><input className="input" placeholder="SA code, SA name, chiefdom, FM-Bo-001, DQM-Bo-001" value={search} onChange={(e) => setSearch(e.target.value)} /></Field>
         {user?.staff_code && (
           <label className="flex items-end gap-2 pb-2 text-sm text-slate-700"><input type="checkbox" checked={mine} onChange={(e) => setMine(e.target.checked)} /> My SAs only ({user.staff_code})</label>
         )}

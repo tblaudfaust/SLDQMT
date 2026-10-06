@@ -172,7 +172,7 @@ export default function UsersPage() {
             <Field label="Full name"><input className="input" required value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></Field>
             <Field label="Phone"><input className="input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></Field>
             {(form.role === "FIELD_MONITOR" || form.role === "DISTRICT_DQM") && (
-              <Field label="Staff code from the workload frame"><input className="input" placeholder={form.role === "FIELD_MONITOR" ? "FM-11-001" : "DQM-11-001"} value={form.staff_code} onChange={(e) => setForm({ ...form, staff_code: e.target.value.toUpperCase() })} /></Field>
+              <Field label="Staff code (links the account to its SAs)"><input className="input" placeholder={form.role === "FIELD_MONITOR" ? "FM-Bo-001" : "DQM-Bo-001"} value={form.staff_code} onChange={(e) => setForm({ ...form, staff_code: e.target.value })} /></Field>
             )}
             <Field label="Role (level)">
               <select className="input" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role, district_ids: [], region_ids: [] })}>
@@ -249,7 +249,7 @@ export default function UsersPage() {
 
       {showImport && (
         <Modal title="Import users from CSV" onClose={() => setShowImport(false)}>
-          <p className="mb-2 text-sm text-slate-600">Columns: username, password (blank = generated, shown nowhere: reset it afterwards), full_name, phone, role (FIELD_MONITOR, DISTRICT_DQM, REGIONAL, NATIONAL_DQM, ADMIN), districts (names or codes separated by ;), region, staff_code (FM-11-001 or DQM-11-001 from the workload frame). Existing usernames are skipped.</p>
+          <p className="mb-2 text-sm text-slate-600">Columns: username, password (blank = generated, shown nowhere: reset it afterwards), full_name, phone, role (FIELD_MONITOR, DISTRICT_DQM, REGIONAL, NATIONAL_DQM, ADMIN), districts (names or codes separated by ;), region, staff_code (FM-Bo-001 or DQM-Bo-001; the frame's FM-41-001 is accepted too). Existing usernames are skipped.</p>
           <button className="mb-3 text-sm text-navy" onClick={downloadTemplate}>Download template</button>
           <div className="flex flex-wrap items-center gap-3">
             <input type="file" accept=".csv" onChange={(e) => setImportFile(e.target.files?.[0] ?? null)} />

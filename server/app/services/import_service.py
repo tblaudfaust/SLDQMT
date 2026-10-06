@@ -17,7 +17,8 @@ Two inputs are accepted:
 
 3. The workload frame (FIELD_MONITOR sheet, or the national master frame that
    carries it next to the two frame sheets): one row per SA with Field monitor ID
-   and DQM ID, stored on the team as monitor_code and dqm_code.
+   and DQM ID, stored on the team as monitor_code and dqm_code in the
+   district-abbreviation form (FM-11-001 -> FM-Kai-001, see app.core.districts).
 
 3. The workload frame (FIELD_MONITOR sheet, or the national master frame that
    carries it next to the two frame sheets): one row per SA with Field monitor ID
@@ -35,6 +36,7 @@ from openpyxl import load_workbook
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.districts import canonical_staff_code
 from app.models import District, Enumerator, EnumerationArea, Region, Supervisor, Team
 from app.schemas.admin import ImportResult
 
@@ -236,7 +238,7 @@ class _Importer:
             # Workload: who is responsible for this SA. The same SAs go to the Field Monitor and the DQM.
             for attr in ("monitor_code", "dqm_code"):
                 if row.get(attr):
-                    setattr(team, attr, row[attr].strip().upper())
+                    setattr(team, attr, canonical_staff_code(row[attr]))  # FM-11-001 -> FM-Kai-001
             self.counts["assigned"] += 1
         self.teams[key] = team
         return team
