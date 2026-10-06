@@ -206,7 +206,10 @@ async def import_users(request: Request, file: UploadFile = File(...), db: Sessi
             if r is None:
                 errors.append(f"Row {i}: unknown region '{row['region']}'")
                 continue
-            user.scopes.append(UserScope(region_id=r.id))
+            # District-level roles are scoped by their district; their region follows from it. A region
+            # scope would open the whole region to them, so for those roles the column is informational.
+            if role not in (Role.FIELD_MONITOR, Role.DISTRICT_DQM):
+                user.scopes.append(UserScope(region_id=r.id))
         db.add(user)
         db.flush()
         created += 1

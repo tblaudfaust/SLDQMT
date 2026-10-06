@@ -174,3 +174,22 @@ def test_create_officer_pair(client, admin, geo):
     # the pair now appears in the district's officer list, so SAs can be reassigned to it
     offs = {o["staff_code"] for o in client.get(f"/api/v1/admin/reference/officers?district_id={wau}", headers=admin).json()}
     assert {"FM-WAU-003", "DQM-WAU-003", "FM-WAU-010", "DQM-WAU-010"} <= offs
+
+
+def test_csv_import_from_the_user_template(client, admin, geo):
+    """The populated template: workbook IDs as usernames, region filled in; district roles stay scoped to their district."""
+    _import_workload(client, admin)
+    csv_text = (
+        "username,password,full_name,phone,role,districts,region,staff_code\n"
+        "FM-WAU-001,ChangeMe123,Field Monitor Western Area Urban 001,23277000000,FIELD_MONITOR,Western Area Urban,Western,FM-WAU-001\n"
+        "DQM-WAU-001,ChangeMe123,District DQM Western Area Urban 001,23277000000,DISTRICT_DQM,Western Area Urban,Western,DQM-WAU-001\n"
+    )
+    r = client.post("/api/v1/admin/users/import", files={"file": ("users-workload.csv", csv_text, "text/csv")}, headers=admin)
+    assert r.status_code == 200, r.text
+    assert r.json()["created"] == 2 and r.json()["errors"] == []
+    fm = login(client, "FM-WAU-001", "ChangeMe123")["user"]
+    assert fm["full_name"] == "Field Monitor Western Area Urban 001" and fm["phone"] == "23277000000"
+    assert fm["district_ids"] == [geo["districts"]["WAU"]["id"]]  # the region column did not widen the scope
+    assert fm["staff_code"] == "FM-WAU-001" and fm["assigned_sas"] == 1
+    dqm = login(client, "dqm-wau-001", "ChangeMe123")["user"]
+    assert dqm["district_ids"] == [geo["districts"]["WAU"]["id"]] and dqm["assigned_sas"] == 1
