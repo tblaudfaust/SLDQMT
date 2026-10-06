@@ -25,7 +25,8 @@ services:
     environment:
       ENVIRONMENT: production
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      BACKEND_CORS_ORIGINS: '["https://${DOMAIN}"]'
+      BACKEND_CORS_ORIGINS: '["https://${DOMAIN}", "https://${ME_DOMAIN:-censusme.statistics.sl}"]'
+      ME_PUBLIC_BASE_URL: https://${ME_DOMAIN:-censusme.statistics.sl}
       RESOURCES_DIR: /app/resources
     volumes:
       - ./downloads:/app/resources:ro
@@ -46,6 +47,7 @@ services:
       - "443:443"
     environment:
       DOMAIN: ${DOMAIN}
+      ME_DOMAIN: ${ME_DOMAIN:-censusme.statistics.sl}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - fm_caddy_data:/data

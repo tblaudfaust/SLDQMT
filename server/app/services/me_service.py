@@ -12,6 +12,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core import me_form
+from app.core.config import settings
 from app.models import MeEvaluation, MeRespondent, MeResponse, User
 from app.schemas.me import (
     Breakdown,
@@ -53,6 +54,8 @@ def to_out(db: Session, e: MeEvaluation) -> EvaluationOut:
     out = EvaluationOut.model_validate(e)
     for k, v in _counts(db, e.id).items():
         setattr(out, k, v)
+    base = settings.ME_PUBLIC_BASE_URL.rstrip("/")
+    out.share_url = f"{base}/evaluate/{e.token}" if base else None
     return out
 
 

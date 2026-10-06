@@ -36,6 +36,7 @@ class EvaluationOut(ORMModel):
     token: str
     status: str
     created_at: datetime
+    share_url: str | None = None  # the link to send; None = build it from the dashboard's own origin
     registered: int = 0
     submitted: int = 0
     trainees: int = 0

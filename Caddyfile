@@ -1,4 +1,6 @@
-{$DOMAIN} {
+# The dashboard and API on the main name, and the same stack on the evaluation name
+# (censusme.statistics.sl) used in the links sent to trainees and trainers.
+{$DOMAIN}, {$ME_DOMAIN} {
 	encode gzip
 
 	handle /api/* {

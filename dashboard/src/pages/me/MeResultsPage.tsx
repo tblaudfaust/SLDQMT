@@ -48,8 +48,8 @@ export default function MeResultsPage() {
             <span className={clsx("rounded-full px-2 py-0.5 font-semibold", e.training_mode === "ONLINE" ? "bg-sky-100 text-sky-800" : "bg-emerald-100 text-emerald-800")}>{e.training_mode === "ONLINE" ? "Online / self-paced" : "In-person"}</span>
             <span className={clsx("rounded-full px-2 py-0.5 font-semibold", e.status === "OPEN" ? "bg-green-100 text-green-800" : "bg-slate-200 text-slate-700")}>{e.status === "OPEN" ? "Open" : "Closed"}</span>
             {(e.period_start || e.period_end) && <span className="text-slate-500">{fmtDate(e.period_start)}{e.period_end ? ` – ${fmtDate(e.period_end)}` : ""}</span>}
-            <button className="text-navy" onClick={() => navigator.clipboard.writeText(evaluationLink(e.token))}><Copy size={12} className="mr-1 inline" />Copy link</button>
-            <a className="text-navy" href={evaluationLink(e.token)} target="_blank" rel="noreferrer"><ExternalLink size={12} className="mr-1 inline" />Open form</a>
+            <button className="text-navy" onClick={() => navigator.clipboard.writeText(evaluationLink(e))}><Copy size={12} className="mr-1 inline" />Copy link</button>
+            <a className="text-navy" href={evaluationLink(e)} target="_blank" rel="noreferrer"><ExternalLink size={12} className="mr-1 inline" />Open form</a>
           </div>
         </div>
         <div className="flex gap-2">

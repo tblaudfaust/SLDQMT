@@ -11,7 +11,8 @@ import { Card, Empty, ErrorBox, Field, KpiTile, Spinner } from "../../components
 interface Form { id?: number; title: string; training_mode: "ONLINE" | "IN_PERSON"; period_start: string; period_end: string; description: string }
 const empty: Form = { title: "", training_mode: "ONLINE", period_start: "", period_end: "", description: "" };
 
-export const evaluationLink = (token: string) => `${window.location.origin}/evaluate/${token}`;
+/** The link to send to trainees and trainers: the configured evaluation address (censusme.statistics.sl), or this dashboard's own address. */
+export const evaluationLink = (e: { token: string; share_url: string | null }) => e.share_url ?? `${window.location.origin}/evaluate/${e.token}`;
 
 /** Monitoring & Evaluation: training evaluations shared by link with trainees and trainers. */
 export default function MeEvaluationsPage() {
@@ -36,7 +37,7 @@ export default function MeEvaluationsPage() {
     onError: setError,
   });
   const copy = async (e: MeEvaluation) => {
-    try { await navigator.clipboard.writeText(evaluationLink(e.token)); setCopied(e.id); setTimeout(() => setCopied(null), 2000); } catch { prompt("Copy this link", evaluationLink(e.token)); }
+    try { await navigator.clipboard.writeText(evaluationLink(e)); setCopied(e.id); setTimeout(() => setCopied(null), 2000); } catch { prompt("Copy this link", evaluationLink(e)); }
   };
   const data = list.data ?? [];
   const totals = data.reduce((t, e) => ({ submitted: t.submitted + e.submitted, registered: t.registered + e.registered, trainees: t.trainees + e.trainees, trainers: t.trainers + e.trainers }), { submitted: 0, registered: 0, trainees: 0, trainers: 0 });
@@ -85,9 +86,9 @@ export default function MeEvaluationsPage() {
               </div>
               <div className="mt-3 flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs">
                 <Link2 size={14} className="shrink-0 text-slate-400" />
-                <span className="truncate font-mono text-slate-600">{evaluationLink(e.token)}</span>
+                <span className="truncate font-mono text-slate-600">{evaluationLink(e)}</span>
                 <button className="ml-auto shrink-0 text-navy" onClick={() => copy(e)} title="Copy the link to share"><Copy size={14} /> {copied === e.id ? "Copied" : "Copy"}</button>
-                <a className="shrink-0 text-navy" href={evaluationLink(e.token)} target="_blank" rel="noreferrer" title="Open the evaluation page"><ExternalLink size={14} /></a>
+                <a className="shrink-0 text-navy" href={evaluationLink(e)} target="_blank" rel="noreferrer" title="Open the evaluation page"><ExternalLink size={14} /></a>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Link to={`/me/evaluations/${e.id}`} className="btn-primary"><BarChart3 size={16} /> Results</Link>

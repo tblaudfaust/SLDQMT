@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     API_V1_PREFIX: str = "/api/v1"
     # Folder holding the downloadable user manual and tablet APK (served to signed-in users only)
+    # Public base of the training-evaluation links (https://censusme.statistics.sl); empty = the dashboard's own origin
+    ME_PUBLIC_BASE_URL: str = ""
     RESOURCES_DIR: str = str((SERVER_DIR.parent / "downloads").as_posix())
 
     # Dev default: a SQLite file next to the server package, whatever the working directory.

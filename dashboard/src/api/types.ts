@@ -513,6 +513,7 @@ export interface MeEvaluation {
   token: string;
   status: "OPEN" | "CLOSED";
   created_at: string;
+  share_url: string | null;
   registered: number;
   submitted: number;
   trainees: number;

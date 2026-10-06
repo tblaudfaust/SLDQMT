@@ -16,6 +16,8 @@ main() {
   echo "== building and restarting containers"
   docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
   docker image prune -f >/dev/null
+  # a changed Caddyfile is bind-mounted, so Caddy must be told to reload it (new site names get their certificates here)
+  docker compose -f docker-compose.prod.yml exec -T caddy caddy reload --config /etc/caddy/Caddyfile >/dev/null 2>&1 || true
 
   echo "== waiting for the API"
   for _ in $(seq 1 30); do
