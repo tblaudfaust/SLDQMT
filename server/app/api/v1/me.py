@@ -88,8 +88,9 @@ def delete_response(evaluation_id: int, response_id: int, request: Request, db: 
 
 
 @router.get("/me/evaluations/{evaluation_id}/results", response_model=Results)
-def results(evaluation_id: int, db: Session = Depends(get_db), _: User = Depends(view)):
-    return me_service.results(db, me_service.get_evaluation(db, evaluation_id))
+def results(evaluation_id: int, district: str | None = Query(default=None, max_length=60), db: Session = Depends(get_db), _: User = Depends(view)):
+    """Results, optionally limited to one district (A04); the by-district table is always national."""
+    return me_service.results(db, me_service.get_evaluation(db, evaluation_id), district or None)
 
 
 @router.get("/me/evaluations/{evaluation_id}/export")

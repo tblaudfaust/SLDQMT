@@ -148,3 +148,26 @@ def test_duplicate_titles_refused_and_empty_evaluations_deletable(client, admin)
     reg = client.post(f"/api/v1/public/evaluations/{ev['token']}/register", json={"full_name": "Observer", "email": "o@example.com", "phone": "076000001"}).json()
     assert client.post(f"/api/v1/public/evaluations/{ev['token']}/submit", json={"respondent_id": reg["respondent_id"], "resume_token": reg["resume_token"], "answers": {"A00": "3"}}).status_code == 200
     assert client.delete(f"/api/v1/me/evaluations/{ev['id']}", headers=me).status_code == 409
+
+
+def test_results_by_district_and_district_filter(client, admin):
+    me, _ = me_user(client, admin)
+    ev = client.post("/api/v1/me/evaluations", json={"title": "Districts", "training_mode": "ONLINE"}, headers=me).json()
+    token = ev["token"]
+    for i, (district, h07) in enumerate((("Bo", "3"), ("Bo", "1"), ("Kenema", "3"))):
+        reg = client.post(f"/api/v1/public/evaluations/{token}/register", json={"full_name": f"Trainee {i}", "email": f"t{i}@example.com", "phone": f"07600000{i}"}).json()
+        r = client.post(f"/api/v1/public/evaluations/{token}/submit", json={"respondent_id": reg["respondent_id"], "resume_token": reg["resume_token"], "answers": trainee_answers(A04=district, H07=h07)})
+        assert r.status_code == 200, r.text
+    reg = client.post(f"/api/v1/public/evaluations/{token}/register", json={"full_name": "Trainer Bo", "email": "tb@example.com", "phone": "076100000"}).json()
+    assert client.post(f"/api/v1/public/evaluations/{token}/submit", json={"respondent_id": reg["respondent_id"], "resume_token": reg["resume_token"], "answers": trainer_answers(A04="Bo")}).status_code == 200
+    res = client.get(f"/api/v1/me/evaluations/{ev['id']}/results", headers=me).json()
+    by = {d["district"]: d for d in res["by_district"]}
+    assert set(by) == {"Bo", "Kenema"}
+    assert by["Bo"]["trainees"] == 2 and by["Bo"]["trainers"] == 1 and by["Bo"]["ready_pct"] == 50.0 and by["Bo"]["not_ready"] == 1
+    assert by["Kenema"]["trainees"] == 1 and by["Kenema"]["trainers"] == 0 and by["Kenema"]["domains"]["J"] is None
+    assert by["Bo"]["domains"]["C"] == 100.0 and by["Bo"]["gain"] == 2.0
+    # the district filter narrows everything else; the by-district table stays national
+    bo = client.get(f"/api/v1/me/evaluations/{ev['id']}/results?district=Bo", headers=me).json()
+    assert bo["district"] == "Bo" and bo["trainees"] == 2 and bo["trainers"] == 1 and bo["submitted"] == 3 and len(bo["by_district"]) == 2
+    assert bo["profile"]["district"] == [{"label": "Bo", "count": 3, "pct": 100.0}]
+    assert client.get(f"/api/v1/me/evaluations/{ev['id']}/export?format=xlsx", headers=me).status_code == 200

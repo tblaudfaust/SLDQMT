@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import clsx from "clsx";
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Copy, Download, ExternalLink } from "lucide-react";
-import { ApiError, api, download, fmt, fmtDate } from "../../api/client";
-import type { MeBreakdown, MeDomain, MeItem, MeRespondent, MeResults } from "../../api/types";
+import { ApiError, api, download, fmt, fmtDate, qs } from "../../api/client";
+import type { MeBreakdown, MeDistrictRow, MeDomain, MeItem, MeRespondent, MeResults } from "../../api/types";
 import { useAuth } from "../../auth/AuthContext";
 import { Card, Empty, ErrorBox, KpiTile, Spinner } from "../../components/ui";
 import { evaluationLink } from "./MeEvaluationsPage";
@@ -19,9 +19,10 @@ export default function MeResultsPage() {
   const { id } = useParams();
   const { can } = useAuth();
   const qc = useQueryClient();
-  const res = useQuery({ queryKey: ["me", "results", id], queryFn: () => api.get<MeResults>(`/me/evaluations/${id}/results`) });
+  const [district, setDistrict] = useState("");
+  const res = useQuery({ queryKey: ["me", "results", id, district], queryFn: () => api.get<MeResults>(`/me/evaluations/${id}/results${qs({ district: district || undefined })}`) });
   const people = useQuery({ queryKey: ["me", "respondents", id], queryFn: () => api.get<MeRespondent[]>(`/me/evaluations/${id}/respondents`) });
-  const [tab, setTab] = useState<"overview" | "items" | "feedback" | "respondents">("overview");
+  const [tab, setTab] = useState<"overview" | "districts" | "items" | "feedback" | "respondents">("overview");
   const [error, setError] = useState<unknown>(null);
   const remove = useMutation({
     mutationFn: (responseId: number) => api.delete(`/me/evaluations/${id}/responses/${responseId}`),
@@ -52,7 +53,11 @@ export default function MeResultsPage() {
             <a className="text-navy" href={evaluationLink(e)} target="_blank" rel="noreferrer"><ExternalLink size={12} className="mr-1 inline" />Open form</a>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <select className="input w-56" value={district} onChange={(e) => setDistrict(e.target.value)} title="Limit every figure on this page to one district">
+            <option value="">All districts</option>
+            {d.by_district.map((x) => <option key={x.district} value={x.district}>{x.district} ({x.trainees + x.trainers})</option>)}
+          </select>
           <button className="btn-outline" onClick={() => exportFile("xlsx")}><Download size={16} /> Excel</button>
           <button className="btn-outline" onClick={() => exportFile("pdf")}><Download size={16} /> PDF</button>
         </div>
@@ -68,11 +73,14 @@ export default function MeResultsPage() {
         <KpiTile label="Ready for their role" value={pct(d.overall.H07.find((b) => b.label.startsWith("Yes"))?.pct ?? (d.trainees ? 0 : null))} tone="green" sub={`${d.overall.H07.find((b) => b.label.startsWith("Not"))?.count ?? 0} not yet ready`} />
       </div>
 
+      {district && <div className="mb-3 rounded-md bg-sky-50 px-3 py-2 text-sm text-sky-900">Showing <b>{district}</b> only. The By district tab always compares all districts.</div>}
       <div className="mb-4 flex gap-1 border-b border-slate-200">
-        {(["overview", "items", "feedback", "respondents"] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={clsx("-mb-px border-b-2 px-3 py-2 text-sm font-medium capitalize", tab === t ? "border-navy text-navy" : "border-transparent text-slate-500 hover:text-slate-700")}>{t === "items" ? "Item scores" : t === "feedback" ? "Open feedback" : t}</button>
+        {(["overview", "districts", "items", "feedback", "respondents"] as const).map((t) => (
+          <button key={t} onClick={() => setTab(t)} className={clsx("-mb-px border-b-2 px-3 py-2 text-sm font-medium capitalize", tab === t ? "border-navy text-navy" : "border-transparent text-slate-500 hover:text-slate-700")}>{t === "items" ? "Item scores" : t === "feedback" ? "Open feedback" : t === "districts" ? "By district" : t}</button>
         ))}
       </div>
+
+      {tab === "districts" && <DistrictTable rows={d.by_district} onPick={(name) => { setDistrict(name); setTab("overview"); }} />}
 
       {tab === "overview" && (
         <div className="grid gap-4 lg:grid-cols-2">
@@ -222,6 +230,51 @@ function DomainTable({ dom }: { dom: MeDomain }) {
           ))}
         </tbody>
       </table>
+    </Card>
+  );
+}
+
+const DOMAIN_COLS: { code: string; label: string; flag: number }[] = [
+  { code: "B", label: "Digital access", flag: 70 }, { code: "C", label: "Organisation", flag: 70 }, { code: "D", label: "Census content", flag: 70 },
+  { code: "E", label: "CAPI / data quality", flag: 70 }, { code: "F", label: "Trainers", flag: 75 }, { code: "G", label: "Readiness", flag: 70 }, { code: "J", label: "Trainer view", flag: 70 },
+];
+
+function DistrictTable({ rows, onPick }: { rows: MeDistrictRow[]; onPick: (district: string) => void }) {
+  const cellPct = (v: number | null, flag: number) => (
+    <td className={clsx("text-right font-semibold", v === null ? "text-slate-300" : v < flag ? "text-red-700" : "text-green-700")}>{v === null ? "—" : `${v}%`}</td>
+  );
+  const totals = rows.reduce((t, r) => ({ trainees: t.trainees + r.trainees, trainers: t.trainers + r.trainers, not_ready: t.not_ready + r.not_ready }), { trainees: 0, trainers: 0, not_ready: 0 });
+  return (
+    <Card title={`${rows.length} districts reporting`} className="mb-4">
+      {rows.length ? (
+        <div className="overflow-x-auto">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>District</th><th className="text-right">Trainees</th><th className="text-right">Trainers</th><th className="text-right">Completed modules</th>
+                {DOMAIN_COLS.map((c) => <th key={c.code} className="text-right" title={`% favourable (rating 4 or 5); flag below ${c.flag}%`}>{c.label}</th>)}
+                <th className="text-right">Knowledge gain</th><th className="text-right">Fully ready</th><th className="text-right">Not ready</th><th className="text-right">Quality (1–5)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.district} className="cursor-pointer hover:bg-slate-50" title="Show this district only" onClick={() => onPick(r.district)}>
+                  <td className="font-medium text-navy">{r.district}</td>
+                  <td className="text-right">{r.trainees}</td><td className="text-right">{r.trainers}</td>
+                  <td className="text-right">{r.completion_pct === null ? "—" : `${r.completion_pct}%`}</td>
+                  {DOMAIN_COLS.map((c) => <Fragment key={c.code}>{cellPct(r.domains[c.code] ?? null, c.flag)}</Fragment>)}
+                  <td className="text-right">{r.gain === null ? "—" : `${r.gain > 0 ? "+" : ""}${r.gain}`}</td>
+                  <td className="text-right">{r.ready_pct === null ? "—" : `${r.ready_pct}%`}</td>
+                  <td className={clsx("text-right", r.not_ready ? "font-semibold text-red-700" : "")}>{r.not_ready}</td>
+                  <td className={clsx("text-right", r.quality_mean !== null && r.quality_mean < 4 ? "text-red-700" : "")}>{r.quality_mean === null ? "—" : r.quality_mean.toFixed(2)}</td>
+                </tr>
+              ))}
+              <tr className="font-semibold"><td>All districts</td><td className="text-right">{totals.trainees}</td><td className="text-right">{totals.trainers}</td><td colSpan={10} /><td className="text-right">{totals.not_ready}</td><td /></tr>
+            </tbody>
+          </table>
+          <p className="mt-2 text-xs text-slate-500">Domain columns show the % favourable per district (red when below the flag). Click a district to limit the whole page to it. The Excel export has the same table on its By district sheet.</p>
+        </div>
+      ) : <Empty text="No district has reported yet" />}
     </Card>
   );
 }

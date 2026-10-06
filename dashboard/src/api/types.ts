@@ -534,8 +534,11 @@ export interface MeItem { code: string; text: string; n: number; na: number; mea
 export interface MeDomain { code: string; label: string; n_respondents: number; mean: number | null; pct_favourable: number | null; flag: boolean; threshold: number; items: MeItem[] }
 export interface MeBreakdown { label: string; count: number; pct: number }
 export interface MeOpenAnswer { code: string; text: string; role: string; district: string | null }
+export interface MeDistrictRow { district: string; trainees: number; trainers: number; completion_pct: number | null; domains: Record<string, number | null>; gain: number | null; ready_pct: number | null; not_ready: number; quality_mean: number | null }
 export interface MeResults {
   evaluation: MeEvaluation;
+  district: string | null;
+  by_district: MeDistrictRow[];
   registered: number;
   submitted: number;
   trainees: number;

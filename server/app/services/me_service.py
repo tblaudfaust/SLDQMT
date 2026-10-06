@@ -16,6 +16,7 @@ from app.core.config import settings
 from app.models import MeEvaluation, MeRespondent, MeResponse, User
 from app.schemas.me import (
     Breakdown,
+    DistrictRow,
     DomainStat,
     EvaluationIn,
     EvaluationOut,
@@ -234,9 +235,41 @@ def _domain(d: dict, answers: list[dict]) -> DomainStat:
     return DomainStat(code=d["code"], label=d["label"], n_respondents=len(scores), mean=m, pct_favourable=f, flag=f is not None and f < d["flag"], threshold=d["flag"], items=items)
 
 
-def results(db: Session, e: MeEvaluation) -> Results:
+def _district_rows(rows: list[MeResponse], all_answers: list[dict]) -> list[DistrictRow]:
+    """National table: every district that answered, with its own counts and scores."""
+    by: dict[str, dict] = {}
+    for r, a in zip(rows, all_answers):
+        d = a.get("A04")
+        if not d or r.role not in ("TRAINEE", "TRAINER"):
+            continue
+        g = by.setdefault(d, {"trainees": [], "trainers": []})
+        g["trainees" if r.role == "TRAINEE" else "trainers"].append(a)
+    out = []
+    for d in sorted(by):
+        tr, tn = by[d]["trainees"], by[d]["trainers"]
+        a06 = [str(a["A06"]) for a in tr if a.get("A06")]
+        gains = [int(a["H02"]) - int(a["H01"]) for a in tr if a.get("H01") and a.get("H02")]
+        h07 = [str(a["H07"]) for a in tr if a.get("H07")]
+        h03 = [int(a["H03"]) for a in tr if a.get("H03")]
+        domains = {dom["code"]: _domain(dom, tn if dom["code"] == "J" else tr).pct_favourable for dom in me_form.DOMAINS}
+        out.append(DistrictRow(
+            district=d, trainees=len(tr), trainers=len(tn),
+            completion_pct=round(100 * a06.count("1") / len(a06), 1) if a06 else None, domains=domains,
+            gain=round(mean(gains), 2) if gains else None,
+            ready_pct=round(100 * h07.count("3") / len(h07), 1) if h07 else None, not_ready=h07.count("1"),
+            quality_mean=round(mean(h03), 2) if h03 else None,
+        ))
+    return out
+
+
+def results(db: Session, e: MeEvaluation, district: str | None = None) -> Results:
     rows = db.execute(select(MeResponse).where(MeResponse.evaluation_id == e.id, MeResponse.deleted.is_(False))).scalars().all()
     all_answers = [json.loads(r.answers) for r in rows]
+    by_district = _district_rows(rows, all_answers)
+    if district:
+        keep = [i for i, a in enumerate(all_answers) if a.get("A04") == district]
+        rows = [rows[i] for i in keep]
+        all_answers = [all_answers[i] for i in keep]
     trainees = [a for r, a in zip(rows, all_answers) if r.role == "TRAINEE"]
     trainers = [a for r, a in zip(rows, all_answers) if r.role == "TRAINER"]
     neither = sum(1 for r in rows if r.role == "NEITHER")
@@ -291,8 +324,10 @@ def results(db: Session, e: MeEvaluation) -> Results:
             if a.get(code):
                 open_feedback.append(OpenAnswer(code=code, text=a[code], role=r.role, district=a.get("A04")))
 
+    if district:
+        counts = {**counts, "submitted": len(rows)}
     return Results(
-        evaluation=to_out(db, e), registered=counts["registered"], submitted=counts["submitted"], trainees=len(trainees), trainers=len(trainers), neither=neither,
+        evaluation=to_out(db, e), district=district, by_district=by_district, registered=counts["registered"], submitted=counts["submitted"], trainees=len(trainees), trainers=len(trainers), neither=neither,
         response_rate=round(100 * counts["submitted"] / counts["registered"], 1) if counts["registered"] else None,
         profile=profile, completion=completion, domains=domains, knowledge=knowledge, overall=overall, reinforcement=reinforcement,
         strengths=strengths, weaknesses=weaknesses, open_feedback=open_feedback,
@@ -314,6 +349,10 @@ def export(db: Session, e: MeEvaluation) -> report_service.Report:
         data.append([r.id, r.submitted_at, r.role, r.respondent.full_name, r.respondent.email, r.respondent.phone]
                     + [", ".join(a[c]) if isinstance(a.get(c), list) else a.get(c, "") for c in codes] + [a.get(c, "") for c in extra])
     items_rows = [[d.label, it.code, it.text, it.n, it.na, it.mean if it.mean is not None else "", it.pct_favourable if it.pct_favourable is not None else "", "FLAG" if it.flag else ""] for d in res.domains for it in d.items]
+    def cell(v):
+        return v if v is not None else ""
+
+    district_rows = [[x.district, x.trainees, x.trainers, cell(x.completion_pct)] + [cell(x.domains.get(c)) for c in ("B", "C", "D", "E", "F", "G", "J")] + [cell(x.gain), cell(x.ready_pct), x.not_ready, cell(x.quality_mean)] for x in res.by_district]
     domain_rows = [[d.label, d.n_respondents, d.mean if d.mean is not None else "", d.pct_favourable if d.pct_favourable is not None else "", d.threshold, "FLAG" if d.flag else ""] for d in res.domains]
     feedback_rows = [[f.code, me_form.ITEMS[f.code]["text"], f.role, f.district or "", f.text] for f in res.open_feedback]
     codebook = [[c, me_form.SECTION_OF[c], me_form.ITEMS[c]["text"], "; ".join(f"{o['value']}={o['label']}" for o in me_form.ITEMS[c].get("options", []))] for c in codes]
@@ -322,6 +361,7 @@ def export(db: Session, e: MeEvaluation) -> report_service.Report:
         kind="me_evaluation", title=f"Training evaluation · {e.title}", generated_at=_now(),
         filters=f"mode={e.training_mode}; period={period or 'n/a'}; responses={len(rows)}",
         sheets=[
+            report_service.Sheet("By district", ["District", "Trainees", "Trainers", "% completed modules", "B digital %fav", "C organisation %fav", "D content %fav", "E CAPI/DQ %fav", "F trainers %fav", "G readiness %fav", "J trainer view %fav", "Knowledge gain", "% fully ready", "Not ready", "Quality mean"], district_rows, landscape=True),
             report_service.Sheet("Domains", ["Domain", "Respondents", "Mean", "% favourable", "Flag below %", "Flag"], domain_rows),
             report_service.Sheet("Items", ["Domain", "Code", "Statement", "n", "N/A", "Mean", "% favourable", "Flag"], items_rows, landscape=True),
             report_service.Sheet("Responses", headers, data, landscape=True),

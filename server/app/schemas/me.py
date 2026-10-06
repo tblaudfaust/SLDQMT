@@ -89,8 +89,24 @@ class OpenAnswer(BaseModel):
     district: str | None = None
 
 
+class DistrictRow(BaseModel):
+    """One district's figures: counts, completion, domain % favourable, knowledge gain, readiness, quality."""
+
+    district: str
+    trainees: int
+    trainers: int
+    completion_pct: float | None = None  # A06 = Yes
+    domains: dict[str, float | None]  # domain code -> % favourable
+    gain: float | None = None
+    ready_pct: float | None = None  # H07 = fully ready
+    not_ready: int = 0
+    quality_mean: float | None = None  # H03
+
+
 class Results(BaseModel):
     evaluation: EvaluationOut
+    district: str | None = None  # the filter applied to everything below (by_district is always national)
+    by_district: list[DistrictRow] = []
     registered: int
     submitted: int
     trainees: int
