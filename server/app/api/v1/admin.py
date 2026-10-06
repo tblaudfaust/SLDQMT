@@ -2,7 +2,7 @@ import secrets
 from datetime import date, datetime, time, timezone
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.api.deps import audit, diff, require_perm, require_web, snapshot
@@ -57,11 +57,12 @@ from app.schemas.reference import (
     PickListIn,
     PickListOut,
     RegionOut,
-    SupervisorOut,
+    SupervisorOut, WorkloadRow,
     TeamOut,
 )
 from app.services import import_service, permission_service
 from app.services.reference import current_settings
+from app.services.scope import district_ids_for
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -183,7 +184,7 @@ async def import_users(request: Request, file: UploadFile = File(...), db: Sessi
         if len(password) < 8:
             errors.append(f"Row {i}: password shorter than 8 characters")
             continue
-        user = User(username=username, password_hash=hash_password(password), full_name=row.get("full_name") or username, phone=row.get("phone") or None, role=role)
+        user = User(username=username, password_hash=hash_password(password), full_name=row.get("full_name") or username, phone=row.get("phone") or None, role=role, staff_code=_staff_code(row.get("staff_code")))
         bad = False
         for name in filter(None, (x.strip() for x in row.get("districts", "").replace(";", ",").split(","))):
             d = districts.get(name.lower())
@@ -303,12 +304,18 @@ def user_activity(user_id: int, db: Session = Depends(get_db), _: User = Depends
     return UserActivity(user=_user_out(user), devices=devices, recent=recent, counts=counts)
 
 
+def _staff_code(value: str | None) -> str | None:
+    """FM-11-001 / DQM-11-001 as written in the workload frame; blank clears it."""
+    value = (value or "").strip().upper()
+    return value or None
+
+
 @router.post("/users", response_model=UserAdminOut, status_code=201)
 def create_user(body: UserCreate, request: Request, db: Session = Depends(get_db), admin: User = Depends(manage_users)):
     username = body.username.strip().lower()
     if db.execute(select(User).where(User.username == username)).scalars().first():
         raise HTTPException(409, "Username already exists")
-    user = User(username=username, password_hash=hash_password(body.password), full_name=body.full_name, phone=body.phone, role=body.role)
+    user = User(username=username, password_hash=hash_password(body.password), full_name=body.full_name, phone=body.phone, role=body.role, staff_code=_staff_code(body.staff_code))
     db.add(user)
     db.flush()
     _set_scopes(db, user, body.district_ids, body.region_ids)
@@ -329,6 +336,8 @@ def update_user(user_id: int, body: UserUpdate, request: Request, db: Session = 
         value = getattr(body, field)
         if value is not None:
             setattr(user, field, value)
+    if body.staff_code is not None:
+        user.staff_code = _staff_code(body.staff_code)
     if body.password:
         user.password_hash = hash_password(body.password)
         user.failed_logins = 0
@@ -459,6 +468,35 @@ def teams(district_id: int | None = None, db: Session = Depends(get_db), _: User
     if district_id:
         q = q.where(Team.district_id == district_id)
     return db.execute(q).scalars().all()
+
+
+@router.get("/reference/workload", response_model=list[WorkloadRow])
+def workload(district_id: int | None = None, search: str | None = None, db: Session = Depends(get_db), user: User = Depends(require_web)):
+    """SAs with the Field Monitor and DQM responsible for each (from the workload frame), scoped like the rest of the dashboard."""
+    q = select(Team).where(Team.active.is_(True)).order_by(Team.code)
+    scope = district_ids_for(db, user)
+    if scope is not None:
+        q = q.where(Team.district_id.in_(scope))
+    if district_id:
+        q = q.where(Team.district_id == district_id)
+    if search:
+        like = f"%{search.strip()}%"
+        q = q.where(or_(Team.code.ilike(like), Team.name.ilike(like), Team.monitor_code.ilike(like), Team.dqm_code.ilike(like), Team.chiefdom.ilike(like)))
+    teams_rows = db.execute(q).scalars().all()
+    districts = {d.id: d.name for d in db.execute(select(District)).scalars()}
+    codes = {t.monitor_code for t in teams_rows if t.monitor_code} | {t.dqm_code for t in teams_rows if t.dqm_code}
+    names: dict[str, str] = {}
+    if codes:
+        for u in db.execute(select(User).where(User.staff_code.in_(codes), User.active.is_(True))).scalars():
+            names.setdefault(u.staff_code, u.full_name)
+    return [
+        WorkloadRow(
+            team_id=t.id, district_id=t.district_id, district=districts.get(t.district_id, ""), code=t.code, name=t.name, chiefdom=t.chiefdom, ea_count=t.ea_count,
+            monitor_code=t.monitor_code, monitor_name=names.get(t.monitor_code) if t.monitor_code else None,
+            dqm_code=t.dqm_code, dqm_name=names.get(t.dqm_code) if t.dqm_code else None,
+        )
+        for t in teams_rows
+    ]
 
 
 @router.get("/reference/supervisors", response_model=list[SupervisorOut])

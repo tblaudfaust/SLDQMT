@@ -17,6 +17,7 @@ export interface Filters {
   support_method?: string;
   overdue_only?: boolean;
   search?: string;
+  own_sas?: boolean; // false = a DQM officer with a workload asks for the whole district
 }
 
 /** Filters live in the URL so a view can be bookmarked or shared. */
@@ -41,6 +42,7 @@ export function useFilters(): [Filters, (patch: Partial<Filters>) => void, () =>
       support_method: str("support_method"),
       overdue_only: params.get("overdue_only") === "true",
       search: str("search"),
+      own_sas: params.get("own_sas") === "false" ? false : undefined,
     };
   }, [params]);
 
@@ -49,7 +51,8 @@ export function useFilters(): [Filters, (patch: Partial<Filters>) => void, () =>
       const next = new URLSearchParams(params);
       for (const [k, v] of Object.entries(patch)) {
         next.delete(k);
-        if (v === undefined || v === null || v === "" || v === false) continue;
+        if (v === undefined || v === null || v === "") continue;
+        if (v === false && k !== "own_sas") continue;
         if (Array.isArray(v)) v.forEach((x) => next.append(k, String(x)));
         else next.set(k, String(v));
       }
@@ -64,5 +67,5 @@ export function useFilters(): [Filters, (patch: Partial<Filters>) => void, () =>
 }
 
 export function filtersToQuery(f: Filters): Record<string, unknown> {
-  return { ...f, district_id: f.district_id?.length ? f.district_id : undefined };
+  return { ...f, district_id: f.district_id?.length ? f.district_id : undefined, own_sas: f.own_sas === false ? "false" : undefined };
 }

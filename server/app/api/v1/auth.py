@@ -20,7 +20,7 @@ from app.schemas.admin import ChangePasswordIn
 from app.schemas.auth import LoginRequest, RefreshRequest, ScopeOut, TokenPair, UserOut
 from app.services.permission_service import effective_permissions
 from app.services.reference import current_settings
-from app.services.scope import district_ids_for
+from app.services.scope import assigned_team_ids_for, district_ids_for
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -28,6 +28,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 def user_out(db: Session, user: User) -> UserOut:
     out = UserOut.model_validate(user)
     out.district_ids = district_ids_for(db, user)
+    out.assigned_sas = len(assigned_team_ids_for(db, user) or [])
+    out.assigned_sas = len(assigned_team_ids_for(db, user) or [])
     out.scopes = [ScopeOut(region_id=s.region_id, district_id=s.district_id) for s in user.scopes]
     out.permissions = sorted(effective_permissions(db, user))
     return out

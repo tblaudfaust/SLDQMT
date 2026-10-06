@@ -17,8 +17,8 @@ export const ROLES: { value: Role; label: string; scope: "district" | "region" |
 ];
 const roleLabel = (r: Role) => ROLES.find((x) => x.value === r)?.label ?? r;
 
-interface Form { id?: number; username: string; password: string; full_name: string; phone: string; role: Role; district_ids: number[]; region_ids: number[]; active: boolean }
-const empty: Form = { username: "", password: "", full_name: "", phone: "", role: "DISTRICT_DQM", district_ids: [], region_ids: [], active: true };
+interface Form { id?: number; username: string; password: string; full_name: string; phone: string; role: Role; staff_code: string; district_ids: number[]; region_ids: number[]; active: boolean }
+const empty: Form = { username: "", password: "", full_name: "", phone: "", role: "DISTRICT_DQM", staff_code: "", district_ids: [], region_ids: [], active: true };
 
 function Modal({ title, onClose, children, wide }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
   return (
@@ -56,7 +56,7 @@ export default function UsersPage() {
 
   const save = useMutation({
     mutationFn: async (f: Form) => {
-      const body: Record<string, unknown> = { full_name: f.full_name, phone: f.phone || null, role: f.role, district_ids: f.district_ids, region_ids: f.region_ids };
+      const body: Record<string, unknown> = { full_name: f.full_name, phone: f.phone || null, role: f.role, staff_code: f.staff_code.trim(), district_ids: f.district_ids, region_ids: f.region_ids };
       if (f.id) { body.active = f.active; if (f.password) body.password = f.password; return api.patch(`/admin/users/${f.id}`, body); }
       return api.post("/admin/users", { ...body, username: f.username, password: f.password });
     },
@@ -137,7 +137,7 @@ export default function UsersPage() {
               <tbody>
                 {users.data.map((u) => (
                   <tr key={u.id} className={clsx(!u.active && "text-slate-400")}>
-                    <td className="font-medium">{u.full_name}<div className="text-xs font-normal text-slate-400">{u.username}</div></td>
+                    <td className="font-medium">{u.full_name}<div className="text-xs font-normal text-slate-400">{u.username}{u.staff_code ? ` · ${u.staff_code}` : ""}</div></td>
                     <td>{roleLabel(u.role)}<div className="text-xs text-slate-400">{ROLES.find((r) => r.value === u.role)?.level}</div></td>
                     <td>{scopeText(u)}</td>
                     <td>{u.phone}</td>
@@ -147,7 +147,7 @@ export default function UsersPage() {
                       {u.pin_reset_requested_at && <div className="mt-1 text-xs text-amber-800" title={`Requested ${fmt(u.pin_reset_requested_at)}; clears when the monitor signs in again`}>PIN reset pending</div>}
                     </td>
                     <td className="whitespace-nowrap text-sm">
-                      <button className="text-navy" onClick={() => setForm({ id: u.id, username: u.username, password: "", full_name: u.full_name, phone: u.phone ?? "", role: u.role, district_ids: u.scopes.map((s) => s.district_id).filter((x): x is number => !!x), region_ids: u.scopes.map((s) => s.region_id).filter((x): x is number => !!x), active: u.active })}>Edit</button>
+                      <button className="text-navy" onClick={() => setForm({ id: u.id, username: u.username, password: "", full_name: u.full_name, phone: u.phone ?? "", role: u.role, staff_code: u.staff_code ?? "", district_ids: u.scopes.map((s) => s.district_id).filter((x): x is number => !!x), region_ids: u.scopes.map((s) => s.region_id).filter((x): x is number => !!x), active: u.active })}>Edit</button>
                       {can("roles.manage") && <button className="ml-3 text-navy" onClick={() => setRightsFor(u)}>Rights</button>}
                       <button className="ml-3 text-navy" onClick={() => { setResetFor(u); setResetResult(null); setResetPassword(""); }}>Reset password</button>
                       {u.role === "FIELD_MONITOR" && (
@@ -171,6 +171,9 @@ export default function UsersPage() {
             <Field label={form.id ? "New password (leave blank to keep)" : "Password (min 8)"}><input className="input" type="password" required={!form.id} minLength={8} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></Field>
             <Field label="Full name"><input className="input" required value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></Field>
             <Field label="Phone"><input className="input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></Field>
+            {(form.role === "FIELD_MONITOR" || form.role === "DISTRICT_DQM") && (
+              <Field label="Staff code from the workload frame"><input className="input" placeholder={form.role === "FIELD_MONITOR" ? "FM-11-001" : "DQM-11-001"} value={form.staff_code} onChange={(e) => setForm({ ...form, staff_code: e.target.value.toUpperCase() })} /></Field>
+            )}
             <Field label="Role (level)">
               <select className="input" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role, district_ids: [], region_ids: [] })}>
                 {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label} · {r.level}</option>)}
@@ -246,7 +249,7 @@ export default function UsersPage() {
 
       {showImport && (
         <Modal title="Import users from CSV" onClose={() => setShowImport(false)}>
-          <p className="mb-2 text-sm text-slate-600">Columns: username, password (blank = generated, shown nowhere: reset it afterwards), full_name, phone, role (FIELD_MONITOR, DISTRICT_DQM, REGIONAL, NATIONAL_DQM, ADMIN), districts (names or codes separated by ;), region. Existing usernames are skipped.</p>
+          <p className="mb-2 text-sm text-slate-600">Columns: username, password (blank = generated, shown nowhere: reset it afterwards), full_name, phone, role (FIELD_MONITOR, DISTRICT_DQM, REGIONAL, NATIONAL_DQM, ADMIN), districts (names or codes separated by ;), region, staff_code (FM-11-001 or DQM-11-001 from the workload frame). Existing usernames are skipped.</p>
           <button className="mb-3 text-sm text-navy" onClick={downloadTemplate}>Download template</button>
           <div className="flex flex-wrap items-center gap-3">
             <input type="file" accept=".csv" onChange={(e) => setImportFile(e.target.files?.[0] ?? null)} />

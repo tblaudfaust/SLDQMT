@@ -37,6 +37,10 @@ class Team(TimestampMixin, Base):
     chiefdom: Mapped[str | None] = mapped_column(String(120))
     local_council: Mapped[str | None] = mapped_column(String(120))
     ea_count: Mapped[int | None] = mapped_column(Integer)
+    # Workload (FIELD_MONITOR sheet): the Field Monitor and the DQM officer responsible for this SA,
+    # e.g. FM-11-001 and DQM-11-001. Accounts link to their SAs through User.staff_code.
+    monitor_code: Mapped[str | None] = mapped_column(String(32), index=True)
+    dqm_code: Mapped[str | None] = mapped_column(String(32), index=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     district: Mapped[District] = relationship(back_populates="teams")

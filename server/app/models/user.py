@@ -29,6 +29,9 @@ class User(TimestampMixin, Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[str] = mapped_column(String(160), nullable=False)
     phone: Mapped[str | None] = mapped_column(String(32))
+    # Staff code from the workload frame (FM-11-001 for a Field Monitor, DQM-11-001 for a District DQM):
+    # the SAs whose monitor_code / dqm_code equal it are this officer's own workload.
+    staff_code: Mapped[str | None] = mapped_column(String(32), index=True)
     role: Mapped[Role] = mapped_column(Enum(Role, name="user_role"), nullable=False)
     active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     failed_logins: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

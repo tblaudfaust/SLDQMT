@@ -31,7 +31,7 @@ from app.schemas.dashboard import (
     TeamRow,
     TrendPoint,
 )
-from app.services.scope import district_ids_for, intersect
+from app.services.scope import assigned_team_ids_for, district_ids_for, intersect
 
 
 def _now() -> datetime:
@@ -56,6 +56,11 @@ def base_query(db: Session, user: User, f: Filters, now: datetime | None = None,
         q = q.where(ErrorRecord.deleted_at.is_(None))
     if scope is not None:
         q = q.where(ErrorRecord.district_id.in_(scope))
+    if f.own_sas is not False:
+        # A DQM officer with a workload sees their own SAs unless they ask for the whole district.
+        assigned = assigned_team_ids_for(db, user)
+        if assigned is not None:
+            q = q.where(ErrorRecord.team_id.in_(assigned))
     if f.team_id:
         q = q.where(ErrorRecord.team_id == f.team_id)
     if f.ea_id:

@@ -15,6 +15,14 @@ Two inputs are accepted:
    names below (Region, District, SA Code, Supervisor, Enumerator, EA Code...),
    which is also how names and phone numbers can be added later.
 
+3. The workload frame (FIELD_MONITOR sheet, or the national master frame that
+   carries it next to the two frame sheets): one row per SA with Field monitor ID
+   and DQM ID, stored on the team as monitor_code and dqm_code.
+
+3. The workload frame (FIELD_MONITOR sheet, or the national master frame that
+   carries it next to the two frame sheets): one row per SA with Field monitor ID
+   and DQM ID, stored on the team as monitor_code and dqm_code.
+
 Re-running an import updates names in place and never changes ids, so error
 records keep pointing at the right team."""
 
@@ -41,6 +49,10 @@ COLUMNS: dict[str, list[str]] = {
     "team_code": ["teamcode", "sacode", "supervisoryareacode", "sa", "sano", "sanumber", "team"],
     "team_name": ["teamname", "saname", "supervisoryarea", "supervisoryareaname"],
     "ea_count": ["noofeas", "eacount", "numberofeas"],
+    "monitor_code": ["fieldmonitorid", "fmid", "monitorid", "fieldmonitorcode", "fieldmonitor"],
+    "dqm_code": ["dqmid", "dqmcode", "dqm"],
+    "monitor_code": ["fieldmonitorid", "fmid", "monitorid", "fieldmonitorcode", "fieldmonitor"],
+    "dqm_code": ["dqmid", "dqmcode", "dqm"],
     "supervisor_code": ["supervisorcode", "supcode", "supervisorno", "supervisornumber"],
     "supervisor_external_id": ["supid", "supervisorid"],
     "supervisor": ["supervisor", "supervisorname"],
@@ -59,7 +71,8 @@ COLUMNS: dict[str, list[str]] = {
 
 # In the GIS frame workbooks SUPERVISOR and ENUMERATOR are ID numbers, not names.
 FRAME_OVERRIDES = {"supervisor": "supervisor_code", "enumerator": "enumerator_code"}
-FRAME_SHEETS = ("SUPERVISORY_AREA", "ENUMERATION_AREA")
+# FIELD_MONITOR (the workload sheet) carries, per SA, the Field monitor ID and DQM ID.
+FRAME_SHEETS = ("SUPERVISORY_AREA", "ENUMERATION_AREA", "FIELD_MONITOR")
 
 # spelling -> (canonical, rank). Earlier spellings in COLUMNS win when a sheet
 # carries several candidates, e.g. SA_CODE (rank 1) beats SA_NO (rank 4).
@@ -134,7 +147,7 @@ class _Importer:
     def __init__(self, db: Session, default_region: str | None):
         self.db = db
         self.default_region = default_region
-        self.counts = {"regions": 0, "districts": 0, "teams": 0, "supervisors": 0, "enumerators": 0, "eas": 0}
+        self.counts = {"regions": 0, "districts": 0, "teams": 0, "supervisors": 0, "enumerators": 0, "eas": 0, "assigned": 0}
         self.warnings: list[str] = []
         self.rows = 0
         self.regions = {r.code: r for r in db.execute(select(Region)).scalars()}
@@ -219,6 +232,12 @@ class _Importer:
                 team.local_council = clean_name(row["local_council"])
         if row.get("ea_count") and str(row["ea_count"]).isdigit():
             team.ea_count = int(row["ea_count"])
+        if row.get("monitor_code") or row.get("dqm_code"):
+            # Workload: who is responsible for this SA. The same SAs go to the Field Monitor and the DQM.
+            for attr in ("monitor_code", "dqm_code"):
+                if row.get(attr):
+                    setattr(team, attr, row[attr].strip().upper())
+            self.counts["assigned"] += 1
         self.teams[key] = team
         return team
 

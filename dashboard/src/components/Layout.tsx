@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { BarChart3, ClipboardCheck, ClipboardList, FileText, FolderDown, KeyRound, Lock, LogOut, Settings, Smartphone, Tablet, Users, UsersRound, ScrollText, Database } from "lucide-react";
+import { BarChart3, ClipboardCheck, ClipboardList, FileText, FolderDown, KeyRound, Lock, LogOut, Settings, Smartphone, Tablet, Users, UsersRound, ScrollText, Database, Map } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "../auth/AuthContext";
 import AnalyticsMenu from "./AnalyticsMenu";
@@ -39,6 +39,7 @@ export default function Layout() {
               <NavLink to="/errors" className={link}><ClipboardList size={16} /> Errors</NavLink>
               <NavLink to="/monitors" className={link}><Tablet size={16} /> Field Monitors</NavLink>
               <NavLink to="/teams" className={link}><UsersRound size={16} /> Teams</NavLink>
+              <NavLink to="/workload" className={link}><Map size={16} /> Workload (SAs)</NavLink>
             </>
           )}
           {can("reports.export") && <NavLink to="/reports" className={link}><FileText size={16} /> Reports</NavLink>}

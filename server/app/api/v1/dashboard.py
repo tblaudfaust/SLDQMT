@@ -35,11 +35,12 @@ def filters(
     support_method: SupportMethod | None = None,
     overdue_only: bool = False,
     search: str | None = None,
+    own_sas: bool | None = None,
 ) -> Filters:
     return Filters(
         district_id=district_id, team_id=team_id, ea_id=ea_id, category_id=category_id, status=status,
         date_from=date_from, date_to=date_to, received_on=received_on, resolved_on=resolved_on, supervisor_id=supervisor_id, supervisor=supervisor,
-        enumerator=enumerator, user_id=user_id, support_method=support_method, overdue_only=overdue_only, search=search,
+        enumerator=enumerator, user_id=user_id, support_method=support_method, overdue_only=overdue_only, search=search, own_sas=own_sas,
     )
 
 

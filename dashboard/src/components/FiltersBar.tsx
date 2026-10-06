@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/client";
 import type { District, PickList, Team } from "../api/types";
+import { useAuth } from "../auth/AuthContext";
 import { useFilters } from "../hooks/useFilters";
 import { Field } from "./ui";
 
@@ -13,7 +14,9 @@ export function useReference() {
 
 export default function FiltersBar({ compact = false }: { compact?: boolean }) {
   const [f, update, clear] = useFilters();
+  const { user } = useAuth();
   const { districts, teams, categories } = useReference();
+  const assigned = user?.assigned_sas ?? 0;
   // Nearly 5,000 teams nationally: only list them once a district is chosen.
   const visibleTeams = f.district_id?.length ? teams.filter((t) => f.district_id!.includes(t.district_id)) : [];
   return (
@@ -65,6 +68,11 @@ export default function FiltersBar({ compact = false }: { compact?: boolean }) {
             <option value="ONSITE">Onsite</option>
           </select>
         </Field>
+        {assigned > 0 && (
+          <label className="mt-5 flex items-center gap-2 text-sm text-slate-700" title="Your workload from the frame: the SAs that carry your staff code">
+            <input type="checkbox" checked={f.own_sas !== false} onChange={(e) => update({ own_sas: e.target.checked ? undefined : false })} /> My {assigned} SAs only
+          </label>
+        )}
         <button className="btn-outline mt-5" onClick={clear}>Clear filters</button>
       </div>
     </div>

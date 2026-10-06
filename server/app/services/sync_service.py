@@ -35,7 +35,7 @@ from app.schemas.sync import (
 )
 from app.services import reference as reference_service
 from app.services.followup import load_policy, next_follow_up
-from app.services.scope import district_ids_for
+from app.services.scope import assigned_team_ids_for, district_ids_for
 
 
 class SyncError(Exception):
@@ -208,7 +208,7 @@ def pull(
         next_cursor = cursor or _now().isoformat()
 
     scope = district_ids_for(db, user)
-    current_version = reference_service.reference_version(db, scope)
+    current_version = reference_service.reference_version(db, scope, assigned_team_ids_for(db, user))
     bundle = None
     if reference_version != current_version:
         bundle = reference_service.build_bundle(db, user)

@@ -29,6 +29,8 @@ class UserOut(ORMModel):
     role: Role
     active: bool
     last_login_at: datetime | None = None
+    staff_code: str | None = None
+    assigned_sas: int = 0  # SAs in this officer's workload (0 = none assigned, district scope applies)
     district_ids: list[int] | None = None
     scopes: list[ScopeOut] = []
     permissions: list[str] = []

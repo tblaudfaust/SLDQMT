@@ -29,7 +29,7 @@ from app.schemas.reference import (
     SupervisorOut,
     TeamOut,
 )
-from app.services.scope import district_ids_for
+from app.services.scope import assigned_team_ids_for, district_ids_for
 
 _TABLES = (Region, District, Team, Supervisor, Enumerator, EnumerationArea, ErrorCategory, ErrorSource, Setting)
 
@@ -39,12 +39,14 @@ def current_settings(db: Session) -> dict[str, str]:
     return {**DEFAULT_SETTINGS, **rows}
 
 
-def reference_version(db: Session, district_ids: list[int] | None) -> str:
+def reference_version(db: Session, district_ids: list[int] | None, team_ids: list[int] | None = None) -> str:
     parts: list[str] = []
     for model in _TABLES:
         count, latest = db.execute(select(func.count(), func.max(model.updated_at))).one()
         parts.append(f"{model.__tablename__}:{count}:{latest}")
     parts.append("scope:" + ",".join(map(str, district_ids)) if district_ids is not None else "scope:all")
+    parts.append("teams:" + ",".join(map(str, team_ids)) if team_ids is not None else "teams:all")
+    parts.append("teams:" + ",".join(map(str, team_ids)) if team_ids is not None else "teams:all")
     return hashlib.sha1("|".join(parts).encode()).hexdigest()[:16]
 
 
@@ -63,6 +65,16 @@ def build_bundle(db: Session, user: User) -> ReferenceBundle:
     teams_q = select(Team).where(Team.active.is_(True))
     if district_ids is not None:
         teams_q = teams_q.where(Team.district_id.in_(district_ids))
+    # A Field Monitor with a workload gets only their own SAs (and those SAs' supervisors,
+    # enumerators and EAs): a small bundle that syncs quickly and works offline.
+    assigned = assigned_team_ids_for(db, user)
+    if assigned is not None:
+        teams_q = teams_q.where(Team.id.in_(assigned))
+    # A Field Monitor with a workload gets only their own SAs (and those SAs' supervisors,
+    # enumerators and EAs): a small bundle that syncs quickly and works offline.
+    assigned = assigned_team_ids_for(db, user)
+    if assigned is not None:
+        teams_q = teams_q.where(Team.id.in_(assigned))
     teams = db.execute(teams_q.order_by(Team.code)).scalars().all()
     team_ids = [t.id for t in teams]
 
@@ -72,7 +84,7 @@ def build_bundle(db: Session, user: User) -> ReferenceBundle:
         return db.execute(select(model).where(model.team_id.in_(team_ids), model.active.is_(True))).scalars().all()
 
     return ReferenceBundle(
-        version=reference_version(db, district_ids),
+        version=reference_version(db, district_ids, assigned),
         regions=[RegionOut.model_validate(r) for r in regions],
         districts=[DistrictOut.model_validate(d) for d in districts],
         teams=[TeamOut.model_validate(t) for t in teams],

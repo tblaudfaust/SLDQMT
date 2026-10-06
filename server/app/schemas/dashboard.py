@@ -22,6 +22,8 @@ class Filters(BaseModel):
     support_method: SupportMethod | None = None
     overdue_only: bool = False
     search: str | None = None
+    own_sas: bool | None = None  # False: a DQM officer with a workload asks for the whole district
+    own_sas: bool | None = None  # False: a DQM officer with a workload asks for the whole district
 
 
 class ErrorUpdate(BaseModel):

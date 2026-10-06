@@ -10,6 +10,8 @@ export interface User {
   active: boolean;
   last_login_at?: string | null;
   pin_reset_requested_at?: string | null;
+  staff_code?: string | null;
+  assigned_sas?: number;
   district_ids?: number[] | null;
   scopes: { region_id: number | null; district_id: number | null }[];
   permissions: string[];
@@ -190,7 +192,23 @@ export interface Team extends Named {
   chiefdom?: string | null;
   local_council?: string | null;
   ea_count?: number | null;
+  monitor_code?: string | null;
+  dqm_code?: string | null;
   active: boolean;
+}
+
+export interface WorkloadRow {
+  team_id: number;
+  district_id: number;
+  district: string;
+  code: string;
+  name: string;
+  chiefdom: string | null;
+  ea_count: number | null;
+  monitor_code: string | null;
+  monitor_name: string | null;
+  dqm_code: string | null;
+  dqm_name: string | null;
 }
 
 export interface PickList extends Named {
@@ -220,6 +238,7 @@ export interface ImportResult {
   supervisors: number;
   enumerators: number;
   eas: number;
+  assigned: number;
   rows: number;
   warnings: string[];
 }

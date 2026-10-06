@@ -14,6 +14,7 @@ class UserCreate(BaseModel):
     full_name: str = Field(min_length=1, max_length=160)
     phone: str | None = None
     role: Role
+    staff_code: str | None = Field(default=None, max_length=32)
     district_ids: list[int] = []
     region_ids: list[int] = []
 
@@ -24,6 +25,7 @@ class UserUpdate(BaseModel):
     role: Role | None = None
     active: bool | None = None
     password: str | None = Field(default=None, min_length=8, max_length=256)
+    staff_code: str | None = Field(default=None, max_length=32)  # "" clears it
     district_ids: list[int] | None = None
     region_ids: list[int] | None = None
 
@@ -35,6 +37,7 @@ class UserAdminOut(ORMModel):
     phone: str | None = None
     role: Role
     active: bool
+    staff_code: str | None = None
     last_login_at: datetime | None = None
     pin_reset_requested_at: datetime | None = None
     scopes: list[ScopeOut] = []
@@ -112,6 +115,7 @@ class ImportResult(BaseModel):
     supervisors: int
     enumerators: int
     eas: int
+    assigned: int = 0  # SAs that received a Field Monitor / DQM assignment
     rows: int
     warnings: list[str]
 

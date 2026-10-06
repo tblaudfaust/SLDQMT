@@ -24,7 +24,25 @@ class TeamOut(ORMModel):
     chiefdom: str | None = None
     local_council: str | None = None
     ea_count: int | None = None
+    monitor_code: str | None = None
+    dqm_code: str | None = None
     active: bool
+
+
+class WorkloadRow(BaseModel):
+    """One SA with the officers responsible for it (and their accounts, when created)."""
+
+    team_id: int
+    district_id: int
+    district: str
+    code: str
+    name: str
+    chiefdom: str | None = None
+    ea_count: int | None = None
+    monitor_code: str | None = None
+    monitor_name: str | None = None
+    dqm_code: str | None = None
+    dqm_name: str | None = None
 
 
 class SupervisorOut(ORMModel):

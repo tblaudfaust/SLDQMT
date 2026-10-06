@@ -58,6 +58,7 @@ export default function ReferencePage() {
           Upload a census GIS district workbook (<code>DISTRICT_EA_FRAME_date.xlsx</code>): its SUPERVISORY_AREA and ENUMERATION_AREA sheets give the teams, EAs, supervisor and enumerator IDs.
           To add supervisor and enumerator names and phones afterwards, upload a CSV with columns District Code, SA Code, Supervisor Code, Supervisor, Supervisor Phone, Enumerator Code, Enumerator, Enumerator Phone.
           Re-importing updates names and keeps ids. Large workbooks can take a minute or two.
+          The workload frame (<code>FIELD_MONITOR-NATIONAL_MASTER_FRAME.xlsx</code>, or the national master frame that carries the FIELD_MONITOR sheet) assigns each SA to its Field Monitor and DQM by staff code; accounts with the same staff code then get exactly those SAs.
         </p>
         <div className="flex flex-wrap items-end gap-3">
           <Field label="File"><input type="file" accept=".csv,.xlsx" onChange={(e) => setFile(e.target.files?.[0] ?? null)} /></Field>
@@ -67,7 +68,7 @@ export default function ReferencePage() {
         <ErrorBox error={importMut.error} />
         {result && (
           <div className="mt-3 text-sm">
-            <p>Rows read: {result.rows}. New: {result.regions} regions, {result.districts} districts, {result.teams} teams, {result.supervisors} supervisors, {result.enumerators} enumerators, {result.eas} EAs.</p>
+            <p>Rows read: {result.rows}. New: {result.regions} regions, {result.districts} districts, {result.teams} teams, {result.supervisors} supervisors, {result.enumerators} enumerators, {result.eas} EAs. SAs assigned to a Field Monitor / DQM: {result.assigned}.</p>
             {result.warnings.length > 0 && <ul className="mt-2 list-disc pl-5 text-amber-800">{result.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>}
           </div>
         )}
