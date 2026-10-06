@@ -56,7 +56,7 @@ export default function MeResultsPage() {
         <div className="flex flex-wrap items-center gap-2">
           <select className="input w-56" value={district} onChange={(e) => setDistrict(e.target.value)} title="Limit every figure on this page to one district">
             <option value="">All districts</option>
-            {d.by_district.map((x) => <option key={x.district} value={x.district}>{x.district} ({x.trainees + x.trainers})</option>)}
+            {(d.by_district ?? []).map((x) => <option key={x.district} value={x.district}>{x.district} ({x.trainees + x.trainers})</option>)}
           </select>
           <button className="btn-outline" onClick={() => exportFile("xlsx")}><Download size={16} /> Excel</button>
           <button className="btn-outline" onClick={() => exportFile("pdf")}><Download size={16} /> PDF</button>
@@ -80,7 +80,7 @@ export default function MeResultsPage() {
         ))}
       </div>
 
-      {tab === "districts" && <DistrictTable rows={d.by_district} onPick={(name) => { setDistrict(name); setTab("overview"); }} />}
+      {tab === "districts" && <DistrictTable rows={d.by_district ?? []} onPick={(name) => { setDistrict(name); setTab("overview"); }} />}
 
       {tab === "overview" && (
         <div className="grid gap-4 lg:grid-cols-2">
