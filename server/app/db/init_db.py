@@ -63,6 +63,21 @@ def add_missing_enum_values() -> None:
 
 
 def init_db(db: Session) -> None:
+    # Several uvicorn workers start at once; on PostgreSQL an advisory lock makes them run this
+    # one after the other, so the second finds the tables and columns already there.
+    lock = None
+    if engine.dialect.name == "postgresql":
+        lock = engine.connect().execution_options(isolation_level="AUTOCOMMIT")
+        lock.execute(text("SELECT pg_advisory_lock(727272)"))
+    try:
+        _init_schema_and_seed(db)
+    finally:
+        if lock is not None:
+            lock.execute(text("SELECT pg_advisory_unlock(727272)"))
+            lock.close()
+
+
+def _init_schema_and_seed(db: Session) -> None:
     Base.metadata.create_all(bind=engine)
     add_missing_columns()
     add_missing_enum_values()
