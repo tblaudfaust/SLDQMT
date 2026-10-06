@@ -32,7 +32,9 @@ def password() -> str:
     return "".join(secrets.choice(chars) for _ in range(10))
 
 
-def main(workbook: str, out: str) -> None:
+def main(workbook: str, out: str, frame_ids: bool = False) -> None:
+    """frame_ids=True keeps the workbook's own IDs (FM-11-001, DQM-11-001) as username, name and
+    staff code; the import still links the account to its SAs (the code is converted internally)."""
     wb = load_workbook(workbook, read_only=True, data_only=True)
     ws = wb["FIELD_MONITOR"] if "FIELD_MONITOR" in wb.sheetnames else wb.active
     it = ws.iter_rows(values_only=True)
@@ -45,7 +47,7 @@ def main(workbook: str, out: str) -> None:
             continue
         district = str(row[dist_i]).strip().title()
         for raw, role in ((row[fm_i], "FIELD_MONITOR"), (row[dqm_i], "DISTRICT_DQM")):
-            code = canonical_staff_code(str(raw))  # FM-41-001 -> FM-Bo-001
+            code = str(raw).strip().upper() if frame_ids else canonical_staff_code(str(raw))  # FM-41-001 -> FM-Bo-001
             if code not in officers:
                 officers[code] = {
                     "username": code,  # the staff code is the username (sign-in ignores case)
@@ -67,4 +69,5 @@ def main(workbook: str, out: str) -> None:
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2])
+    # python -m scripts.make_workload_users <workbook> <out.csv> [--frame-ids]
+    main(sys.argv[1], sys.argv[2], frame_ids="--frame-ids" in sys.argv[3:])
