@@ -80,6 +80,11 @@ export default function EvaluatePage() {
           <Wizard ev={ev} token={token} saved={saved} setSaved={setSaved} />
         )}
         <p className="mt-6 text-center text-xs text-sky-100/70">Results are reported in aggregate only. This form does not replace the formal trainee assessment.</p>
+        <footer className="mt-8 border-t border-white/15 pt-5 text-center text-xs leading-relaxed text-sky-100/80">
+          <div className="font-semibold text-white">Statistics Sierra Leone (Stats SL)</div>
+          <div>A.J. Momoh Street / Tower Hill</div>
+          <div>P.M.B. 595, Freetown / Sierra Leone</div>
+        </footer>
       </div>
     </div>
   );
