@@ -114,7 +114,7 @@ def respondents(db: Session, evaluation_id: int) -> list[RespondentOut]:
         out.append(RespondentOut(
             id=r.id, full_name=r.full_name, email=r.email, phone=r.phone, registered_at=r.created_at,
             role=resp.role if resp else None, submitted_at=resp.submitted_at if resp else None, response_id=resp.id if resp else None,
-            district=answers.get("A04"),
+            district=answers.get("A04") or r.district, attendance_mode=r.attendance_mode, hall=r.hall,
         ))
     return out
 
@@ -147,19 +147,29 @@ def register(db: Session, e: MeEvaluation, body: RegisterIn) -> RegisterOut:
     phone = body.phone.strip()
     if not me_form.valid_phone(phone):
         raise HTTPException(400, "Enter a valid phone number (8 to 15 digits)")
+    district = body.district.strip()
+    if district not in me_form.DISTRICTS:
+        raise HTTPException(400, "Choose your district from the list")
+    hall = (body.hall or "").strip() or None
+    if body.attendance_mode == "IN_PERSON" and not hall:
+        raise HTTPException(400, "Enter the hall number for in-person training")
+    if body.attendance_mode == "ONLINE":
+        hall = None
     token = secrets.token_urlsafe(24)
     r = db.execute(select(MeRespondent).where(MeRespondent.evaluation_id == e.id, MeRespondent.email == email)).scalars().first()
     if r is None:
-        r = MeRespondent(evaluation_id=e.id, full_name=body.full_name.strip(), email=email, phone=phone, resume_token_hash=_hash(token))
+        r = MeRespondent(evaluation_id=e.id, full_name=body.full_name.strip(), email=email, phone=phone, resume_token_hash=_hash(token), district=district, attendance_mode=body.attendance_mode, hall=hall)
         db.add(r)
     else:
         # the same person coming back (new device, interrupted session): refresh their details and key
         r.full_name = body.full_name.strip()
         r.phone = phone
         r.resume_token_hash = _hash(token)
+        if r.response is None or r.response.deleted:
+            r.district, r.attendance_mode, r.hall = district, body.attendance_mode, hall
     db.flush()
     already = r.response is not None and not r.response.deleted
-    return RegisterOut(respondent_id=r.id, resume_token=token, full_name=r.full_name, already_submitted=already)
+    return RegisterOut(respondent_id=r.id, resume_token=token, full_name=r.full_name, already_submitted=already, district=r.district, attendance_mode=r.attendance_mode, hall=r.hall)
 
 
 def submit(db: Session, e: MeEvaluation, body: SubmitIn, user_agent: str | None) -> SubmitOut:
@@ -170,7 +180,10 @@ def submit(db: Session, e: MeEvaluation, body: SubmitIn, user_agent: str | None)
         raise HTTPException(403, "Please register again before submitting")
     if r.response is not None and not r.response.deleted:
         raise HTTPException(409, "You have already submitted this evaluation. Thank you!")
-    clean, errors = me_form.validate(body.answers, e.training_mode)
+    answers = dict(body.answers)
+    if r.district and not answers.get("A04"):
+        answers["A04"] = r.district
+    clean, errors = me_form.validate(answers, r.attendance_mode or e.training_mode)
     if errors:
         raise HTTPException(422, {"errors": errors})
     role = me_form.role_of(clean) or "NEITHER"
@@ -287,6 +300,11 @@ def results(db: Session, e: MeEvaluation, district: str | None = None) -> Result
         "age": _breakdown(vals("A03", participants), "A03"),
         "respondent_role": [Breakdown(label=k, count=v, pct=round(100 * v / len(rows), 1) if rows else 0.0) for k, v in (("Trainees", len(trainees)), ("Trainers", len(trainers)), ("Neither", neither)) if v],
     }
+    modes = Counter((r.respondent.attendance_mode or e.training_mode) for r in rows if r.role in ("TRAINEE", "TRAINER"))
+    total_modes = sum(modes.values())
+    profile["mode"] = [Breakdown(label="Online / self-paced" if k == "ONLINE" else "In-person", count=v, pct=round(100 * v / total_modes, 1)) for k, v in modes.items()]
+    halls = Counter(r.respondent.hall for r in rows if r.respondent.hall and r.role in ("TRAINEE", "TRAINER"))
+    profile["hall"] = [Breakdown(label=f"Hall {k}", count=v, pct=round(100 * v / sum(halls.values()), 1)) for k, v in sorted(halls.items())]
     completion = {code: _breakdown(vals(code, trainees), code) for code in ("A06", "A07", "A08", "B07", "A09")}
     domains = [_domain(d, trainers if d["code"] == "J" else trainees) for d in me_form.DOMAINS]
 
@@ -342,11 +360,11 @@ def export(db: Session, e: MeEvaluation) -> report_service.Report:
     rows = db.execute(select(MeResponse).where(MeResponse.evaluation_id == e.id, MeResponse.deleted.is_(False)).order_by(MeResponse.submitted_at)).scalars().all()
     codes = list(me_form.ITEMS)
     extra = [f"{c}_other" for c in codes if me_form.ITEMS[c].get("other")]
-    headers = ["Response", "Submitted", "Role", "Name", "Email", "Phone"] + codes + extra
+    headers = ["Response", "Submitted", "Role", "Name", "Email", "Phone", "District (registration)", "Attendance", "Hall"] + codes + extra
     data = []
     for r in rows:
         a = json.loads(r.answers)
-        data.append([r.id, r.submitted_at, r.role, r.respondent.full_name, r.respondent.email, r.respondent.phone]
+        data.append([r.id, r.submitted_at, r.role, r.respondent.full_name, r.respondent.email, r.respondent.phone, r.respondent.district or "", r.respondent.attendance_mode or "", r.respondent.hall or ""]
                     + [", ".join(a[c]) if isinstance(a.get(c), list) else a.get(c, "") for c in codes] + [a.get(c, "") for c in extra])
     items_rows = [[d.label, it.code, it.text, it.n, it.na, it.mean if it.mean is not None else "", it.pct_favourable if it.pct_favourable is not None else "", "FLAG" if it.flag else ""] for d in res.domains for it in d.items]
     def cell(v):

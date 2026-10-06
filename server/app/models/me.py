@@ -40,6 +40,9 @@ class MeRespondent(TimestampMixin, Base):
     email: Mapped[str] = mapped_column(String(200), nullable=False)
     phone: Mapped[str] = mapped_column(String(32), nullable=False)
     resume_token_hash: Mapped[str] = mapped_column(String(64), nullable=False)  # proves the browser that registered is the one submitting
+    district: Mapped[str | None] = mapped_column(String(60))  # chosen at registration; pre-fills A04 and drives the district reports
+    attendance_mode: Mapped[str | None] = mapped_column(String(16))  # ONLINE | IN_PERSON, how this person took the training
+    hall: Mapped[str | None] = mapped_column(String(60))  # training hall / venue number for in-person attendance
 
     evaluation: Mapped[MeEvaluation] = relationship(back_populates="respondents")
     response: Mapped["MeResponse | None"] = relationship(back_populates="respondent", uselist=False)

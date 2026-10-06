@@ -53,6 +53,8 @@ class RespondentOut(BaseModel):
     submitted_at: datetime | None = None
     response_id: int | None = None
     district: str | None = None
+    attendance_mode: str | None = None
+    hall: str | None = None
 
 
 class ItemStat(BaseModel):
@@ -141,6 +143,9 @@ class RegisterIn(BaseModel):
     full_name: str = Field(min_length=2, max_length=160)
     email: str = Field(min_length=5, max_length=200)
     phone: str = Field(min_length=8, max_length=32)
+    district: str = Field(min_length=2, max_length=60)
+    attendance_mode: str = Field(pattern="^(ONLINE|IN_PERSON)$")
+    hall: str | None = Field(default=None, max_length=60)  # required when in person
 
 
 class RegisterOut(BaseModel):
@@ -148,6 +153,9 @@ class RegisterOut(BaseModel):
     resume_token: str
     full_name: str
     already_submitted: bool
+    district: str | None = None
+    attendance_mode: str | None = None
+    hall: str | None = None
 
 
 class SubmitIn(BaseModel):

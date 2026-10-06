@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import clsx from "clsx";
-import { ArrowLeft, ArrowRight, CheckCircle2, ClipboardCheck, Mail, Phone, UserRound } from "lucide-react";
+import { ArrowLeft, ArrowRight, Building2, CheckCircle2, ClipboardCheck, ClipboardList, Laptop, Mail, MapPin, Phone, School, ShieldCheck, Timer, UserRound, Users } from "lucide-react";
 import { ApiError, api } from "../../api/client";
 
 /* ------------------------------------------------------------------------------------------------
@@ -16,7 +16,7 @@ type Section = { code: string; title: string; audience: string; intro?: string; 
 type Form = { scales: { agree: Option[]; confidence: Option[] }; sections: Section[]; rules: { role_item: string; in_person_hidden: string[] } };
 type Evaluation = { title: string; training_mode: "ONLINE" | "IN_PERSON"; period_start: string | null; period_end: string | null; description: string | null; status: string; form: Form };
 type Answers = Record<string, string | string[] | number | undefined>;
-type Saved = { respondent_id: number; resume_token: string; full_name: string; answers: Answers; step: number; done?: boolean };
+type Saved = { respondent_id: number; resume_token: string; full_name: string; answers: Answers; step: number; done?: boolean; mode?: "ONLINE" | "IN_PERSON"; district?: string };
 
 const roleOf = (a: Answers) => ({ "1": "TRAINER", "2": "TRAINEE", "3": "NEITHER" } as Record<string, string>)[String(a.A00 ?? "")];
 const sectionOf = (code: string) => code[0];
@@ -92,46 +92,99 @@ function ModeBadge({ mode }: { mode: string }) {
   return <span className={clsx("inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold", mode === "ONLINE" ? "bg-sky-100 text-sky-800" : "bg-emerald-100 text-emerald-800")}>{mode === "ONLINE" ? "Online / self-paced" : "In-person"}</span>;
 }
 
-/* ---- step 1: register --------------------------------------------------------------------------- */
+/* ---- step 1: the landing page and registration -------------------------------------------------- */
 
 function Register({ ev, token, onDone }: { ev: Evaluation; token: string; onDone: (s: Saved) => void }) {
-  const [form, setForm] = useState({ full_name: "", email: "", phone: "" });
+  const districts = ev.form.sections[0].items.find((it) => it.code === "A04")?.options ?? [];
+  const [form, setForm] = useState({ full_name: "", email: "", phone: "", district: "", attendance_mode: ev.training_mode as "ONLINE" | "IN_PERSON", hall: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const phoneOk = /^\+?\d{8,15}$/.test(form.phone.replace(/[\s\-()]/g, ""));
   const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(form.email.trim());
-  const ready = form.full_name.trim().length >= 2 && emailOk && phoneOk;
+  const hallOk = form.attendance_mode === "ONLINE" || form.hall.trim().length > 0;
+  const ready = form.full_name.trim().length >= 2 && emailOk && phoneOk && !!form.district && hallOk;
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true); setError(null);
     try {
-      const r = await api.post<{ respondent_id: number; resume_token: string; full_name: string; already_submitted: boolean }>(`/public/evaluations/${token}/register`, form);
-      onDone({ respondent_id: r.respondent_id, resume_token: r.resume_token, full_name: r.full_name, answers: {}, step: 0, done: r.already_submitted });
+      const r = await api.post<{ respondent_id: number; resume_token: string; full_name: string; already_submitted: boolean; district: string | null; attendance_mode: "ONLINE" | "IN_PERSON" | null }>(`/public/evaluations/${token}/register`, { ...form, hall: form.attendance_mode === "IN_PERSON" ? form.hall : null });
+      onDone({ respondent_id: r.respondent_id, resume_token: r.resume_token, full_name: r.full_name, answers: r.district ? { A04: r.district } : {}, step: 0, done: r.already_submitted, mode: r.attendance_mode ?? form.attendance_mode, district: r.district ?? form.district });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not register. Please try again.");
     } finally { setBusy(false); }
   };
+  const inPerson = form.attendance_mode === "IN_PERSON";
   return (
-    <Card>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold text-navy">{ev.title}</h1>
-        <ModeBadge mode={ev.training_mode} />
+    <div className="space-y-4">
+      <Card className="overflow-hidden p-0 sm:p-0">
+        <div className="bg-gradient-to-br from-navy via-[#245a8c] to-[#1b7f6b] px-5 py-6 text-white sm:px-8 sm:py-8">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="text-xs uppercase tracking-[0.3em] text-sky-100/80">2026 Population and Housing Census</div>
+              <h1 className="mt-1 text-2xl font-bold leading-tight sm:text-3xl">{ev.title}</h1>
+              {(ev.period_start || ev.period_end) && <p className="mt-1 text-sm text-sky-100">{fmtDate(ev.period_start)}{ev.period_end ? ` – ${fmtDate(ev.period_end)}` : ""}</p>}
+            </div>
+            <ModeBadge mode={ev.training_mode} />
+          </div>
+          <p className="mt-4 max-w-xl text-sm text-sky-50/90">{ev.description || "Your feedback helps us assess training quality, participant readiness, CAPI and data-quality preparedness, and trainer performance, and to see which topics, districts or roles need reinforcement."}</p>
+          <div className="mt-5 grid gap-2 sm:grid-cols-3">
+            {[
+              { icon: <Users size={18} />, title: "Who answers", text: "Trainees rate the training; trainers rate the group they facilitated." },
+              { icon: <Timer size={18} />, title: "About 10 minutes", text: "One section at a time. Your answers are saved on this device as you go." },
+              { icon: <ShieldCheck size={18} />, title: "Reported in aggregate", text: "Individual answers are never published. One submission per person." },
+            ].map((b) => (
+              <div key={b.title} className="rounded-xl bg-white/10 p-3 backdrop-blur-sm">
+                <div className="flex items-center gap-2 text-sm font-semibold">{b.icon} {b.title}</div>
+                <div className="mt-1 text-xs text-sky-50/85">{b.text}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <form onSubmit={submit} className="space-y-5 px-5 py-6 sm:px-8 sm:py-7">
+          <div>
+            <h2 className="flex items-center gap-2 text-lg font-bold text-navy"><ClipboardList size={20} /> Register to start</h2>
+            <p className="text-sm text-slate-500">All fields are required. Your email lets you continue later on the same link and prevents duplicate submissions.</p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field icon={<UserRound size={18} />} label="Full name"><input className="pub-input" required value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} placeholder="Your full name" autoComplete="name" /></Field>
+            <Field icon={<MapPin size={18} />} label="District">
+              <select className="pub-input" required value={form.district} onChange={(e) => setForm({ ...form, district: e.target.value })}>
+                <option value="">Choose your district…</option>
+                {districts.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
+              </select>
+            </Field>
+            <Field icon={<Mail size={18} />} label="Email address"><input className="pub-input" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="name@example.com" autoComplete="email" /></Field>
+            <Field icon={<Phone size={18} />} label="Phone number" hint={form.phone && !phoneOk ? "Enter 8 to 15 digits, for example 076 123 456" : undefined}><input className="pub-input" type="tel" required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="076 123 456" autoComplete="tel" /></Field>
+          </div>
+          <div>
+            <span className="mb-2 block text-sm font-medium text-slate-700">How did you take this training?</span>
+            <div className="grid grid-cols-2 gap-2">
+              {([["ONLINE", "Online / self-paced", <Laptop size={20} key="l" />], ["IN_PERSON", "In person", <School size={20} key="s" />]] as const).map(([v, label, icon]) => (
+                <button type="button" key={v} onClick={() => setForm({ ...form, attendance_mode: v })}
+                  className={clsx("flex items-center justify-center gap-2 rounded-xl border px-3 py-3 text-sm font-semibold transition", form.attendance_mode === v ? "border-navy bg-navy text-white shadow" : "border-slate-200 bg-white text-slate-700 hover:border-navy/50 hover:bg-sky-50")}>
+                  {icon} {label}
+                </button>
+              ))}
+            </div>
+            {inPerson && (
+              <div className="mt-3">
+                <Field icon={<Building2 size={18} />} label="Hall number (required for in-person training)"><input className="pub-input sm:w-64" required value={form.hall} onChange={(e) => setForm({ ...form, hall: e.target.value })} placeholder="e.g. 3 or Hall B" /></Field>
+              </div>
+            )}
+          </div>
+          {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+          <button className="pub-btn w-full" disabled={!ready || busy}>{busy ? "One moment…" : "Start the evaluation"} <ArrowRight size={18} /></button>
+        </form>
+      </Card>
+      <div className="grid gap-3 sm:grid-cols-3">
+        {[["1", "Register", "Name, district, email, phone and how you attended."], ["2", "Answer", "Short sections with 1 to 5 ratings; skip what does not apply."], ["3", "Submit", "Review and send. You will see a confirmation."]].map(([n, t, d]) => (
+          <div key={n} className="flex items-start gap-3 rounded-xl bg-white/10 p-3 text-white">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-400 text-sm font-bold text-navy">{n}</span>
+            <div><div className="text-sm font-semibold">{t}</div><div className="text-xs text-sky-100/80">{d}</div></div>
+          </div>
+        ))}
       </div>
-      {(ev.period_start || ev.period_end) && <p className="mt-1 text-sm text-slate-500">Training period: {fmtDate(ev.period_start)}{ev.period_end ? ` – ${fmtDate(ev.period_end)}` : ""}</p>}
-      <p className="mt-3 text-slate-700">{ev.description || "Your feedback helps us assess training quality, participant readiness, CAPI and data-quality preparedness, and trainer performance. It takes about 10 minutes."}</p>
-      <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
-        <b className="text-slate-800">Who should answer:</b> trainees and participants rate the training; trainers and facilitators rate their group of trainees. Please answer from your own experience.
-      </div>
-      <form onSubmit={submit} className="mt-6 space-y-4">
-        <h2 className="text-base font-semibold text-slate-800">Register to start</h2>
-        <Field icon={<UserRound size={18} />} label="Full name"><input className="pub-input" required value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} placeholder="Your full name" autoComplete="name" /></Field>
-        <Field icon={<Mail size={18} />} label="Email address"><input className="pub-input" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="name@example.com" autoComplete="email" /></Field>
-        <Field icon={<Phone size={18} />} label="Phone number (required)" hint={form.phone && !phoneOk ? "Enter 8 to 15 digits, for example 076 123 456" : undefined}><input className="pub-input" type="tel" required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="076 123 456" autoComplete="tel" /></Field>
-        {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
-        <button className="pub-btn w-full" disabled={!ready || busy}>{busy ? "One moment…" : "Start the evaluation"} <ArrowRight size={18} /></button>
-        <p className="text-center text-xs text-slate-500">Your email lets you continue later on the same link and prevents duplicate submissions. Your answers are reported in aggregate only.</p>
-      </form>
-    </Card>
+    </div>
   );
 }
 
@@ -148,7 +201,7 @@ function Field({ icon, label, hint, children }: { icon: React.ReactNode; label: 
 /* ---- step 2: the questionnaire, one section per step ------------------------------------------- */
 
 function Wizard({ ev, token, saved, setSaved }: { ev: Evaluation; token: string; saved: Saved; setSaved: (s: Saved) => void }) {
-  const mode = ev.training_mode;
+  const mode = saved.mode ?? ev.training_mode; // the registrant's own attendance mode drives the routing
   const answers = saved.answers;
   const role = roleOf(answers);
   // the sections this respondent answers, given their role and the training mode

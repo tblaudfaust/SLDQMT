@@ -529,6 +529,8 @@ export interface MeRespondent {
   submitted_at: string | null;
   response_id: number | null;
   district: string | null;
+  attendance_mode: "ONLINE" | "IN_PERSON" | null;
+  hall: string | null;
 }
 export interface MeItem { code: string; text: string; n: number; na: number; mean: number | null; pct_favourable: number | null; flag: boolean }
 export interface MeDomain { code: string; label: string; n_respondents: number; mean: number | null; pct_favourable: number | null; flag: boolean; threshold: number; items: MeItem[] }

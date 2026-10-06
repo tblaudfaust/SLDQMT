@@ -106,6 +106,7 @@ export default function MeResultsPage() {
           <Card title="Weakest items (reinforce first)"><ItemList items={d.weaknesses} /></Card>
           <BreakdownCard title="Respondents by district" rows={d.profile.district} />
           <BreakdownCard title="Trainees by position" rows={d.profile.role} />
+          <div className="grid gap-4 sm:grid-cols-2"><BreakdownCard title="Attendance mode" rows={d.profile.mode ?? []} /><BreakdownCard title="Training hall (in-person)" rows={d.profile.hall ?? []} /></div>
           <BreakdownCard title="By institution" rows={d.profile.institution} />
           <div className="grid gap-4 sm:grid-cols-2"><BreakdownCard title="Sex" rows={d.profile.sex} /><BreakdownCard title="Age group" rows={d.profile.age} /></div>
           <BreakdownCard title={e.training_mode === "ONLINE" ? "Completed all modules (A06)" : "Attended all sessions (A06)"} rows={d.completion.A06} />
@@ -158,13 +159,13 @@ export default function MeResultsPage() {
           {people.isLoading ? <Spinner /> : people.data?.length ? (
             <div className="overflow-x-auto">
               <table className="table">
-                <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>District</th><th>Registered</th><th>Submitted</th>{can("me.manage") && <th />}</tr></thead>
+                <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>District</th><th>Mode</th><th>Hall</th><th>Registered</th><th>Submitted</th>{can("me.manage") && <th />}</tr></thead>
                 <tbody>
                   {people.data.map((p) => (
                     <tr key={p.id}>
                       <td className="font-medium">{p.full_name}</td><td>{p.email}</td><td>{p.phone}</td>
                       <td>{p.role === "TRAINER" ? "Trainer" : p.role === "TRAINEE" ? "Trainee" : p.role === "NEITHER" ? "Neither" : <span className="text-slate-400">not yet</span>}</td>
-                      <td>{p.district ?? ""}</td><td className="whitespace-nowrap">{fmt(p.registered_at)}</td>
+                      <td>{p.district ?? ""}</td><td>{p.attendance_mode === "IN_PERSON" ? "In-person" : p.attendance_mode === "ONLINE" ? "Online" : ""}</td><td>{p.hall ?? ""}</td><td className="whitespace-nowrap">{fmt(p.registered_at)}</td>
                       <td className="whitespace-nowrap">{p.submitted_at ? fmt(p.submitted_at) : <span className="text-amber-700">pending</span>}</td>
                       {can("me.manage") && <td>{p.response_id && <button className="text-xs text-red-700" onClick={() => { if (confirm(`Remove the response of ${p.full_name} from the results? They can submit again.`)) remove.mutate(p.response_id!); }}>Remove response</button>}</td>}
                     </tr>
