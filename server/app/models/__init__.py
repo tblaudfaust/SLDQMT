@@ -15,12 +15,16 @@ from app.models.reference import (
     Team,
 )
 from app.models.me import MeEvaluation, MeRespondent, MeResponse
+from app.models.mefm import MefmChiefdom, MefmFrameVersion, MefmSection
 from app.models.setting import DEFAULT_SETTINGS, Setting
 from app.models.user import RefreshToken, Role, User, UserScope
 
 __all__ = [
     "AuditLog",
     "MeEvaluation",
+    "MefmChiefdom",
+    "MefmFrameVersion",
+    "MefmSection",
     "MeRespondent",
     "MeResponse",
     "Device",

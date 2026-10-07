@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, Field
 
@@ -16,6 +16,8 @@ class UserCreate(BaseModel):
     phone: str | None = None
     role: Role
     staff_code: str | None = Field(default=None, max_length=32)
+    active_from: date | None = None
+    active_until: date | None = None
     district_ids: list[int] = []
     region_ids: list[int] = []
 
@@ -27,6 +29,8 @@ class UserUpdate(BaseModel):
     active: bool | None = None
     password: str | None = Field(default=None, min_length=8, max_length=256)
     staff_code: str | None = Field(default=None, max_length=32)  # "" clears it
+    active_from: date | None = None
+    active_until: date | None = None
     district_ids: list[int] | None = None
     region_ids: list[int] | None = None
 
@@ -39,6 +43,9 @@ class UserAdminOut(ORMModel):
     role: Role
     active: bool
     staff_code: str | None = None
+    active_from: date | None = None
+    active_until: date | None = None
+    must_change_password: bool | None = None
     last_login_at: datetime | None = None
     pin_reset_requested_at: datetime | None = None
     scopes: list[ScopeOut] = []
@@ -135,9 +142,24 @@ class ImportResult(BaseModel):
     supervisors: int
     enumerators: int
     eas: int
+    chiefdoms: int = 0
+    sections: int = 0
     assigned: int = 0  # SAs that received a Field Monitor / DQM assignment
+    updated: int = 0  # names or attributes changed on rows that already existed
+    dry_run: bool = False  # nothing was saved; the counts show what applying the file would do
+    removed: dict = {}  # SAs and EAs in the touched districts that the file no longer lists (kept, reported)
     rows: int
     warnings: list[str]
+
+
+class FrameVersionOut(BaseModel):
+    id: int
+    filename: str
+    applied_by: str | None = None
+    applied_at: datetime
+    rows: int
+    counts: dict
+    changes: dict
 
 
 class AuditOut(ORMModel):

@@ -1,4 +1,4 @@
-export type Role = "FIELD_MONITOR" | "DISTRICT_DQM" | "REGIONAL" | "NATIONAL_DQM" | "ADMIN" | "ME";
+export type Role = "FIELD_MONITOR" | "DISTRICT_DQM" | "REGIONAL" | "NATIONAL_DQM" | "ADMIN" | "ME" | "ME_DISTRICT" | "ME_REGIONAL";
 export type Status = "UNRESOLVED" | "RESOLVED";
 
 export interface User {
@@ -11,6 +11,9 @@ export interface User {
   last_login_at?: string | null;
   pin_reset_requested_at?: string | null;
   staff_code?: string | null;
+  must_change_password?: boolean | null;
+  active_from?: string | null;
+  active_until?: string | null;
   assigned_sas?: number;
   district_ids?: number[] | null;
   scopes: { region_id: number | null; district_id: number | null }[];
@@ -252,9 +255,23 @@ export interface ImportResult {
   supervisors: number;
   enumerators: number;
   eas: number;
+  chiefdoms: number;
+  sections: number;
   assigned: number;
+  updated: number;
+  dry_run: boolean;
+  removed: { teams?: number; eas?: number; team_codes?: string[]; ea_codes?: string[] };
   rows: number;
   warnings: string[];
+}
+
+export interface FrameVersion { id: number; filename: string; applied_by: string | null; applied_at: string; rows: number; counts: Record<string, number>; changes: Record<string, unknown> }
+
+export interface MefmOverview {
+  scope: string;
+  districts: { district_id: number; district: string; region: string; chiefdoms: number; sections: number; sas: number; eas: number; eas_with_point: number }[];
+  totals: Record<string, number>;
+  frame_version: { id: number; filename: string; applied_at: string; rows: number; counts: Record<string, number> } | null;
 }
 
 export type ReportPeriod = "LISTING" | "ENUMERATION";

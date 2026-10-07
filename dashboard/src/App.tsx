@@ -29,6 +29,7 @@ import ExitSummaryPage from "./pages/exit/ExitSummaryPage";
 import MeEvaluationsPage from "./pages/me/MeEvaluationsPage";
 import MeResultsPage from "./pages/me/MeResultsPage";
 import EvaluatePage from "./pages/public/EvaluatePage";
+import MefmHomePage from "./pages/mefm/MefmHomePage";
 
 const client = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 30_000 } } });
 
@@ -44,6 +45,7 @@ function Home() {
   const { can } = useAuth();
   if (can("dashboard.view")) return <DashboardPage />;
   if (can("me.view")) return <Navigate to="/me/evaluations" replace />;
+  if (can("mefm.view")) return <Navigate to="/mefm" replace />;
   if (can("daily_reports.view")) return <Navigate to="/dqm/reports" replace />;
   return <Navigate to="/resources" replace />;
 }
@@ -52,6 +54,7 @@ function Home() {
 function NotForMe() {
   const { user } = useAuth();
   if (user?.role === "ME") return <Navigate to="/me/evaluations" replace />;
+  if (user?.role === "ME_DISTRICT" || user?.role === "ME_REGIONAL") return <Navigate to="/mefm" replace />;
   return <Outlet />;
 }
 
@@ -87,6 +90,7 @@ export default function App() {
                 <Route path="dqm/exit" element={<ExitCheckoutsPage />} />
                 <Route path="dqm/exit/summary/:level" element={<ExitSummaryPage />} />
                 <Route path="dqm/exit/:id" element={<ExitCheckoutFormPage />} />
+                <Route element={<RequirePerm code="mefm.view" />}><Route path="mefm" element={<MefmHomePage />} /></Route>
                 <Route element={<RequirePerm code="me.view" />}>
                   <Route path="me/evaluations" element={<MeEvaluationsPage />} />
                   <Route path="me/evaluations/:id" element={<MeResultsPage />} />

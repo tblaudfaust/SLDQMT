@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, Field
 
@@ -30,6 +30,9 @@ class UserOut(ORMModel):
     active: bool
     last_login_at: datetime | None = None
     staff_code: str | None = None
+    must_change_password: bool | None = False  # choose a new password before doing anything else (empty on old accounts = no)
+    active_from: date | None = None
+    active_until: date | None = None
     assigned_sas: int = 0  # SAs in this officer's workload (0 = none assigned, district scope applies)
     district_ids: list[int] | None = None
     scopes: list[ScopeOut] = []

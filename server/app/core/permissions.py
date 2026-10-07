@@ -37,6 +37,11 @@ PERMISSIONS: dict[str, tuple[str, str]] = {
     "sync.use": ("Tablet", "Synchronise a tablet (Field Monitor app)"),
     "me.view": ("Monitoring & Evaluation", "View training evaluations, respondents and results"),
     "me.manage": ("Monitoring & Evaluation", "Create, edit and close training evaluations; remove responses"),
+    "mefm.collect": ("M&E field monitoring", "Fill and submit field monitoring forms (district officers)"),
+    "mefm.view": ("M&E field monitoring", "View field monitoring dashboards and forms in scope"),
+    "mefm.review": ("M&E field monitoring", "Review forms, comment and resolve issues"),
+    "mefm.export": ("M&E field monitoring", "Export forms, indicators and daily briefs"),
+    "mefm.manage": ("M&E field monitoring", "Upload the frame and change field monitoring settings"),
 }
 
 _DISTRICT = [
@@ -61,6 +66,8 @@ DEFAULT_ROLE_PERMISSIONS: dict[Role, list[str]] = {
     Role.DISTRICT_DQM: _DISTRICT,
     Role.REGIONAL: _REGIONAL,
     Role.NATIONAL_DQM: _NATIONAL,
-    Role.ME: ["me.view", "me.manage"],
+    Role.ME: ["me.view", "me.manage", "mefm.view", "mefm.review", "mefm.export", "mefm.manage"],
+    Role.ME_DISTRICT: ["mefm.collect", "mefm.view", "sync.use"],
+    Role.ME_REGIONAL: ["mefm.view", "mefm.review"],
     Role.ADMIN: [code for code in PERMISSIONS if code != "sync.use"],
 }

@@ -13,10 +13,12 @@ const roleLabel: Record<string, string> = {
   NATIONAL_DQM: "National DQM",
   ADMIN: "Administrator",
   ME: "Monitoring & Evaluation",
+  ME_REGIONAL: "Regional M&E Officer",
+  ME_DISTRICT: "District M&E Officer",
 };
 
 export default function Layout() {
-  const { user, logout, can } = useAuth();
+  const { user, logout, can, refreshUser } = useAuth();
   const [changePw, setChangePw] = useState(false);
   const isNational = user?.role === "NATIONAL_DQM" || user?.role === "ADMIN";
   const isRegionalUp = isNational || user?.role === "REGIONAL";
@@ -34,7 +36,7 @@ export default function Layout() {
             <div className="text-sm font-semibold leading-tight">Statistics Sierra Leone</div>
           </div>
           <div className="mt-3 text-xs uppercase tracking-wider text-slate-300">SLPHC 2026</div>
-          <div className="text-xl font-bold leading-tight">{isMeSite || user?.role === "ME" ? "Monitoring & Evaluation" : "Field Monitor Errors"}</div>
+          <div className="text-xl font-bold leading-tight">{isMeSite || user?.role === "ME" || user?.role === "ME_DISTRICT" || user?.role === "ME_REGIONAL" ? "Monitoring & Evaluation" : "Field Monitor Errors"}</div>
         </div>
         <nav className="flex-1 space-y-1 px-2">
           {can("dashboard.view") && (
@@ -61,10 +63,11 @@ export default function Layout() {
               <NavLink to={isNational ? "/dqm/exit/summary/national" : isRegionalUp ? "/dqm/exit/summary/region" : "/dqm/exit/summary/district"} className={link}><BarChart3 size={16} /> Exit summary</NavLink>
             </>
           )}
-          {can("me.view") && (
+          {(can("me.view") || can("mefm.view")) && (
             <>
               <div className="px-3 pt-5 pb-1 text-base font-bold text-white">Monitoring &amp; Evaluation</div>
-              <NavLink to="/me/evaluations" className={link}><GraduationCap size={16} /> Training evaluations</NavLink>
+              {can("me.view") && <NavLink to="/me/evaluations" className={link}><GraduationCap size={16} /> Training evaluations</NavLink>}
+              {can("mefm.view") && <NavLink to="/mefm" className={link}><Map size={16} /> Field monitoring</NavLink>}
             </>
           )}
           {showManuals && (
@@ -97,7 +100,7 @@ export default function Layout() {
       <main className="flex-1 p-6">
         <Outlet />
       </main>
-      {changePw && <ChangePasswordDialog onClose={() => setChangePw(false)} />}
+      {(changePw || user?.must_change_password) && <ChangePasswordDialog forced={!!user?.must_change_password} onClose={() => { setChangePw(false); if (user?.must_change_password) void refreshUser(); }} />}
     </div>
   );
 }

@@ -37,7 +37,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.districts import canonical_staff_code
-from app.models import District, Enumerator, EnumerationArea, Region, Supervisor, Team
+from app.models import District, Enumerator, EnumerationArea, MefmChiefdom, MefmSection, Region, Supervisor, Team
 from app.schemas.admin import ImportResult
 
 # canonical field -> accepted header spellings (normalised: lower-case, alphanumerics only)
@@ -51,6 +51,11 @@ COLUMNS: dict[str, list[str]] = {
     "team_code": ["teamcode", "sacode", "supervisoryareacode", "sa", "sano", "sanumber", "team"],
     "team_name": ["teamname", "saname", "supervisoryarea", "supervisoryareaname"],
     "ea_count": ["noofeas", "eacount", "numberofeas"],
+    "chiefdom_code": ["chiefdomcode", "chfdmcode"],
+    "section": ["section", "sectname", "sectionname"],
+    "section_code": ["sectioncode", "sectcode"],
+    "pop_ea_code": ["popeacode", "eacode10", "popea"],
+    "loc_status": ["locstatus", "urbanrural"],
     "monitor_code": ["fieldmonitorid", "fmid", "monitorid", "fieldmonitorcode", "fieldmonitor"],
     "dqm_code": ["dqmid", "dqmcode", "dqm"],
     "monitor_code": ["fieldmonitorid", "fmid", "monitorid", "fieldmonitorcode", "fieldmonitor"],
@@ -149,7 +154,12 @@ class _Importer:
     def __init__(self, db: Session, default_region: str | None):
         self.db = db
         self.default_region = default_region
-        self.counts = {"regions": 0, "districts": 0, "teams": 0, "supervisors": 0, "enumerators": 0, "eas": 0, "assigned": 0}
+        self.counts = {"regions": 0, "districts": 0, "teams": 0, "supervisors": 0, "enumerators": 0, "eas": 0, "assigned": 0, "chiefdoms": 0, "sections": 0, "updated": 0}
+        self.chiefdoms: dict[str, MefmChiefdom] = {c.code: c for c in db.execute(select(MefmChiefdom)).scalars()}
+        self.sections: dict[str, MefmSection] = {x.code: x for x in db.execute(select(MefmSection)).scalars()}
+        self.seen_teams: set[int] = set()
+        self.seen_eas: set[int] = set()
+        self.touched_districts: set[int] = set()
         self.warnings: list[str] = []
         self.rows = 0
         self.regions = {r.code: r for r in db.execute(select(Region)).scalars()}
@@ -226,8 +236,9 @@ class _Importer:
             self.db.flush()
             self.counts["teams"] += 1
         else:
-            if name:
+            if name and team.name != name:
                 team.name = name
+                self.counts["updated"] += 1
             if row.get("chiefdom"):
                 team.chiefdom = clean_name(row["chiefdom"])
             if row.get("local_council"):
@@ -241,7 +252,43 @@ class _Importer:
                     setattr(team, attr, canonical_staff_code(row[attr]))  # FM-11-001 -> FM-Kai-001
             self.counts["assigned"] += 1
         self.teams[key] = team
+        self.seen_teams.add(team.id)
+        self.touched_districts.add(district.id)
         return team
+
+    def chiefdom(self, row: dict, district: District) -> MefmChiefdom | None:
+        code = row.get("chiefdom_code")
+        if not code:
+            return None
+        name = clean_name(row.get("chiefdom")) or f"Chiefdom {code}"
+        c = self.chiefdoms.get(code)
+        if c is None:
+            c = MefmChiefdom(district_id=district.id, code=code, name=name)
+            self.db.add(c)
+            self.db.flush()
+            self.chiefdoms[code] = c
+            self.counts["chiefdoms"] += 1
+        elif c.name != name or c.district_id != district.id:
+            c.name, c.district_id = name, district.id
+            self.counts["updated"] += 1
+        return c
+
+    def section(self, row: dict, chiefdom: MefmChiefdom | None) -> MefmSection | None:
+        code = row.get("section_code")
+        if not code or chiefdom is None:
+            return None
+        name = clean_name(row.get("section")) or f"Section {code}"
+        x = self.sections.get(code)
+        if x is None:
+            x = MefmSection(district_id=chiefdom.district_id, chiefdom_id=chiefdom.id, code=code, name=name)
+            self.db.add(x)
+            self.db.flush()
+            self.sections[code] = x
+            self.counts["sections"] += 1
+        elif x.name != name or x.chiefdom_id != chiefdom.id:
+            x.name, x.chiefdom_id, x.district_id = name, chiefdom.id, chiefdom.district_id
+            self.counts["updated"] += 1
+        return x
 
     def person(self, model, cache: dict, counter: str, team: Team, name: str | None, code: str | None, external_id: str | None, phone: str | None):
         if not (name or code):
@@ -286,8 +333,9 @@ class _Importer:
             self.db.flush()
             self.counts["eas"] += 1
         else:
-            if name:
+            if name and ea.name != name:
                 ea.name = name
+                self.counts["updated"] += 1
             # An EA spans several localities; keep the first as the reference locality.
             if locality and not ea.locality:
                 ea.locality = locality
@@ -295,14 +343,22 @@ class _Importer:
                 ea.households = households
             if lat is not None and ea.lat is None:
                 ea.lat, ea.lng = lat, lng
+        # the national frame: the 10-digit code officers type, geography below the district, expected households
+        for attr, col in (("pop_ea_code", "pop_ea_code"), ("chiefdom_code", "chiefdom_code"), ("section_code", "section_code"), ("loc_status", "loc_status")):
+            if row.get(col) and getattr(ea, attr) != str(row[col]):
+                setattr(ea, attr, str(row[col]))
+        if households is not None and ea.expected_households != households:
+            ea.expected_households = households
         self.eas[key] = ea
+        self.seen_eas.add(ea.id)
 
-    def run(self, rows) -> ImportResult:
+    def run(self, rows, dry_run: bool = False) -> ImportResult:
         for i, row in enumerate(rows, start=2):
             self.rows += 1
             district = self.district(i, row)
             if district is None:
                 continue
+            self.section(row, self.chiefdom(row, district))
             team = self.team(i, row, district)
             if team is None:
                 continue
@@ -311,8 +367,23 @@ class _Importer:
             self.ea(row, team)
             if self.rows % 2000 == 0:
                 self.db.flush()
-        self.db.commit()
-        return ImportResult(rows=self.rows, warnings=self.warnings[:100], **self.counts)
+        removed = self.removed()
+        if dry_run:
+            self.db.rollback()
+        else:
+            self.db.commit()
+        return ImportResult(rows=self.rows, warnings=self.warnings[:100], dry_run=dry_run, removed=removed, **self.counts)
+
+    def removed(self) -> dict:
+        """Active SAs and EAs of the districts in the file that the file no longer lists: reported, never deleted."""
+        if not self.touched_districts:
+            return {}
+        teams = self.db.execute(select(Team).where(Team.district_id.in_(self.touched_districts), Team.active.is_(True))).scalars().all()
+        gone_teams = [t for t in teams if t.id not in self.seen_teams]
+        team_ids = [t.id for t in teams]
+        eas = self.db.execute(select(EnumerationArea).where(EnumerationArea.team_id.in_(team_ids), EnumerationArea.active.is_(True))).scalars().all() if team_ids else []
+        gone_eas = [e for e in eas if e.id not in self.seen_eas]
+        return {"teams": len(gone_teams), "eas": len(gone_eas), "team_codes": [t.code for t in gone_teams[:20]], "ea_codes": [e.code for e in gone_eas[:20]]}
 
 
 def _float(v) -> float | None:
@@ -322,5 +393,5 @@ def _float(v) -> float | None:
         return None
 
 
-def import_reference(db: Session, filename: str, source: bytes | str | Path, default_region: str | None = None) -> ImportResult:
-    return _Importer(db, default_region).run(read_rows(filename, source))
+def import_reference(db: Session, filename: str, source: bytes | str | Path, default_region: str | None = None, dry_run: bool = False) -> ImportResult:
+    return _Importer(db, default_region).run(read_rows(filename, source), dry_run=dry_run)

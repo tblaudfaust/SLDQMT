@@ -7,11 +7,13 @@ interface AuthState {
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
+  /** Reload the signed-in user's profile from the server (after a password change, for example). */
+  refreshUser: () => Promise<void>;
   /** True when the signed-in user holds every listed permission. */
   can: (...codes: string[]) => boolean;
 }
 
-const Ctx = createContext<AuthState>({ user: null, loading: true, login: async () => {}, logout: () => {}, can: () => false });
+const Ctx = createContext<AuthState>({ user: null, loading: true, login: async () => {}, logout: () => {}, refreshUser: async () => {}, can: () => false });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -46,9 +48,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const refreshUser = useCallback(async () => { setUser(await api.get<User>("/auth/me")); }, []);
+
   const can = useCallback((...codes: string[]) => !!user && codes.every((c) => user.permissions?.includes(c)), [user]);
 
-  return <Ctx.Provider value={{ user, loading, login, logout, can }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ user, loading, login, logout, refreshUser, can }}>{children}</Ctx.Provider>;
 }
 
 export const useAuth = () => useContext(Ctx);

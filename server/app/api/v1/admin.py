@@ -12,6 +12,7 @@ from app.core.permissions import DEFAULT_ROLE_PERMISSIONS, PERMISSIONS
 from app.core.security import hash_password
 from app.db.session import get_db
 from app.models import (
+    MefmFrameVersion,
     AuditLog,
     Device,
     District,
@@ -35,6 +36,7 @@ from app.schemas.admin import (
     AuditOut,
     DeviceOut,
     DeviceStatusUpdate,
+    FrameVersionOut,
     ImportResult,
     OfficerPairIn,
     OfficerPairOut,
@@ -190,7 +192,13 @@ async def import_users(request: Request, file: UploadFile = File(...), db: Sessi
         if len(password) < 8:
             errors.append(f"Row {i}: password shorter than 8 characters")
             continue
-        user = User(username=username, password_hash=hash_password(password), full_name=row.get("full_name") or username, phone=row.get("phone") or None, role=role, staff_code=_staff_code(row.get("staff_code")))
+        try:
+            active_from = date.fromisoformat(row["active_from"]) if row.get("active_from") else None
+            active_until = date.fromisoformat(row["active_until"]) if row.get("active_until") else None
+        except ValueError:
+            errors.append(f"Row {i}: active_from / active_until must be YYYY-MM-DD")
+            continue
+        user = User(username=username, password_hash=hash_password(password), full_name=row.get("full_name") or username, phone=row.get("phone") or None, role=role, staff_code=_staff_code(row.get("staff_code")), active_from=active_from, active_until=active_until, must_change_password=True)
         bad = False
         for name in filter(None, (x.strip() for x in row.get("districts", "").replace(";", ",").split(","))):
             d = districts.get(name.lower())
@@ -252,6 +260,7 @@ def reset_password(user_id: int, body: PasswordResetIn, request: Request, db: Se
     user.password_hash = hash_password(password)
     user.failed_logins = 0
     user.locked_until = None
+    user.must_change_password = True
     for t in db.execute(select(RefreshToken).where(RefreshToken.user_id == user.id, RefreshToken.revoked.is_(False))).scalars():
         t.revoked = True  # sign the user out everywhere
     audit(db, admin, "user.reset_password", "user", user.id, {"username": user.username, "generated": temp is not None}, request)
@@ -358,7 +367,7 @@ def create_officer_pair(body: OfficerPairIn, request: Request, db: Session = Dep
         (dqm_code, Role.DISTRICT_DQM, body.dqm_full_name, body.dqm_phone, body.dqm_password),
     ):
         password = password or _initial_password()
-        user = User(username=code.lower(), password_hash=hash_password(password), full_name=(name or "").strip() or code, phone=(phone or "").strip() or None, role=role, staff_code=code)
+        user = User(username=code.lower(), password_hash=hash_password(password), full_name=(name or "").strip() or code, phone=(phone or "").strip() or None, role=role, staff_code=code, must_change_password=True)
         user.scopes.append(UserScope(district_id=district.id))
         db.add(user)
         out.append(CreatedAccount(username=code.lower(), staff_code=code, role=role.value, district=district.name, password=password))
@@ -374,7 +383,7 @@ def create_user(body: UserCreate, request: Request, db: Session = Depends(get_db
     username = body.username.strip().lower()
     if db.execute(select(User).where(User.username == username)).scalars().first():
         raise HTTPException(409, "Username already exists")
-    user = User(username=username, password_hash=hash_password(body.password), full_name=body.full_name, phone=body.phone, role=body.role, staff_code=_staff_code(body.staff_code))
+    user = User(username=username, password_hash=hash_password(body.password), full_name=body.full_name, phone=body.phone, role=body.role, staff_code=_staff_code(body.staff_code), active_from=body.active_from, active_until=body.active_until, must_change_password=True)
     db.add(user)
     db.flush()
     _set_scopes(db, user, body.district_ids, body.region_ids)
@@ -397,6 +406,11 @@ def update_user(user_id: int, body: UserUpdate, request: Request, db: Session = 
             setattr(user, field, value)
     if body.staff_code is not None:
         user.staff_code = _staff_code(body.staff_code)
+    for field in ("active_from", "active_until"):
+        if field in body.model_fields_set:
+            setattr(user, field, getattr(body, field))
+    if body.password:
+        user.must_change_password = True
     if body.password:
         user.password_hash = hash_password(body.password)
         user.failed_logins = 0
@@ -614,7 +628,7 @@ def create_workload_accounts(request: Request, district_id: int | None = None, d
         if role is None or username in taken:
             continue
         password = _initial_password()
-        user = User(username=username, password_hash=hash_password(password), full_name=code, role=Role(role), staff_code=code)
+        user = User(username=username, password_hash=hash_password(password), full_name=code, role=Role(role), staff_code=code, must_change_password=True)
         user.scopes.append(UserScope(district_id=wanted[code]))
         db.add(user)
         created.append(CreatedAccount(username=username, staff_code=code, role=role, district=districts[wanted[code]].name, password=password))
@@ -756,17 +770,32 @@ def update_source(item_id: int, body: PickListIn, request: Request, db: Session 
 async def import_reference(
     request: Request,
     file: UploadFile = File(...),
-    region: str | None = Query(default=None, description="Region name to use when the file has no region column"),
+    region: str | None = None,
+    dry_run: bool = Query(default=False, description="Preview: report what the file would change without saving anything"),
     db: Session = Depends(get_db),
     admin: User = Depends(manage_reference),
 ):
     content = await file.read()
-    if len(content) > 250 * 1024 * 1024:
-        raise HTTPException(413, "File larger than 250 MB")
-    result = import_service.import_reference(db, file.filename or "import.csv", content, region)
-    audit(db, admin, "reference.import", "file", file.filename, f"rows={result.rows} teams={result.teams} eas={result.eas}", request)
+    result = import_service.import_reference(db, file.filename or "import.csv", content, region, dry_run=dry_run)
+    if dry_run:
+        return result
+    import json as _json
+    db.add(MefmFrameVersion(
+        filename=file.filename or "import.csv", applied_by=admin.id, rows=result.rows,
+        counts=_json.dumps({"regions": result.regions, "districts": result.districts, "chiefdoms": result.chiefdoms, "sections": result.sections, "teams": result.teams, "supervisors": result.supervisors, "enumerators": result.enumerators, "eas": result.eas, "assigned": result.assigned}),
+        changes=_json.dumps({"updated": result.updated, "removed": result.removed, "warnings": len(result.warnings)}),
+    ))
+    audit(db, admin, "reference.import", "file", file.filename, f"rows={result.rows} teams={result.teams} eas={result.eas} chiefdoms={result.chiefdoms} sections={result.sections}", request)
     db.commit()
     return result
+
+
+@router.get("/reference/frame-versions", response_model=list[FrameVersionOut])
+def frame_versions(db: Session = Depends(get_db), _: User = Depends(require_web)):
+    import json as _json
+    rows = db.execute(select(MefmFrameVersion).order_by(MefmFrameVersion.id.desc()).limit(50)).scalars().all()
+    names = {u.id: u.full_name for u in db.execute(select(User).where(User.id.in_([r.applied_by for r in rows if r.applied_by]))).scalars()} if rows else {}
+    return [FrameVersionOut(id=r.id, filename=r.filename, applied_by=names.get(r.applied_by), applied_at=r.created_at, rows=r.rows, counts=_json.loads(r.counts), changes=_json.loads(r.changes)) for r in rows]
 
 
 # ---- Settings and audit ----------------------------------------------------

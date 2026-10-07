@@ -1,7 +1,7 @@
 import enum
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -14,12 +14,14 @@ class Role(str, enum.Enum):
     REGIONAL = "REGIONAL"
     NATIONAL_DQM = "NATIONAL_DQM"
     ADMIN = "ADMIN"
-    ME = "ME"  # Monitoring & Evaluation: training evaluations only
+    ME = "ME"  # Monitoring & Evaluation, national: training evaluations and field monitoring
+    ME_DISTRICT = "ME_DISTRICT"  # District M&E Officer: fills field monitoring forms for one district
+    ME_REGIONAL = "ME_REGIONAL"  # Regional M&E Officer: reviews the districts of one region
 
 
 # Roles that see every district; a scope row never narrows them.
 UNSCOPED_ROLES = {Role.NATIONAL_DQM, Role.ADMIN, Role.ME}
-WEB_ROLES = {Role.DISTRICT_DQM, Role.REGIONAL, Role.NATIONAL_DQM, Role.ADMIN, Role.ME}
+WEB_ROLES = {Role.DISTRICT_DQM, Role.REGIONAL, Role.NATIONAL_DQM, Role.ADMIN, Role.ME, Role.ME_DISTRICT, Role.ME_REGIONAL}
 
 
 class User(TimestampMixin, Base):
@@ -40,6 +42,11 @@ class User(TimestampMixin, Base):
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Set by an administrator; the tablet wipes its PIN at the next sync and the flag clears at the next sign-in
     pin_reset_requested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Active dates: sign-in is refused before active_from and after active_until (both optional)
+    active_from: Mapped[date | None] = mapped_column(Date)
+    active_until: Mapped[date | None] = mapped_column(Date)
+    # Set when an administrator creates the account or resets the password; cleared when the user changes it
+    must_change_password: Mapped[bool | None] = mapped_column(Boolean)
 
     scopes: Mapped[list["UserScope"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 

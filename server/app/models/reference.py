@@ -84,6 +84,12 @@ class EnumerationArea(TimestampMixin, Base):
     name: Mapped[str | None] = mapped_column(String(160))
     locality: Mapped[str | None] = mapped_column(String(160))
     households: Mapped[int | None] = mapped_column(Integer)
+    # From the national frame, for M&E field monitoring
+    pop_ea_code: Mapped[str | None] = mapped_column(String(16), index=True)  # the 10-digit code officers type (A8)
+    chiefdom_code: Mapped[str | None] = mapped_column(String(16), index=True)
+    section_code: Mapped[str | None] = mapped_column(String(16), index=True)
+    loc_status: Mapped[str | None] = mapped_column(String(8))  # 1 rural, 2 urban
+    expected_households: Mapped[int | None] = mapped_column(Integer)
     lat: Mapped[float | None] = mapped_column(Float)
     lng: Mapped[float | None] = mapped_column(Float)
     active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

@@ -16,12 +16,14 @@ export const ROLES: { value: Role; label: string; scope: "district" | "region" |
   { value: "REGIONAL", label: "Regional staff", scope: "region", level: "Region" },
   { value: "NATIONAL_DQM", label: "National DQM", scope: "none", level: "National" },
   { value: "ADMIN", label: "Administrator", scope: "none", level: "National" },
-  { value: "ME", label: "Monitoring & Evaluation", scope: "none", level: "National" },
+  { value: "ME", label: "Monitoring & Evaluation (national)", scope: "none", level: "National" },
+  { value: "ME_REGIONAL", label: "Regional M&E Officer", scope: "region", level: "Region" },
+  { value: "ME_DISTRICT", label: "District M&E Officer", scope: "district", level: "District" },
 ];
 const roleLabel = (r: Role) => ROLES.find((x) => x.value === r)?.label ?? r;
 
-interface Form { id?: number; username: string; password: string; full_name: string; phone: string; role: Role; staff_code: string; district_ids: number[]; region_ids: number[]; active: boolean }
-const empty: Form = { username: "", password: "", full_name: "", phone: "", role: "DISTRICT_DQM", staff_code: "", district_ids: [], region_ids: [], active: true };
+interface Form { id?: number; username: string; password: string; full_name: string; phone: string; role: Role; staff_code: string; district_ids: number[]; region_ids: number[]; active: boolean; active_from: string; active_until: string }
+const empty: Form = { username: "", password: "", full_name: "", phone: "", role: "DISTRICT_DQM", staff_code: "", district_ids: [], region_ids: [], active: true, active_from: "", active_until: "" };
 
 function Modal({ title, onClose, children, wide }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
   return (
@@ -61,7 +63,7 @@ export default function UsersPage() {
 
   const save = useMutation({
     mutationFn: async (f: Form) => {
-      const body: Record<string, unknown> = { full_name: f.full_name, phone: f.phone || null, role: f.role, staff_code: f.staff_code.trim(), district_ids: f.district_ids, region_ids: f.region_ids };
+      const body: Record<string, unknown> = { full_name: f.full_name, phone: f.phone || null, role: f.role, staff_code: f.staff_code.trim(), district_ids: f.district_ids, region_ids: f.region_ids, active_from: f.active_from || null, active_until: f.active_until || null };
       if (f.id) { body.active = f.active; if (f.password) body.password = f.password; return api.patch(`/admin/users/${f.id}`, body); }
       return api.post("/admin/users", { ...body, username: f.username, password: f.password });
     },
@@ -167,9 +169,11 @@ export default function UsersPage() {
                     <td>
                       {u.active ? <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800">Active</span> : <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">Deactivated</span>}
                       {u.pin_reset_requested_at && <div className="mt-1 text-xs text-amber-800" title={`Requested ${fmt(u.pin_reset_requested_at)}; clears when the monitor signs in again`}>PIN reset pending</div>}
+                      {u.must_change_password && <div className="mt-1 text-xs text-amber-800">Must change password</div>}
+                      {(u.active_from || u.active_until) && <div className="mt-1 text-xs text-slate-500">{u.active_from ? `from ${u.active_from}` : ""}{u.active_until ? ` until ${u.active_until}` : ""}</div>}
                     </td>
                     <td className="whitespace-nowrap text-sm">
-                      <button className="text-navy" onClick={() => setForm({ id: u.id, username: u.username, password: "", full_name: u.full_name, phone: u.phone ?? "", role: u.role, staff_code: u.staff_code ?? "", district_ids: u.scopes.map((s) => s.district_id).filter((x): x is number => !!x), region_ids: u.scopes.map((s) => s.region_id).filter((x): x is number => !!x), active: u.active })}>Edit</button>
+                      <button className="text-navy" onClick={() => setForm({ id: u.id, username: u.username, password: "", full_name: u.full_name, phone: u.phone ?? "", role: u.role, staff_code: u.staff_code ?? "", active_from: u.active_from ?? "", active_until: u.active_until ?? "", district_ids: u.scopes.map((s) => s.district_id).filter((x): x is number => !!x), region_ids: u.scopes.map((s) => s.region_id).filter((x): x is number => !!x), active: u.active, active_from: u.active_from ?? "", active_until: u.active_until ?? "" })}>Edit</button>
                       {can("roles.manage") && <button className="ml-3 text-navy" onClick={() => setRightsFor(u)}>Rights</button>}
                       <button className="ml-3 text-navy" onClick={() => { setResetFor(u); setResetResult(null); setResetPassword(""); }}>Reset password</button>
                       {u.role === "FIELD_MONITOR" && (
@@ -193,6 +197,8 @@ export default function UsersPage() {
             <Field label={form.id ? "New password (leave blank to keep)" : "Password (min 8)"}><input className="input" type="password" required={!form.id} minLength={8} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></Field>
             <Field label="Full name"><input className="input" required value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></Field>
             <Field label="Phone"><input className="input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></Field>
+            <Field label="Active from (optional)"><input className="input" type="date" value={form.active_from} onChange={(e) => setForm({ ...form, active_from: e.target.value })} /></Field>
+            <Field label="Active until (optional)"><input className="input" type="date" value={form.active_until} onChange={(e) => setForm({ ...form, active_until: e.target.value })} /></Field>
             {(form.role === "FIELD_MONITOR" || form.role === "DISTRICT_DQM") && (
               <Field label="Staff code (links the account to its SAs)"><input className="input" placeholder={form.role === "FIELD_MONITOR" ? "FM-Bo-001" : "DQM-Bo-001"} value={form.staff_code} onChange={(e) => setForm({ ...form, staff_code: e.target.value })} /></Field>
             )}
@@ -271,7 +277,7 @@ export default function UsersPage() {
 
       {showImport && (
         <Modal title="Import users from CSV" onClose={() => setShowImport(false)}>
-          <p className="mb-2 text-sm text-slate-600">Columns: username, password (blank = generated, shown nowhere: reset it afterwards), full_name, phone, role (FIELD_MONITOR, DISTRICT_DQM, REGIONAL, NATIONAL_DQM, ADMIN), districts (names or codes separated by ;), region (scope for regional staff; informational for Field Monitors and District DQM, who are scoped by their district), staff_code (FM-Bo-001 or DQM-Bo-001; the frame's FM-41-001 is accepted too). Existing usernames are skipped.</p>
+          <p className="mb-2 text-sm text-slate-600">Columns: username, password (blank = generated, shown nowhere: reset it afterwards), full_name, phone, role (FIELD_MONITOR, DISTRICT_DQM, REGIONAL, NATIONAL_DQM, ADMIN), districts (names or codes separated by ;), region (scope for regional staff; informational for Field Monitors and District DQM, who are scoped by their district), staff_code (FM-Bo-001 or DQM-Bo-001; the frame's FM-41-001 is accepted too), active_from and active_until (YYYY-MM-DD, optional). Every imported user must change their password at first sign-in. Existing usernames are skipped.</p>
           <button className="mb-3 text-sm text-navy" onClick={downloadTemplate}>Download template</button>
           <div className="flex flex-wrap items-center gap-3">
             <input type="file" accept=".csv" onChange={(e) => setImportFile(e.target.files?.[0] ?? null)} />

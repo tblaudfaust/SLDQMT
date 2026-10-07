@@ -35,7 +35,7 @@ def trainer_answers(**over):
 
 def test_me_user_sees_only_me_and_runs_an_evaluation(client, admin):
     me, profile = me_user(client, admin)
-    assert set(profile["permissions"]) == {"me.view", "me.manage"}
+    assert {"me.view", "me.manage"} <= set(profile["permissions"]) and "dashboard.view" not in profile["permissions"]
     assert client.get("/api/v1/dashboard/summary", headers=me).status_code == 403
     assert client.get("/api/v1/admin/users", headers=me).status_code == 403
 

@@ -29,6 +29,7 @@ def user_out(db: Session, user: User) -> UserOut:
     out = UserOut.model_validate(user)
     out.district_ids = district_ids_for(db, user)
     out.assigned_sas = len(assigned_team_ids_for(db, user) or [])
+    out.must_change_password = bool(user.must_change_password)
     out.assigned_sas = len(assigned_team_ids_for(db, user) or [])
     out.scopes = [ScopeOut(region_id=s.region_id, district_id=s.district_id) for s in user.scopes]
     out.permissions = sorted(effective_permissions(db, user))
@@ -57,6 +58,11 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid username or password")
     if user.locked_until and user.locked_until.replace(tzinfo=user.locked_until.tzinfo or timezone.utc) > now:
         raise HTTPException(status.HTTP_423_LOCKED, "Account temporarily locked after failed logins")
+    today = now.date()
+    if user.active_from and today < user.active_from:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, f"This account is active from {user.active_from:%d %b %Y}")
+    if user.active_until and today > user.active_until:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, f"This account expired on {user.active_until:%d %b %Y}")
     if not verify_password(body.password, user.password_hash):
         user.failed_logins += 1
         if user.failed_logins >= settings.MAX_FAILED_LOGIN_ATTEMPTS:
@@ -109,5 +115,6 @@ def change_password(body: ChangePasswordIn, request: Request, db: Session = Depe
     if body.current_password == body.new_password:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Choose a different password")
     user.password_hash = hash_password(body.new_password)
+    user.must_change_password = False
     audit(db, user, "auth.change_password", "user", user.id, None, request)
     db.commit()
