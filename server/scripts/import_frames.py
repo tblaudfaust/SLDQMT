@@ -12,8 +12,11 @@ import sys
 import time
 from pathlib import Path
 
+import json
+
 from app.db.init_db import init_db
 from app.db.session import SessionLocal
+from app.models import MefmFrameVersion
 from app.services.import_service import import_reference
 
 
@@ -34,9 +37,16 @@ def main(folder: str) -> None:
         result = import_reference(db, path.name, path)
         for k in totals:
             totals[k] += getattr(result, k)
-        print(f"{result.rows} rows, +{result.teams} teams, +{result.supervisors} supervisors, +{result.enumerators} enumerators, +{result.eas} EAs, {result.assigned} SAs assigned, {len(result.warnings)} warnings, {time.time() - started:.0f}s")
+        print(f"{result.rows} rows, +{result.teams} teams, +{result.chiefdoms} chiefdoms, +{result.sections} sections, +{result.supervisors} supervisors, +{result.enumerators} enumerators, +{result.eas} EAs, {result.assigned} SAs assigned, {result.updated} updated, {len(result.warnings)} warnings, {time.time() - started:.0f}s")
         for w in result.warnings[:5]:
             print("   ", w)
+        # the same record a dashboard upload leaves, so the Frame versions table shows command-line imports too
+        db.add(MefmFrameVersion(
+            filename=path.name, applied_by=None, rows=result.rows,
+            counts=json.dumps({"regions": result.regions, "districts": result.districts, "chiefdoms": result.chiefdoms, "sections": result.sections, "teams": result.teams, "supervisors": result.supervisors, "enumerators": result.enumerators, "eas": result.eas, "assigned": result.assigned}),
+            changes=json.dumps({"updated": result.updated, "removed": result.removed, "warnings": len(result.warnings)}), note="command line (scripts.import_frames)",
+        ))
+        db.commit()
     print("Done:", totals)
 
 
