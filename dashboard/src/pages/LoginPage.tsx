@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { isMeSite, siteSubtitle, siteTitle } from "../brand";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { ErrorBox } from "../components/ui";
@@ -32,14 +33,14 @@ export default function LoginPage() {
           <img src="/statsl-logo.png" alt="Statistics Sierra Leone" className="mb-3 h-28 w-28" />
           <div className="text-sm font-semibold text-navy">Statistics Sierra Leone</div>
           <div className="mt-2 text-xs uppercase tracking-wider text-slate-500">SLPHC 2026</div>
-          <h1 className="text-xl font-bold">Field Monitor Error Follow-up</h1>
-          <p className="text-sm text-slate-500">Dashboard and reports</p>
+          <h1 className="text-xl font-bold">{siteTitle}</h1>
+          <p className="text-sm text-slate-500">{siteSubtitle}</p>
         </div>
         <input className="input" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} autoFocus />
         <input className="input" type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
         <ErrorBox error={error} />
         <button className="btn-primary w-full justify-center" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
-        <p className="pt-2 text-center text-xs text-slate-500">The user manual and the tablet app are available after signing in.</p>
+        {!isMeSite && <p className="pt-2 text-center text-xs text-slate-500">The user manual and the tablet app are available after signing in.</p>}
       </form>
     </div>
   );

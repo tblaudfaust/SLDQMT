@@ -3,6 +3,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import { BarChart3, ClipboardCheck, ClipboardList, FileText, FolderDown, KeyRound, Lock, LogOut, Settings, Smartphone, Tablet, Users, UsersRound, ScrollText, Database, Map, GraduationCap } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "../auth/AuthContext";
+import { isMeSite } from "../brand";
 import AnalyticsMenu from "./AnalyticsMenu";
 import ChangePasswordDialog from "./ChangePasswordDialog";
 
@@ -33,7 +34,7 @@ export default function Layout() {
             <div className="text-sm font-semibold leading-tight">Statistics Sierra Leone</div>
           </div>
           <div className="mt-3 text-xs uppercase tracking-wider text-slate-300">SLPHC 2026</div>
-          <div className="text-xl font-bold leading-tight">Field Monitor Errors</div>
+          <div className="text-xl font-bold leading-tight">{isMeSite || user?.role === "ME" ? "Monitoring & Evaluation" : "Field Monitor Errors"}</div>
         </div>
         <nav className="flex-1 space-y-1 px-2">
           {can("dashboard.view") && (
