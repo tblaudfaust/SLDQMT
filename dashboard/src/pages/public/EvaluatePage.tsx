@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import clsx from "clsx";
-import { ArrowLeft, ArrowRight, Building2, CheckCircle2, ClipboardCheck, ClipboardList, Laptop, Mail, MapPin, Phone, School, ShieldCheck, Timer, UserRound, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, Building2, CheckCircle2, ClipboardCheck, ClipboardList, Laptop, Mail, MapPin, School, ShieldCheck, Timer, Users } from "lucide-react";
 import { ApiError, api } from "../../api/client";
 
 /* ------------------------------------------------------------------------------------------------
  * The public training evaluation page: /evaluate/<token>. No sign-in. Trainees and trainers
- * register with name, email and phone, then answer the questionnaire step by step. The question
+ * register anonymously (district and attendance; email optional), then answer the questionnaire step by step. The question
  * set, options and routing come from the server (app/core/me_form.py) so the two cannot drift.
  * ---------------------------------------------------------------------------------------------- */
 
@@ -16,7 +16,7 @@ type Section = { code: string; title: string; audience: string; intro?: string; 
 type Form = { scales: { agree: Option[]; confidence: Option[] }; sections: Section[]; rules: { role_item: string; in_person_hidden: string[] } };
 type Evaluation = { title: string; training_mode: "ONLINE" | "IN_PERSON"; period_start: string | null; period_end: string | null; description: string | null; status: string; form: Form };
 type Answers = Record<string, string | string[] | number | undefined>;
-type Saved = { respondent_id: number; resume_token: string; full_name: string; answers: Answers; step: number; done?: boolean; mode?: "ONLINE" | "IN_PERSON"; district?: string };
+type Saved = { respondent_id: number; resume_token: string; email?: string | null; answers: Answers; step: number; done?: boolean; mode?: "ONLINE" | "IN_PERSON"; district?: string };
 
 const roleOf = (a: Answers) => ({ "1": "TRAINER", "2": "TRAINEE", "3": "NEITHER" } as Record<string, string>)[String(a.A00 ?? "")];
 const sectionOf = (code: string) => code[0];
@@ -73,7 +73,7 @@ export default function EvaluatePage() {
         ) : ev.status !== "OPEN" && !saved?.done ? (
           <Card><h1 className="text-xl font-bold">{ev.title}</h1><p className="mt-2 text-slate-600">This evaluation is closed. Thank you for your interest.</p></Card>
         ) : saved?.done ? (
-          <ThankYou ev={ev} name={saved.full_name} />
+          <ThankYou ev={ev} />
         ) : !saved ? (
           <Register ev={ev} token={token} onDone={(s) => setSaved(s)} />
         ) : (
@@ -102,19 +102,18 @@ function ModeBadge({ mode }: { mode: string }) {
 
 function Register({ ev, token, onDone }: { ev: Evaluation; token: string; onDone: (s: Saved) => void }) {
   const districts = ev.form.sections[0].items.find((it) => it.code === "A04")?.options ?? [];
-  const [form, setForm] = useState({ full_name: "", email: "", phone: "", district: "", attendance_mode: ev.training_mode as "ONLINE" | "IN_PERSON", hall: "" });
+  const [form, setForm] = useState({ email: "", district: "", attendance_mode: ev.training_mode as "ONLINE" | "IN_PERSON", hall: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const phoneOk = /^\+?\d{8,15}$/.test(form.phone.replace(/[\s\-()]/g, ""));
-  const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(form.email.trim());
+  const emailOk = form.email.trim() === "" || /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(form.email.trim());
   const hallOk = form.attendance_mode === "ONLINE" || form.hall.trim().length > 0;
-  const ready = form.full_name.trim().length >= 2 && emailOk && phoneOk && !!form.district && hallOk;
+  const ready = emailOk && !!form.district && hallOk;
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true); setError(null);
     try {
-      const r = await api.post<{ respondent_id: number; resume_token: string; full_name: string; already_submitted: boolean; district: string | null; attendance_mode: "ONLINE" | "IN_PERSON" | null }>(`/public/evaluations/${token}/register`, { ...form, hall: form.attendance_mode === "IN_PERSON" ? form.hall : null });
-      onDone({ respondent_id: r.respondent_id, resume_token: r.resume_token, full_name: r.full_name, answers: r.district ? { A04: r.district } : {}, step: 0, done: r.already_submitted, mode: r.attendance_mode ?? form.attendance_mode, district: r.district ?? form.district });
+      const r = await api.post<{ respondent_id: number; resume_token: string; email: string | null; already_submitted: boolean; district: string | null; attendance_mode: "ONLINE" | "IN_PERSON" | null }>(`/public/evaluations/${token}/register`, { ...form, email: form.email.trim() || null, hall: form.attendance_mode === "IN_PERSON" ? form.hall : null });
+      onDone({ respondent_id: r.respondent_id, resume_token: r.resume_token, email: r.email, answers: r.district ? { A04: r.district } : {}, step: 0, done: r.already_submitted, mode: r.attendance_mode ?? form.attendance_mode, district: r.district ?? form.district });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not register. Please try again.");
     } finally { setBusy(false); }
@@ -137,7 +136,7 @@ function Register({ ev, token, onDone }: { ev: Evaluation; token: string; onDone
             {[
               { icon: <Users size={18} />, title: "Who answers", text: "Trainees rate the training; trainers rate the group they facilitated." },
               { icon: <Timer size={18} />, title: "About 10 minutes", text: "One section at a time. Your answers are saved on this device as you go." },
-              { icon: <ShieldCheck size={18} />, title: "Reported in aggregate", text: "Individual answers are never published. One submission per person." },
+              { icon: <ShieldCheck size={18} />, title: "Anonymous", text: "No name or phone is asked. Answers are reported in aggregate only." },
             ].map((b) => (
               <div key={b.title} className="rounded-xl bg-white/10 p-3 backdrop-blur-sm">
                 <div className="flex items-center gap-2 text-sm font-semibold">{b.icon} {b.title}</div>
@@ -149,18 +148,16 @@ function Register({ ev, token, onDone }: { ev: Evaluation; token: string; onDone
         <form onSubmit={submit} className="space-y-5 px-5 py-6 sm:px-8 sm:py-7">
           <div>
             <h2 className="flex items-center gap-2 text-lg font-bold text-navy"><ClipboardList size={20} /> Register to start</h2>
-            <p className="text-sm text-slate-500">All fields are required. Your email lets you continue later on the same link and prevents duplicate submissions.</p>
+            <p className="text-sm text-slate-500">The evaluation is anonymous. Choose your district and how you attended. An email is optional: it only lets you continue later on another device and prevents a second submission.</p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field icon={<UserRound size={18} />} label="Full name"><input className="pub-input" required value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} placeholder="Your full name" autoComplete="name" /></Field>
             <Field icon={<MapPin size={18} />} label="District">
               <select className="pub-input" required value={form.district} onChange={(e) => setForm({ ...form, district: e.target.value })}>
                 <option value="">Choose your district…</option>
                 {districts.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
               </select>
             </Field>
-            <Field icon={<Mail size={18} />} label="Email address"><input className="pub-input" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="name@example.com" autoComplete="email" /></Field>
-            <Field icon={<Phone size={18} />} label="Phone number" hint={form.phone && !phoneOk ? "Enter 8 to 15 digits, for example 076 123 456" : undefined}><input className="pub-input" type="tel" required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="076 123 456" autoComplete="tel" /></Field>
+            <Field icon={<Mail size={18} />} label="Email (optional)" hint={form.email && !emailOk ? "Enter a valid email address or leave it blank" : undefined}><input className="pub-input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="name@example.com (optional)" autoComplete="email" /></Field>
           </div>
           <div>
             <span className="mb-2 block text-sm font-medium text-slate-700">How did you take this training?</span>
@@ -183,7 +180,7 @@ function Register({ ev, token, onDone }: { ev: Evaluation; token: string; onDone
         </form>
       </Card>
       <div className="grid gap-3 sm:grid-cols-3">
-        {[["1", "Register", "Name, district, email, phone and how you attended."], ["2", "Answer", "Short sections with 1 to 5 ratings; skip what does not apply."], ["3", "Submit", "Review and send. You will see a confirmation."]].map(([n, t, d]) => (
+        {[["1", "Register", "Your district and how you attended; no name or phone."], ["2", "Answer", "Short sections with 1 to 5 ratings; skip what does not apply."], ["3", "Submit", "Review and send. You will see a confirmation."]].map(([n, t, d]) => (
           <div key={n} className="flex items-start gap-3 rounded-xl bg-white/10 p-3 text-white">
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-400 text-sm font-bold text-navy">{n}</span>
             <div><div className="text-sm font-semibold">{t}</div><div className="text-xs text-sky-100/80">{d}</div></div>
@@ -275,7 +272,7 @@ function Wizard({ ev, token, saved, setSaved }: { ev: Evaluation; token: string;
     <Card className="p-0 sm:p-0">
       <div className="rounded-t-2xl bg-gradient-to-r from-navy to-[#2a6aa6] px-5 py-4 text-white sm:px-8">
         <div className="flex items-center justify-between gap-3 text-xs text-sky-100">
-          <span>{saved.full_name}</span>
+          <span>{saved.email || "Anonymous respondent"}</span>
           <ModeBadge mode={mode} />
         </div>
         <div className="mt-2 flex items-end justify-between gap-3">
@@ -395,13 +392,13 @@ function Question({ index, item, mode, value, other, error, scale, onChange, onO
   );
 }
 
-function ThankYou({ ev, name }: { ev: Evaluation; name: string }) {
+function ThankYou({ ev }: { ev: Evaluation }) {
   return (
     <Card className="text-center">
       <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"><ClipboardCheck size={34} /></div>
-      <h1 className="text-2xl font-bold text-navy">Thank you, {name.split(" ")[0]}!</h1>
+      <h1 className="text-2xl font-bold text-navy">Thank you!</h1>
       <p className="mt-2 text-slate-600">Your evaluation of <b>{ev.title}</b> has been received. Your feedback helps Statistics Sierra Leone improve the 2026 census training.</p>
-      <p className="mt-4 text-xs text-slate-400">You can close this page. Each person can submit once per evaluation.</p>
+      <p className="mt-4 text-xs text-slate-400">You can close this page. Your answers were recorded anonymously.</p>
     </Card>
   );
 }

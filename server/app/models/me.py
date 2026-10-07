@@ -29,16 +29,16 @@ class MeEvaluation(TimestampMixin, Base):
 
 
 class MeRespondent(TimestampMixin, Base):
-    """A trainee or trainer who registered on the evaluation page with their email and phone."""
+    """A trainee or trainer who registered on the evaluation page. Registration is anonymous: no name or
+    phone is asked; an email is optional and, when given, lets the same person continue on another device
+    and stops a second submission."""
 
     __tablename__ = "me_respondent"
     __table_args__ = (UniqueConstraint("evaluation_id", "email", name="uq_me_respondent_email"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     evaluation_id: Mapped[int] = mapped_column(ForeignKey("me_evaluation.id", ondelete="CASCADE"), nullable=False, index=True)
-    full_name: Mapped[str] = mapped_column(String(160), nullable=False)
-    email: Mapped[str] = mapped_column(String(200), nullable=False)
-    phone: Mapped[str] = mapped_column(String(32), nullable=False)
+    email: Mapped[str | None] = mapped_column(String(200))  # optional; NULL for anonymous respondents
     resume_token_hash: Mapped[str] = mapped_column(String(64), nullable=False)  # proves the browser that registered is the one submitting
     district: Mapped[str | None] = mapped_column(String(60))  # chosen at registration; pre-fills A04 and drives the district reports
     attendance_mode: Mapped[str | None] = mapped_column(String(16))  # ONLINE | IN_PERSON, how this person took the training

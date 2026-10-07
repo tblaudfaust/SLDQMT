@@ -112,7 +112,7 @@ def respondents(db: Session, evaluation_id: int) -> list[RespondentOut]:
         resp = r.response if r.response and not r.response.deleted else None
         answers = json.loads(resp.answers) if resp else {}
         out.append(RespondentOut(
-            id=r.id, full_name=r.full_name, email=r.email, phone=r.phone, registered_at=r.created_at,
+            id=r.id, email=r.email, registered_at=r.created_at,
             role=resp.role if resp else None, submitted_at=resp.submitted_at if resp else None, response_id=resp.id if resp else None,
             district=answers.get("A04") or r.district, attendance_mode=r.attendance_mode, hall=r.hall,
         ))
@@ -139,14 +139,14 @@ def by_token(db: Session, token: str) -> MeEvaluation:
 
 
 def register(db: Session, e: MeEvaluation, body: RegisterIn) -> RegisterOut:
+    """Anonymous by design: no name or phone. With an email the same person can come back (new device,
+    interrupted session) and cannot submit twice; without one a new anonymous respondent is created and the
+    browser's resume token is the only key."""
     if e.status != "OPEN":
         raise HTTPException(409, "This evaluation is closed")
-    email = body.email.strip().lower()
-    if not me_form.valid_email(email):
-        raise HTTPException(400, "Enter a valid email address")
-    phone = body.phone.strip()
-    if not me_form.valid_phone(phone):
-        raise HTTPException(400, "Enter a valid phone number (8 to 15 digits)")
+    email = (body.email or "").strip().lower() or None
+    if email is not None and not me_form.valid_email(email):
+        raise HTTPException(400, "Enter a valid email address, or leave it blank")
     district = body.district.strip()
     if district not in me_form.DISTRICTS:
         raise HTTPException(400, "Choose your district from the list")
@@ -156,20 +156,17 @@ def register(db: Session, e: MeEvaluation, body: RegisterIn) -> RegisterOut:
     if body.attendance_mode == "ONLINE":
         hall = None
     token = secrets.token_urlsafe(24)
-    r = db.execute(select(MeRespondent).where(MeRespondent.evaluation_id == e.id, MeRespondent.email == email)).scalars().first()
+    r = db.execute(select(MeRespondent).where(MeRespondent.evaluation_id == e.id, MeRespondent.email == email)).scalars().first() if email else None
     if r is None:
-        r = MeRespondent(evaluation_id=e.id, full_name=body.full_name.strip(), email=email, phone=phone, resume_token_hash=_hash(token), district=district, attendance_mode=body.attendance_mode, hall=hall)
+        r = MeRespondent(evaluation_id=e.id, email=email, resume_token_hash=_hash(token), district=district, attendance_mode=body.attendance_mode, hall=hall)
         db.add(r)
     else:
-        # the same person coming back (new device, interrupted session): refresh their details and key
-        r.full_name = body.full_name.strip()
-        r.phone = phone
         r.resume_token_hash = _hash(token)
         if r.response is None or r.response.deleted:
             r.district, r.attendance_mode, r.hall = district, body.attendance_mode, hall
     db.flush()
     already = r.response is not None and not r.response.deleted
-    return RegisterOut(respondent_id=r.id, resume_token=token, full_name=r.full_name, already_submitted=already, district=r.district, attendance_mode=r.attendance_mode, hall=r.hall)
+    return RegisterOut(respondent_id=r.id, resume_token=token, email=r.email, already_submitted=already, district=r.district, attendance_mode=r.attendance_mode, hall=r.hall)
 
 
 def submit(db: Session, e: MeEvaluation, body: SubmitIn, user_agent: str | None) -> SubmitOut:
@@ -360,11 +357,11 @@ def export(db: Session, e: MeEvaluation) -> report_service.Report:
     rows = db.execute(select(MeResponse).where(MeResponse.evaluation_id == e.id, MeResponse.deleted.is_(False)).order_by(MeResponse.submitted_at)).scalars().all()
     codes = list(me_form.ITEMS)
     extra = [f"{c}_other" for c in codes if me_form.ITEMS[c].get("other")]
-    headers = ["Response", "Submitted", "Role", "Name", "Email", "Phone", "District (registration)", "Attendance", "Hall"] + codes + extra
+    headers = ["Response", "Submitted", "Role", "Email (if given)", "District (registration)", "Attendance", "Hall"] + codes + extra
     data = []
     for r in rows:
         a = json.loads(r.answers)
-        data.append([r.id, r.submitted_at, r.role, r.respondent.full_name, r.respondent.email, r.respondent.phone, r.respondent.district or "", r.respondent.attendance_mode or "", r.respondent.hall or ""]
+        data.append([r.id, r.submitted_at, r.role, r.respondent.email or "", r.respondent.district or "", r.respondent.attendance_mode or "", r.respondent.hall or ""]
                     + [", ".join(a[c]) if isinstance(a.get(c), list) else a.get(c, "") for c in codes] + [a.get(c, "") for c in extra])
     items_rows = [[d.label, it.code, it.text, it.n, it.na, it.mean if it.mean is not None else "", it.pct_favourable if it.pct_favourable is not None else "", "FLAG" if it.flag else ""] for d in res.domains for it in d.items]
     def cell(v):

@@ -51,10 +51,14 @@ def test_me_user_sees_only_me_and_runs_an_evaluation(client, admin):
     assert [s["code"] for s in pub.json()["form"]["sections"]] == list("ABCDEFGHIJ")
     assert client.get("/api/v1/public/evaluations/not-a-token").status_code == 404
 
-    # register: phone is mandatory and validated, email too
-    r = client.post(f"/api/v1/public/evaluations/{token}/register", json={"full_name": "Aminata Sesay", "email": "aminata@example.com", "phone": "not-a-phone", "district": "Bo", "attendance_mode": "ONLINE"})
+    # register: anonymous; no name or phone is asked, the email is optional but validated when given
+    r = client.post(f"/api/v1/public/evaluations/{token}/register", json={"email": "not-an-email", "district": "Bo", "attendance_mode": "ONLINE"})
     assert r.status_code == 400
-    r = client.post(f"/api/v1/public/evaluations/{token}/register", json={"full_name": "Aminata Sesay", "email": "aminata@example.com", "phone": "+232 77 000 001", "district": "Bo", "attendance_mode": "ONLINE"})
+    anon = client.post(f"/api/v1/public/evaluations/{token}/register", json={"district": "Bo", "attendance_mode": "ONLINE"})
+    assert anon.status_code == 200 and anon.json()["email"] is None, anon.text
+    anon2 = client.post(f"/api/v1/public/evaluations/{token}/register", json={"district": "Bo", "attendance_mode": "ONLINE"}).json()
+    assert anon2["respondent_id"] != anon.json()["respondent_id"]  # two anonymous registrations are two people
+    r = client.post(f"/api/v1/public/evaluations/{token}/register", json={"email": "aminata@example.com", "district": "Bo", "attendance_mode": "ONLINE"})
     assert r.status_code == 200, r.text
     reg = r.json()
     assert reg["already_submitted"] is False
@@ -76,20 +80,20 @@ def test_me_user_sees_only_me_and_runs_an_evaluation(client, admin):
     # twice is refused; registering again with the same email says so
     r = client.post(f"/api/v1/public/evaluations/{token}/submit", json={"respondent_id": reg["respondent_id"], "resume_token": reg["resume_token"], "answers": trainee_answers()})
     assert r.status_code == 409
-    again = client.post(f"/api/v1/public/evaluations/{token}/register", json={"full_name": "Aminata Sesay", "email": "AMINATA@example.com", "phone": "+23277000001", "district": "Bo", "attendance_mode": "ONLINE"}).json()
+    again = client.post(f"/api/v1/public/evaluations/{token}/register", json={"email": "AMINATA@example.com", "district": "Bo", "attendance_mode": "ONLINE"}).json()
     assert again["already_submitted"] is True and again["respondent_id"] == reg["respondent_id"]
 
     # a trainer and an observer
-    t = client.post(f"/api/v1/public/evaluations/{token}/register", json={"full_name": "Trainer One", "email": "trainer@example.com", "phone": "076123456", "district": "Bo", "attendance_mode": "ONLINE"}).json()
+    t = client.post(f"/api/v1/public/evaluations/{token}/register", json={"email": "trainer@example.com", "district": "Bo", "attendance_mode": "ONLINE"}).json()
     r = client.post(f"/api/v1/public/evaluations/{token}/submit", json={"respondent_id": t["respondent_id"], "resume_token": t["resume_token"], "answers": trainer_answers()})
     assert r.status_code == 200 and r.json()["role"] == "TRAINER", r.text
-    o = client.post(f"/api/v1/public/evaluations/{token}/register", json={"full_name": "Observer", "email": "obs@example.com", "phone": "076999999", "district": "Bo", "attendance_mode": "ONLINE"}).json()
+    o = client.post(f"/api/v1/public/evaluations/{token}/register", json={"email": "obs@example.com", "district": "Bo", "attendance_mode": "ONLINE"}).json()
     r = client.post(f"/api/v1/public/evaluations/{token}/submit", json={"respondent_id": o["respondent_id"], "resume_token": o["resume_token"], "answers": {"A00": "3"}})
     assert r.status_code == 200 and r.json()["role"] == "NEITHER"
 
     # results
     res = client.get(f"/api/v1/me/evaluations/{ev['id']}/results", headers=me).json()
-    assert res["registered"] == 3 and res["submitted"] == 3 and res["trainees"] == 1 and res["trainers"] == 1 and res["neither"] == 1
+    assert res["registered"] == 5 and res["submitted"] == 3 and res["trainees"] == 1 and res["trainers"] == 1 and res["neither"] == 1
     assert res["knowledge"]["gain"] == 2.0 and res["knowledge"]["pct_positive"] == 100.0
     domains = {d["code"]: d for d in res["domains"]}
     assert domains["E"]["items"][3]["code"] == "E04" and domains["E"]["items"][3]["mean"] == 2.0 and domains["E"]["items"][3]["flag"] is True
@@ -102,21 +106,21 @@ def test_me_user_sees_only_me_and_runs_an_evaluation(client, admin):
 
     # respondents list, export, close, delete a response
     people = client.get(f"/api/v1/me/evaluations/{ev['id']}/respondents", headers=me).json()
-    assert len(people) == 3 and all(p["submitted_at"] for p in people)
+    assert len(people) == 5 and sum(1 for p in people if p["submitted_at"]) == 3 and "full_name" not in people[0] and "phone" not in people[0]
     x = client.get(f"/api/v1/me/evaluations/{ev['id']}/export?format=xlsx", headers=me)
     assert x.status_code == 200 and x.headers["content-type"].startswith("application/vnd.openxmlformats")
     resp_id = next(p["response_id"] for p in people if p["email"] == "obs@example.com")
     assert client.delete(f"/api/v1/me/evaluations/{ev['id']}/responses/{resp_id}", headers=me).status_code == 204
     assert client.get(f"/api/v1/me/evaluations/{ev['id']}/results", headers=me).json()["submitted"] == 2
     assert client.patch(f"/api/v1/me/evaluations/{ev['id']}", json={"status": "CLOSED"}, headers=me).status_code == 200
-    assert client.post(f"/api/v1/public/evaluations/{token}/register", json={"full_name": "Late", "email": "late@example.com", "phone": "076000000", "district": "Bo", "attendance_mode": "ONLINE"}).status_code == 409
+    assert client.post(f"/api/v1/public/evaluations/{token}/register", json={"email": "late@example.com", "district": "Bo", "attendance_mode": "ONLINE"}).status_code == 409
 
 
 def test_in_person_mode_skips_digital_access_and_routing_rules(client, admin):
     me, _ = me_user(client, admin)
     ev = client.post("/api/v1/me/evaluations", json={"title": "In-person training", "training_mode": "IN_PERSON"}, headers=me).json()
     token = ev["token"]
-    reg = client.post(f"/api/v1/public/evaluations/{token}/register", json={"full_name": "Mohamed", "email": "m@example.com", "phone": "076111111", "district": "Bo", "attendance_mode": "IN_PERSON", "hall": "1"}).json()
+    reg = client.post(f"/api/v1/public/evaluations/{token}/register", json={"email": "m@example.com", "district": "Bo", "attendance_mode": "IN_PERSON", "hall": "1"}).json()
     # B01-B07 and A09 are not asked in person; Master Trainer answers G07 not G08; F skipped when no sessions attended
     answers = trainee_answers(A01="1", A07="1")
     for code in [f"B0{i}" for i in range(1, 8)] + ["A09", "G08"] + [f"F0{i}" for i in range(1, 5)]:
@@ -145,7 +149,7 @@ def test_duplicate_titles_refused_and_empty_evaluations_deletable(client, admin)
     assert client.delete(f"/api/v1/me/evaluations/{first.json()['id']}", headers=me).status_code == 204
     assert client.get("/api/v1/me/evaluations", headers=me).json() == []
     ev = client.post("/api/v1/me/evaluations", json={"title": "Testing", "training_mode": "ONLINE"}, headers=me).json()
-    reg = client.post(f"/api/v1/public/evaluations/{ev['token']}/register", json={"full_name": "Observer", "email": "o@example.com", "phone": "076000001", "district": "Bo", "attendance_mode": "ONLINE"}).json()
+    reg = client.post(f"/api/v1/public/evaluations/{ev['token']}/register", json={"email": "o@example.com", "district": "Bo", "attendance_mode": "ONLINE"}).json()
     assert client.post(f"/api/v1/public/evaluations/{ev['token']}/submit", json={"respondent_id": reg["respondent_id"], "resume_token": reg["resume_token"], "answers": {"A00": "3"}}).status_code == 200
     assert client.delete(f"/api/v1/me/evaluations/{ev['id']}", headers=me).status_code == 409
 
@@ -155,10 +159,10 @@ def test_results_by_district_and_district_filter(client, admin):
     ev = client.post("/api/v1/me/evaluations", json={"title": "Districts", "training_mode": "ONLINE"}, headers=me).json()
     token = ev["token"]
     for i, (district, h07) in enumerate((("Bo", "3"), ("Bo", "1"), ("Kenema", "3"))):
-        reg = client.post(f"/api/v1/public/evaluations/{token}/register", json={"full_name": f"Trainee {i}", "email": f"t{i}@example.com", "phone": f"07600000{i}", "district": district, "attendance_mode": "ONLINE"}).json()
+        reg = client.post(f"/api/v1/public/evaluations/{token}/register", json={"email": f"t{i}@example.com", "district": district, "attendance_mode": "ONLINE"}).json()
         r = client.post(f"/api/v1/public/evaluations/{token}/submit", json={"respondent_id": reg["respondent_id"], "resume_token": reg["resume_token"], "answers": trainee_answers(A04=district, H07=h07)})
         assert r.status_code == 200, r.text
-    reg = client.post(f"/api/v1/public/evaluations/{token}/register", json={"full_name": "Trainer Bo", "email": "tb@example.com", "phone": "076100000", "district": "Bo", "attendance_mode": "ONLINE"}).json()
+    reg = client.post(f"/api/v1/public/evaluations/{token}/register", json={"email": "tb@example.com", "district": "Bo", "attendance_mode": "ONLINE"}).json()
     assert client.post(f"/api/v1/public/evaluations/{token}/submit", json={"respondent_id": reg["respondent_id"], "resume_token": reg["resume_token"], "answers": trainer_answers(A04="Bo")}).status_code == 200
     res = client.get(f"/api/v1/me/evaluations/{ev['id']}/results", headers=me).json()
     by = {d["district"]: d for d in res["by_district"]}
@@ -178,11 +182,11 @@ def test_registration_district_mode_and_hall(client, admin):
     me, _ = me_user(client, admin)
     ev = client.post("/api/v1/me/evaluations", json={"title": "Mixed", "training_mode": "ONLINE"}, headers=me).json()
     token = ev["token"]
-    r = client.post(f"/api/v1/public/evaluations/{token}/register", json={"full_name": "Hall Person", "email": "h@example.com", "phone": "076222222", "district": "Kenema", "attendance_mode": "IN_PERSON"})
+    r = client.post(f"/api/v1/public/evaluations/{token}/register", json={"email": "h@example.com", "district": "Kenema", "attendance_mode": "IN_PERSON"})
     assert r.status_code == 400 and "hall" in r.json()["detail"].lower()
-    r = client.post(f"/api/v1/public/evaluations/{token}/register", json={"full_name": "Hall Person", "email": "h@example.com", "phone": "076222222", "district": "Nowhere", "attendance_mode": "IN_PERSON", "hall": "3"})
+    r = client.post(f"/api/v1/public/evaluations/{token}/register", json={"email": "h@example.com", "district": "Nowhere", "attendance_mode": "IN_PERSON", "hall": "3"})
     assert r.status_code == 400
-    reg = client.post(f"/api/v1/public/evaluations/{token}/register", json={"full_name": "Hall Person", "email": "h@example.com", "phone": "076222222", "district": "Kenema", "attendance_mode": "IN_PERSON", "hall": "3"}).json()
+    reg = client.post(f"/api/v1/public/evaluations/{token}/register", json={"email": "h@example.com", "district": "Kenema", "attendance_mode": "IN_PERSON", "hall": "3"}).json()
     assert reg["district"] == "Kenema" and reg["hall"] == "3"
     # in person: section B and A09 are not asked even though the evaluation is online; A04 comes from registration
     answers = trainee_answers()

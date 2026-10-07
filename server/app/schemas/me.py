@@ -45,9 +45,7 @@ class EvaluationOut(ORMModel):
 
 class RespondentOut(BaseModel):
     id: int
-    full_name: str
-    email: str
-    phone: str
+    email: str | None = None  # anonymous when None
     registered_at: datetime
     role: str | None = None  # from the response, once submitted
     submitted_at: datetime | None = None
@@ -140,9 +138,10 @@ class PublicEvaluation(BaseModel):
 
 
 class RegisterIn(BaseModel):
-    full_name: str = Field(min_length=2, max_length=160)
-    email: str = Field(min_length=5, max_length=200)
-    phone: str = Field(min_length=8, max_length=32)
+    """Anonymous registration: only the district and how the training was attended are required.
+    An email is optional; it lets the person continue on another device and prevents a second submission."""
+
+    email: str | None = Field(default=None, max_length=200)
     district: str = Field(min_length=2, max_length=60)
     attendance_mode: str = Field(pattern="^(ONLINE|IN_PERSON)$")
     hall: str | None = Field(default=None, max_length=60)  # required when in person
@@ -151,7 +150,7 @@ class RegisterIn(BaseModel):
 class RegisterOut(BaseModel):
     respondent_id: int
     resume_token: str
-    full_name: str
+    email: str | None = None
     already_submitted: bool
     district: str | None = None
     attendance_mode: str | None = None

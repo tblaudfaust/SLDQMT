@@ -564,9 +564,7 @@ export interface MeEvaluation {
 }
 export interface MeRespondent {
   id: number;
-  full_name: string;
-  email: string;
-  phone: string;
+  email: string | null; // anonymous when null
   registered_at: string;
   role: "TRAINER" | "TRAINEE" | "NEITHER" | null;
   submitted_at: string | null;

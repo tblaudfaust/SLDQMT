@@ -159,15 +159,15 @@ export default function MeResultsPage() {
           {people.isLoading ? <Spinner /> : people.data?.length ? (
             <div className="overflow-x-auto">
               <table className="table">
-                <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>District</th><th>Mode</th><th>Hall</th><th>Registered</th><th>Submitted</th>{can("me.manage") && <th />}</tr></thead>
+                <thead><tr><th>Respondent</th><th>Role</th><th>District</th><th>Mode</th><th>Hall</th><th>Registered</th><th>Submitted</th>{can("me.manage") && <th />}</tr></thead>
                 <tbody>
                   {people.data.map((p) => (
                     <tr key={p.id}>
-                      <td className="font-medium">{p.full_name}</td><td>{p.email}</td><td>{p.phone}</td>
+                      <td className="font-medium">{p.email ?? <span className="text-slate-400">anonymous #{p.id}</span>}</td>
                       <td>{p.role === "TRAINER" ? "Trainer" : p.role === "TRAINEE" ? "Trainee" : p.role === "NEITHER" ? "Neither" : <span className="text-slate-400">not yet</span>}</td>
                       <td>{p.district ?? ""}</td><td>{p.attendance_mode === "IN_PERSON" ? "In-person" : p.attendance_mode === "ONLINE" ? "Online" : ""}</td><td>{p.hall ?? ""}</td><td className="whitespace-nowrap">{fmt(p.registered_at)}</td>
                       <td className="whitespace-nowrap">{p.submitted_at ? fmt(p.submitted_at) : <span className="text-amber-700">pending</span>}</td>
-                      {can("me.manage") && <td>{p.response_id && <button className="text-xs text-red-700" onClick={() => { if (confirm(`Remove the response of ${p.full_name} from the results? They can submit again.`)) remove.mutate(p.response_id!); }}>Remove response</button>}</td>}
+                      {can("me.manage") && <td>{p.response_id && <button className="text-xs text-red-700" onClick={() => { if (confirm(`Remove the response of ${p.email ?? `anonymous respondent #${p.id}`} from the results? They can submit again.`)) remove.mutate(p.response_id!); }}>Remove response</button>}</td>}
                     </tr>
                   ))}
                 </tbody>
