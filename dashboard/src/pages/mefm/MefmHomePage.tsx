@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { api, fmt } from "../../api/client";
+import { api, fmt, fmtDate } from "../../api/client";
 import type { MefmOverview, MefmVisitRow } from "../../api/types";
 import { useAuth } from "../../auth/AuthContext";
 import { Card, Empty, ErrorBox, KpiTile, Spinner } from "../../components/ui";
@@ -58,7 +58,7 @@ export default function MefmHomePage() {
               <tbody>
                 {(visits.data ?? []).map((v) => (
                   <tr key={v.id}>
-                    <td className="whitespace-nowrap">{fmt(v.visit_date)}</td>
+                    <td className="whitespace-nowrap">{fmtDate(v.visit_date)}</td>
                     <td>{v.officer}</td>
                     <td>{v.district}</td>
                     <td>{[v.chiefdom, v.section].filter(Boolean).join(" / ")}</td>
