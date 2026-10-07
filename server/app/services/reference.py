@@ -46,7 +46,6 @@ def reference_version(db: Session, district_ids: list[int] | None, team_ids: lis
         parts.append(f"{model.__tablename__}:{count}:{latest}")
     parts.append("scope:" + ",".join(map(str, district_ids)) if district_ids is not None else "scope:all")
     parts.append("teams:" + ",".join(map(str, team_ids)) if team_ids is not None else "teams:all")
-    parts.append("teams:" + ",".join(map(str, team_ids)) if team_ids is not None else "teams:all")
     return hashlib.sha1("|".join(parts).encode()).hexdigest()[:16]
 
 
@@ -65,11 +64,6 @@ def build_bundle(db: Session, user: User) -> ReferenceBundle:
     teams_q = select(Team).where(Team.active.is_(True))
     if district_ids is not None:
         teams_q = teams_q.where(Team.district_id.in_(district_ids))
-    # A Field Monitor with a workload gets only their own SAs (and those SAs' supervisors,
-    # enumerators and EAs): a small bundle that syncs quickly and works offline.
-    assigned = assigned_team_ids_for(db, user)
-    if assigned is not None:
-        teams_q = teams_q.where(Team.id.in_(assigned))
     # A Field Monitor with a workload gets only their own SAs (and those SAs' supervisors,
     # enumerators and EAs): a small bundle that syncs quickly and works offline.
     assigned = assigned_team_ids_for(db, user)

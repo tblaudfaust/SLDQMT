@@ -48,18 +48,3 @@ def assigned_team_ids_for(db: Session, user: User) -> list[int] | None:
     ids = db.execute(select(Team.id).where(column == user.staff_code, Team.active.is_(True))).scalars().all()
     return sorted(ids) or None
 
-
-def assigned_team_ids_for(db: Session, user: User) -> list[int] | None:
-    """The SAs this officer is responsible for: teams whose monitor_code (Field Monitor) or
-    dqm_code (District DQM) equals the account's staff code. None when the account has no
-    staff code, or no SA carries it yet, so the district scope applies instead."""
-    if not user.staff_code:
-        return None
-    if user.role == Role.FIELD_MONITOR:
-        column = Team.monitor_code
-    elif user.role == Role.DISTRICT_DQM:
-        column = Team.dqm_code
-    else:
-        return None
-    ids = db.execute(select(Team.id).where(column == user.staff_code, Team.active.is_(True))).scalars().all()
-    return sorted(ids) or None

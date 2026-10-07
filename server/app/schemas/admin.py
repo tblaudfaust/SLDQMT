@@ -133,6 +133,16 @@ class SettingsUpdate(BaseModel):
     quiet_hours_start: str | None = Field(default=None, pattern=r"^\d{2}:\d{2}$")
     quiet_hours_end: str | None = Field(default=None, pattern=r"^\d{2}:\d{2}$")
     offline_days: int | None = Field(default=None, ge=1, le=90)
+    # M&E field monitoring GPS checks and phase dates
+    mefm_ea_distance_m: int | None = Field(default=None, ge=50, le=50000)
+    mefm_gps_accuracy_m: int | None = Field(default=None, ge=5, le=1000)
+    mefm_max_speed_kmh: int | None = Field(default=None, ge=10, le=500)
+    mefm_night_start: str | None = Field(default=None, pattern=r"^\d{2}:\d{2}$")
+    mefm_night_end: str | None = Field(default=None, pattern=r"^\d{2}:\d{2}$")
+    mefm_phase_listing_start: str | None = Field(default=None, pattern=r"^(\d{4}-\d{2}-\d{2})?$")
+    mefm_phase_enumeration_start: str | None = Field(default=None, pattern=r"^(\d{4}-\d{2}-\d{2})?$")
+    mefm_phase_mopup_start: str | None = Field(default=None, pattern=r"^(\d{4}-\d{2}-\d{2})?$")
+    mefm_phase_end: str | None = Field(default=None, pattern=r"^(\d{4}-\d{2}-\d{2})?$")
 
 
 class ImportResult(BaseModel):

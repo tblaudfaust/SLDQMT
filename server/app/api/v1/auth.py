@@ -28,7 +28,6 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 def user_out(db: Session, user: User) -> UserOut:
     out = UserOut.model_validate(user)
     out.district_ids = district_ids_for(db, user)
-    out.assigned_sas = len(assigned_team_ids_for(db, user) or [])
     out.must_change_password = bool(user.must_change_password)
     out.assigned_sas = len(assigned_team_ids_for(db, user) or [])
     out.scopes = [ScopeOut(region_id=s.region_id, district_id=s.district_id) for s in user.scopes]

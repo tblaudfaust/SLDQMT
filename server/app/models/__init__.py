@@ -15,7 +15,7 @@ from app.models.reference import (
     Team,
 )
 from app.models.me import MeEvaluation, MeRespondent, MeResponse
-from app.models.mefm import MefmChiefdom, MefmFrameVersion, MefmSection
+from app.models.mefm import IssueStatus, MefmCheckin, MefmChiefdom, MefmFrameVersion, MefmIssue, MefmSection, MefmVisit, VisitStatus
 from app.models.setting import DEFAULT_SETTINGS, Setting
 from app.models.user import RefreshToken, Role, User, UserScope
 
@@ -25,6 +25,11 @@ __all__ = [
     "MefmChiefdom",
     "MefmFrameVersion",
     "MefmSection",
+    "MefmVisit",
+    "MefmIssue",
+    "MefmCheckin",
+    "VisitStatus",
+    "IssueStatus",
     "MeRespondent",
     "MeResponse",
     "Device",
