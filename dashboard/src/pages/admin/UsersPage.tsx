@@ -173,7 +173,7 @@ export default function UsersPage() {
                       {(u.active_from || u.active_until) && <div className="mt-1 text-xs text-slate-500">{u.active_from ? `from ${u.active_from}` : ""}{u.active_until ? ` until ${u.active_until}` : ""}</div>}
                     </td>
                     <td className="whitespace-nowrap text-sm">
-                      <button className="text-navy" onClick={() => setForm({ id: u.id, username: u.username, password: "", full_name: u.full_name, phone: u.phone ?? "", role: u.role, staff_code: u.staff_code ?? "", active_from: u.active_from ?? "", active_until: u.active_until ?? "", district_ids: u.scopes.map((s) => s.district_id).filter((x): x is number => !!x), region_ids: u.scopes.map((s) => s.region_id).filter((x): x is number => !!x), active: u.active, active_from: u.active_from ?? "", active_until: u.active_until ?? "" })}>Edit</button>
+                      <button className="text-navy" onClick={() => setForm({ id: u.id, username: u.username, password: "", full_name: u.full_name, phone: u.phone ?? "", role: u.role, staff_code: u.staff_code ?? "", district_ids: u.scopes.map((s) => s.district_id).filter((x): x is number => !!x), region_ids: u.scopes.map((s) => s.region_id).filter((x): x is number => !!x), active: u.active, active_from: u.active_from ?? "", active_until: u.active_until ?? "" })}>Edit</button>
                       {can("roles.manage") && <button className="ml-3 text-navy" onClick={() => setRightsFor(u)}>Rights</button>}
                       <button className="ml-3 text-navy" onClick={() => { setResetFor(u); setResetResult(null); setResetPassword(""); }}>Reset password</button>
                       {u.role === "FIELD_MONITOR" && (
