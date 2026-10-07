@@ -1,14 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { api, fmt } from "../../api/client";
-import type { MefmOverview } from "../../api/types";
+import type { MefmOverview, MefmVisitRow } from "../../api/types";
 import { useAuth } from "../../auth/AuthContext";
 import { Card, Empty, ErrorBox, KpiTile, Spinner } from "../../components/ui";
 
-/** M&E Field Monitoring, stage 1: the frame in the signed-in user's scope. Forms and dashboards follow in later stages. */
+const PHASES: Record<string, string> = { P: "Pre-field", L: "Listing", E: "Enumeration", M: "Mop-up" };
+
+/** M&E Field Monitoring: the frame in the signed-in user's scope (stage 1) and the visit forms received from the app (stage 2). Dashboards follow in stage 3. */
 export default function MefmHomePage() {
   const { user, can } = useAuth();
   const q = useQuery({ queryKey: ["mefm", "overview"], queryFn: () => api.get<MefmOverview>("/mefm/overview") });
+  const visits = useQuery({ queryKey: ["mefm", "visits", "recent"], queryFn: () => api.get<MefmVisitRow[]>("/mefm/visits?limit=50") });
   if (q.isLoading) return <Spinner />;
   if (q.error || !q.data) return <ErrorBox error={q.error} />;
   const d = q.data;
@@ -47,10 +50,36 @@ export default function MefmHomePage() {
           </div>
         ) : <Empty text="No district in your scope. Ask an administrator to assign your district." />}
       </Card>
+      <Card title="Recent visit forms" className="mb-4">
+        {visits.isLoading ? <Spinner /> : (visits.data ?? []).length ? (
+          <div className="overflow-x-auto">
+            <table className="table">
+              <thead><tr><th>Date</th><th>Officer</th><th>District</th><th>Chiefdom / section</th><th>EA</th><th>Phase</th><th>Team found</th><th className="text-right">Rating</th><th className="text-right">Critical</th><th className="text-right">Open issues</th><th>GPS checks</th></tr></thead>
+              <tbody>
+                {(visits.data ?? []).map((v) => (
+                  <tr key={v.id}>
+                    <td className="whitespace-nowrap">{fmt(v.visit_date)}</td>
+                    <td>{v.officer}</td>
+                    <td>{v.district}</td>
+                    <td>{[v.chiefdom, v.section].filter(Boolean).join(" / ")}</td>
+                    <td><span className="font-mono">{v.pop_ea_code}</span>{v.ea_name ? <span className="text-slate-500"> · {v.ea_name}</span> : null}</td>
+                    <td>{PHASES[v.phase] ?? v.phase}</td>
+                    <td className={v.team_found === false ? "text-red-700" : ""}>{v.team_found == null ? "—" : v.team_found ? "Yes" : "No"}</td>
+                    <td className="text-right">{v.overall_rating ?? "—"}</td>
+                    <td className={`text-right ${v.critical_count ? "font-semibold text-red-700" : ""}`}>{v.critical_count}</td>
+                    <td className="text-right">{v.open_issues}</td>
+                    <td className={v.flags.length ? "text-amber-700" : "text-slate-500"}>{v.flags.length ? v.flags.map((f) => f.replace(/_/g, " ")).join(", ") : v.distance_to_ea_m != null ? `${Math.round(v.distance_to_ea_m)} m from the EA point` : "no EA point"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : <Empty text="No visit forms received yet. District M&E Officers send them from the Android app." />}
+      </Card>
       <Card title="What is ready, and what comes next">
         <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-700">
           <li><b>Stage 1 (this page):</b> the frame with chiefdoms, sections and the 10-digit EA code, uploads previewed before they are applied and kept as versions{can("mefm.manage") ? <> (see <Link to="/admin/reference" className="text-navy underline">Reference lists</Link>)</> : ""}; the District and Regional M&E roles, each seeing only their geography; active dates and a password change on first sign-in.</li>
-          <li><b>Stage 2:</b> the offline Android form with every skip pattern, automatic GPS and sync.</li>
+          <li><b>Stage 2 (live):</b> the offline Android form with every skip pattern, automatic GPS, check-ins and sync; District M&E Officers sign in to the same app as Field Monitors (version 0.4.0 or later, on the <Link to="/resources" className="text-navy underline">manuals and app page</Link>).</li>
           <li><b>Stage 3:</b> the district dashboard, map, officer table, indicators and issues log.</li>
           <li><b>Stage 4:</b> regional and national dashboards.</li>
           <li><b>Stage 5:</b> exports, the daily brief and the audit trail.</li>

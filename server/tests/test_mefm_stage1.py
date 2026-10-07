@@ -109,3 +109,29 @@ def test_active_dates_and_forced_password_change(client, admin, geo):
     assert r.status_code == 200 and r.json()["created"] == 1, r.text
     u = next(x for x in client.get("/api/v1/admin/users?role=ME_DISTRICT", headers=admin).json() if x["username"] == "me.csv")
     assert u["active_from"] == "2026-10-01" and u["active_until"] == "2026-12-31" and u["must_change_password"] is True
+
+
+def test_new_role_gets_its_default_rights_on_an_already_seeded_database(client, admin, geo):
+    """A database seeded before the M&E roles existed (no marker, ME_DISTRICT without sync.use) gets them on the next start."""
+    from sqlalchemy import delete, select
+
+    from app.db import session as session_module
+    from app.models import RolePermission, Setting
+    from app.services.permission_service import seed_defaults
+
+    db = session_module.SessionLocal()
+    try:
+        db.execute(delete(RolePermission).where(RolePermission.role == "ME_DISTRICT", RolePermission.code == "sync.use"))
+        db.execute(delete(RolePermission).where(RolePermission.role == "DISTRICT_DQM", RolePermission.code == "resources.view"))  # an administrator revoked a right
+        db.execute(delete(Setting).where(Setting.key == "rbac_seeded_roles"))
+        db.commit()
+        seed_defaults(db)
+        db.commit()
+        me = set(db.execute(select(RolePermission.code).where(RolePermission.role == "ME_DISTRICT")).scalars().all())
+        dqm = set(db.execute(select(RolePermission.code).where(RolePermission.role == "DISTRICT_DQM")).scalars().all())
+        marker = db.get(Setting, "rbac_seeded_roles").value
+    finally:
+        db.close()
+    assert {"sync.use", "mefm.collect", "mefm.view"} <= me
+    assert "resources.view" not in dqm  # a revoked right of an already seeded role stays revoked
+    assert "ME_DISTRICT" in marker and "FIELD_MONITOR" in marker

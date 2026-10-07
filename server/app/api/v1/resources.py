@@ -43,8 +43,8 @@ RESOURCES: dict[str, tuple[str, str, str, str, str]] = {
         "SLPHC-FieldMonitor.apk",
         "application/vnd.android.package-archive",
         "attachment",
-        "Tablet app for Field Monitors (Android APK)",
-        "Install on the tablet, then sign in once online and choose a PIN. Android 8.0 or newer.",
+        "Android app for Field Monitors and District M&E Officers (APK)",
+        "Install on the tablet or phone, then sign in once online and choose a PIN. Field Monitors get the error follow-up screens; District M&E Officers get the field monitoring forms. Android 8.0 or newer.",
     ),
 }
 

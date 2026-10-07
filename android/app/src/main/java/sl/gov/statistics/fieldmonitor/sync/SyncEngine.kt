@@ -38,6 +38,7 @@ class SyncEngine @Inject constructor(
     private val db: AppDatabase,
     private val session: SessionStore,
     private val reference: ReferenceRepository,
+    private val mefm: MefmSyncEngine,
 ) {
     private val errors = db.errorDao()
     private val followUps = db.followUpDao()
@@ -45,7 +46,9 @@ class SyncEngine @Inject constructor(
     private val state = db.syncStateDao()
 
     suspend fun run(): SyncOutcome {
-        if (session.session == null || session.accessToken == null) return SyncOutcome.NotSignedIn
+        val current = session.session
+        if (current == null || session.accessToken == null) return SyncOutcome.NotSignedIn
+        if (current.isMe) return mefm.run()
         val deviceId = session.deviceId
         var pushed = 0
         var rejected = 0

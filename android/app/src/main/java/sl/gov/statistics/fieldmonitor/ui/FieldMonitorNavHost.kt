@@ -24,6 +24,10 @@ import sl.gov.statistics.fieldmonitor.ui.screens.ErrorListScreen
 import sl.gov.statistics.fieldmonitor.ui.screens.FollowUpsDueScreen
 import sl.gov.statistics.fieldmonitor.ui.screens.HomeScreen
 import sl.gov.statistics.fieldmonitor.ui.screens.LoginScreen
+import sl.gov.statistics.fieldmonitor.ui.screens.MefmCheckinScreen
+import sl.gov.statistics.fieldmonitor.ui.screens.MefmHomeScreen
+import sl.gov.statistics.fieldmonitor.ui.screens.MefmVisitFormScreen
+import sl.gov.statistics.fieldmonitor.ui.screens.MefmVisitListScreen
 import sl.gov.statistics.fieldmonitor.ui.screens.PinScreen
 import sl.gov.statistics.fieldmonitor.ui.screens.SettingsScreen
 import sl.gov.statistics.fieldmonitor.ui.screens.SyncScreen
@@ -39,7 +43,12 @@ object Routes {
     const val DUE = "due"
     const val SYNC = "sync"
     const val SETTINGS = "settings"
+    const val MEFM_HOME = "mefm"
+    const val MEFM_VISITS = "mefm/visits"
+    const val MEFM_FORM = "mefm/visits/{id}"
+    const val MEFM_CHECKIN = "mefm/checkin"
     fun detail(id: String) = "errors/$id"
+    fun mefmForm(id: String) = "mefm/visits/$id"
 }
 
 @HiltViewModel
@@ -47,6 +56,8 @@ class AppViewModel @Inject constructor(private val auth: AuthRepository, session
     val unlocked: StateFlow<Boolean> = session.unlocked
     val hasSession: Boolean get() = auth.hasSession
     val hasPin: Boolean get() = auth.hasPin
+    val isMe: Boolean get() = auth.isMe
+    val home: String get() = if (auth.isMe) Routes.MEFM_HOME else Routes.HOME
 }
 
 @Composable
@@ -60,7 +71,7 @@ fun FieldMonitorNavHost(startAtFollowUps: Boolean, vm: AppViewModel = hiltViewMo
         when {
             !vm.hasSession -> Routes.LOGIN
             !unlocked -> Routes.PIN
-            else -> Routes.HOME
+            else -> vm.home
         }
     }
 
@@ -79,7 +90,7 @@ fun FieldMonitorNavHost(startAtFollowUps: Boolean, vm: AppViewModel = hiltViewMo
         }
         composable(Routes.PIN) {
             PinScreen(
-                onUnlocked = { nav.navigate(Routes.HOME) { popUpTo(nav.graph.id) { inclusive = true } } },
+                onUnlocked = { nav.navigate(vm.home) { popUpTo(nav.graph.id) { inclusive = true } } },
                 onWiped = { nav.navigate(Routes.LOGIN) { popUpTo(nav.graph.id) { inclusive = true } } },
             )
         }
@@ -93,22 +104,41 @@ fun FieldMonitorNavHost(startAtFollowUps: Boolean, vm: AppViewModel = hiltViewMo
             )
         }
         composable(Routes.ERRORS) {
-            ErrorListScreen(onOpen = { nav.navigate(Routes.detail(it)) }, onNew = { nav.navigate(Routes.NEW_ERROR) }, onBack = { nav.safeBack() })
+            ErrorListScreen(onOpen = { nav.navigate(Routes.detail(it)) }, onNew = { nav.navigate(Routes.NEW_ERROR) }, onBack = { nav.safeBack(vm.home) })
         }
         composable(Routes.NEW_ERROR) {
-            ErrorFormScreen(onSaved = { id -> nav.navigate(Routes.detail(id)) { popUpTo(Routes.NEW_ERROR) { inclusive = true } } }, onBack = { nav.safeBack() })
+            ErrorFormScreen(onSaved = { id -> nav.navigate(Routes.detail(id)) { popUpTo(Routes.NEW_ERROR) { inclusive = true } } }, onBack = { nav.safeBack(vm.home) })
         }
         composable(Routes.ERROR_DETAIL) { entry ->
-            ErrorDetailScreen(errorId = entry.arguments?.getString("id") ?: "", onBack = { nav.safeBack() })
+            ErrorDetailScreen(errorId = entry.arguments?.getString("id") ?: "", onBack = { nav.safeBack(vm.home) })
         }
         composable(Routes.DUE) {
-            FollowUpsDueScreen(onOpen = { nav.navigate(Routes.detail(it)) }, onBack = { nav.safeBack() })
+            FollowUpsDueScreen(onOpen = { nav.navigate(Routes.detail(it)) }, onBack = { nav.safeBack(vm.home) })
         }
         composable(Routes.SYNC) {
-            SyncScreen(onOpen = { nav.navigate(Routes.detail(it)) }, onBack = { nav.safeBack() })
+            SyncScreen(onOpen = { nav.navigate(Routes.detail(it)) }, onBack = { nav.safeBack(vm.home) })
         }
         composable(Routes.SETTINGS) {
-            SettingsScreen(onBack = { nav.safeBack() }, onLoggedOut = { nav.navigate(Routes.LOGIN) { popUpTo(nav.graph.id) { inclusive = true } } })
+            SettingsScreen(onBack = { nav.safeBack(vm.home) }, onLoggedOut = { nav.navigate(Routes.LOGIN) { popUpTo(nav.graph.id) { inclusive = true } } })
+        }
+        // ---- M&E Field Monitoring (District M&E Officers) ----
+        composable(Routes.MEFM_HOME) {
+            MefmHomeScreen(
+                onOpenVisit = { nav.navigate(Routes.mefmForm(it)) },
+                onVisits = { nav.navigate(Routes.MEFM_VISITS) },
+                onCheckin = { nav.navigate(Routes.MEFM_CHECKIN) },
+                onSync = { nav.navigate(Routes.SYNC) },
+                onSettings = { nav.navigate(Routes.SETTINGS) },
+            )
+        }
+        composable(Routes.MEFM_VISITS) {
+            MefmVisitListScreen(onOpen = { nav.navigate(Routes.mefmForm(it)) }, onBack = { nav.safeBack(vm.home) })
+        }
+        composable(Routes.MEFM_FORM) {
+            MefmVisitFormScreen(onDone = { nav.navigate(Routes.MEFM_HOME) { popUpTo(nav.graph.id) { inclusive = true } } }, onBack = { nav.safeBack(vm.home) })
+        }
+        composable(Routes.MEFM_CHECKIN) {
+            MefmCheckinScreen(onBack = { nav.safeBack(vm.home) })
         }
     }
 
@@ -119,7 +149,7 @@ fun FieldMonitorNavHost(startAtFollowUps: Boolean, vm: AppViewModel = hiltViewMo
                 nav.navigate(Routes.LOGIN) { popUpTo(nav.graph.id) { inclusive = true } }
             !unlocked && vm.hasSession && nav.currentDestination?.route != Routes.PIN ->
                 nav.navigate(Routes.PIN) { popUpTo(nav.graph.id) { inclusive = true } }
-            unlocked && startAtFollowUps -> nav.navigate(Routes.DUE)
+            unlocked && startAtFollowUps && !vm.isMe -> nav.navigate(Routes.DUE)
         }
     }
 }
@@ -132,10 +162,10 @@ private const val TAG = "FMNav"
  * which shows as a blank white screen. That can happen when a Back button is
  * activated repeatedly, for example by a hardware keyboard.
  */
-private fun NavHostController.safeBack() {
+private fun NavHostController.safeBack(home: String = Routes.HOME) {
     if (previousBackStackEntry != null) {
         popBackStack()
-    } else if (currentDestination?.route != Routes.HOME) {
-        navigate(Routes.HOME) { popUpTo(graph.id) { inclusive = true } }
+    } else if (currentDestination?.route != home) {
+        navigate(home) { popUpTo(graph.id) { inclusive = true } }
     }
 }

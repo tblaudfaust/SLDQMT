@@ -1,6 +1,6 @@
 # 2026 SLPHC M&E Field Monitoring module: design report
 
-Stage 0 deliverable, 7 October 2026. Nothing has been built yet; this report is for confirmation before stage 1.
+Stage 0 deliverable, 7 October 2026, kept as the design record. Stage 1 (roles, scoped access, frame) and stage 2 (Android forms, GPS, sync) are live; see the stage notes at the end.
 
 ## (a) My understanding of the requirements
 
@@ -66,3 +66,14 @@ Other frame facts the module can use: TOT_HH (expected households per EA, feeds 
 8. **Personal data.** Section G3 records the household head's name for the match. Store the name, or only whether it matched?
 9. **National M&E** = the existing Monitoring & Evaluation role (training evaluations plus field monitoring), as proposed?
 10. **Phase dates** for Pre-field, Listing, Enumeration and Mop-up, so the phase filter and "EAs on schedule" can be set up.
+
+## Stage notes
+
+### Stage 1 (live 7 October 2026)
+District and Regional M&E roles with scoped access, active dates and a forced password change; frame import with chiefdoms, sections and the 10-digit EA code, previewed before it is applied and kept as versions; the scoped overview page under Monitoring & Evaluation › Field monitoring.
+
+### Stage 2 (live 7 October 2026)
+- The questionnaire lives on the server as data (`server/app/core/mefm_form.py`): sections A to J, codes, ⚑ items and every skip pattern (phase routing by A12, A16 team not found, A17, B10/B11, C1 and C9/C10, A14, D11 exclusive "None", F0 consent, G repeated per household with at least 2 in enumeration and mop-up, I asked of a community leader and two residents with I4 for the leader only, I5/I6, special populations present/arrangement, J9/J9_date, "other, specify"). The app renders the form from it and validates with the same rules, so the two cannot drift.
+- Android app 0.4.0: District M&E Officers sign in to the same app as Field Monitors and get the M&E mode (home with counts, visit forms, check-ins, sync). The EA is typed as its 10-digit code and resolved from the district frame on the device (name, chiefdom, section, SA, supervisor, enumerators, expected households are shown and pre-filled). GPS is captured automatically when the form opens and again on request; a form cannot be submitted without a fix. Drafts are saved on every change; a submitted form is queued and uploaded at the next sync; the server's rejection messages are shown on the form so it can be corrected and resent. Works fully offline after the first sync.
+- Server: `/mefm/sync/pull` (form, district frame, settings, state of the officer's forms) and `/mefm/sync/push` (forms and check-ins; idempotent on the tablet id; EA must be in the officer's district). Each form is stored with its answers, the indicators of the annex, the GPS checks (poor accuracy over 50 m, night 20:00 to 05:00, repeated point, implausible speed over 120 km/h, farther than 1 km from the EA point) and its issues log: typed rows plus a Critical row for every ⚑ item coded as a problem. `/mefm/visits` lists forms in the user's scope and `/mefm/visits/{id}` returns one with its issues; the web page shows the recent forms.
+- Settings (Administration › Settings API): `mefm_ea_distance_m`, `mefm_gps_accuracy_m`, `mefm_max_speed_kmh`, `mefm_night_start`, `mefm_night_end`, and the phase dates `mefm_phase_*` for later.

@@ -38,13 +38,15 @@ import kotlinx.coroutines.launch
 import sl.gov.statistics.fieldmonitor.BuildConfig
 import sl.gov.statistics.fieldmonitor.data.repo.AuthRepository
 import sl.gov.statistics.fieldmonitor.data.repo.ErrorRepository
+import sl.gov.statistics.fieldmonitor.data.repo.MefmRepository
+import kotlinx.coroutines.flow.combine
 import sl.gov.statistics.fieldmonitor.ui.LabelValue
 import javax.inject.Inject
 
 @HiltViewModel
-class SettingsViewModel @Inject constructor(private val auth: AuthRepository, errors: ErrorRepository) : ViewModel() {
+class SettingsViewModel @Inject constructor(private val auth: AuthRepository, errors: ErrorRepository, mefm: MefmRepository) : ViewModel() {
     val fullName = auth.fullName
-    val pending = errors.observePendingCount()
+    val pending = combine(errors.observePendingCount(), mefm.pendingVisits(), mefm.pendingCheckins()) { a, b, c -> a + b + c }
     fun changePin(pin: String) = auth.setPin(pin)
     fun lock() = auth.lock()
     fun logout(done: () -> Unit) { viewModelScope.launch { auth.logout(); done() } }

@@ -526,7 +526,13 @@ def indicators(clean: dict) -> dict[str, Any]:
 
 
 def public_spec() -> dict[str, Any]:
-    return {"phases": [{"value": k, "label": v} for k, v in PHASES.items()], "sections": SECTIONS, "severities": SEVERITIES, "referred_to": REINFORCEMENT, "indicators": INDICATORS}
+    """The questionnaire for clients; section phases become lists like the item phases."""
+    sections = []
+    for s in SECTIONS:
+        d = dict(s)
+        d["phases"] = list(s["phases"]) if s.get("phases") else []
+        sections.append(d)
+    return {"phases": [{"value": k, "label": v} for k, v in PHASES.items()], "sections": sections, "severities": SEVERITIES, "referred_to": REINFORCEMENT, "indicators": INDICATORS}
 
 
 def night(t: time, start: time, end: time) -> bool:

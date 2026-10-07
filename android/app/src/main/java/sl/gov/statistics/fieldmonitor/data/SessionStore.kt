@@ -21,7 +21,10 @@ data class Session(
     val fullName: String,
     val districtIds: List<Int>,
     val lastOnlineLoginAt: Long,
-)
+    val role: String = "FIELD_MONITOR",
+) {
+    val isMe: Boolean get() = role == "ME_DISTRICT"
+}
 
 /**
  * Keystore-backed storage for tokens, the offline PIN and the database
@@ -59,6 +62,7 @@ class SessionStore @Inject constructor(@ApplicationContext context: Context) {
                 fullName = prefs.getString(KEY_FULL_NAME, "") ?: "",
                 districtIds = prefs.getString(KEY_DISTRICTS, "")!!.split(",").filter { it.isNotBlank() }.map { it.toInt() },
                 lastOnlineLoginAt = prefs.getLong(KEY_LAST_LOGIN, 0L),
+                role = prefs.getString(KEY_ROLE, "FIELD_MONITOR") ?: "FIELD_MONITOR",
             )
         }
 
@@ -79,9 +83,10 @@ class SessionStore @Inject constructor(@ApplicationContext context: Context) {
         prefs.edit { putString(KEY_ACCESS, access); putString(KEY_REFRESH, refresh) }
     }
 
-    fun saveSession(userId: Int, username: String, fullName: String, districtIds: List<Int>) {
+    fun saveSession(userId: Int, username: String, fullName: String, districtIds: List<Int>, role: String = "FIELD_MONITOR") {
         prefs.edit {
             putInt(KEY_USER_ID, userId)
+            putString(KEY_ROLE, role)
             putString(KEY_USERNAME, username)
             putString(KEY_FULL_NAME, fullName)
             putString(KEY_DISTRICTS, districtIds.joinToString(","))
@@ -127,7 +132,7 @@ class SessionStore @Inject constructor(@ApplicationContext context: Context) {
         prefs.edit {
             remove(KEY_ACCESS); remove(KEY_REFRESH); remove(KEY_USER_ID); remove(KEY_USERNAME)
             remove(KEY_FULL_NAME); remove(KEY_DISTRICTS); remove(KEY_PIN_HASH); remove(KEY_PIN_SALT)
-            remove(KEY_PIN_FAILURES); remove(KEY_LAST_LOGIN)
+            remove(KEY_PIN_FAILURES); remove(KEY_LAST_LOGIN); remove(KEY_ROLE)
         }
         _unlocked.value = false
     }
@@ -154,6 +159,7 @@ class SessionStore @Inject constructor(@ApplicationContext context: Context) {
         private const val KEY_USERNAME = "username"
         private const val KEY_FULL_NAME = "full_name"
         private const val KEY_DISTRICTS = "district_ids"
+        private const val KEY_ROLE = "role"
         private const val KEY_LAST_LOGIN = "last_online_login"
         private const val KEY_PIN_HASH = "pin_hash"
         private const val KEY_PIN_SALT = "pin_salt"

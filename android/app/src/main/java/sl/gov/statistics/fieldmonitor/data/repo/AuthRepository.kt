@@ -29,6 +29,7 @@ class AuthRepository @Inject constructor(
     val hasSession: Boolean get() = session.session != null
     val hasPin: Boolean get() = session.hasPin
     val fullName: String get() = session.session?.fullName ?: ""
+    val isMe: Boolean get() = session.session?.isMe == true
 
     suspend fun login(username: String, password: String): LoginResult {
         val deviceId = session.deviceId
@@ -45,11 +46,11 @@ class AuthRepository @Inject constructor(
                 }
             )
         }
-        if (pair.user.role != "FIELD_MONITOR") {
-            return LoginResult.Failed("Only Field Monitor accounts can use the tablet app")
+        if (pair.user.role != "FIELD_MONITOR" && pair.user.role != "ME_DISTRICT") {
+            return LoginResult.Failed("Only Field Monitor and District M&E Officer accounts can use this app")
         }
         session.saveTokens(pair.accessToken, pair.refreshToken)
-        session.saveSession(pair.user.id, pair.user.username, pair.user.fullName, pair.user.districtIds ?: emptyList())
+        session.saveSession(pair.user.id, pair.user.username, pair.user.fullName, pair.user.districtIds ?: emptyList(), pair.user.role)
         db.referenceDao().upsertSettings(pair.settings.map { SettingEntity(it.key, it.value) })
         try {
             api.registerDevice(DeviceRegister(deviceId, "${Build.MANUFACTURER} ${Build.MODEL}", Build.VERSION.RELEASE, BuildConfig.VERSION_NAME))

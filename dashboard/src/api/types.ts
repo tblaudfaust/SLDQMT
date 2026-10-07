@@ -274,6 +274,32 @@ export interface MefmOverview {
   frame_version: { id: number; filename: string; applied_at: string; rows: number; counts: Record<string, number> } | null;
 }
 
+export interface MefmVisitRow {
+  id: string;
+  user_id: number;
+  officer: string;
+  district_id: number;
+  district: string;
+  chiefdom: string | null;
+  section: string | null;
+  sa_code: string | null;
+  pop_ea_code: string;
+  ea_name: string | null;
+  visit_date: string;
+  phase: "P" | "L" | "E" | "M";
+  visit_type: string | null;
+  team_found: boolean | null;
+  overall_rating: number | null;
+  critical_count: number;
+  open_issues: number;
+  flags: string[];
+  distance_to_ea_m: number | null;
+  lat: number;
+  lng: number;
+  status: string;
+  server_updated_at: string;
+}
+
 export type ReportPeriod = "LISTING" | "ENUMERATION";
 export type ReportStatus = "DRAFT" | "SUBMITTED" | "RECEIVED";
 

@@ -37,6 +37,7 @@ import sl.gov.statistics.fieldmonitor.data.local.AppDatabase
 import sl.gov.statistics.fieldmonitor.data.local.ErrorEntity
 import sl.gov.statistics.fieldmonitor.data.local.SyncStateEntity
 import sl.gov.statistics.fieldmonitor.data.repo.ErrorRepository
+import sl.gov.statistics.fieldmonitor.data.repo.MefmRepository
 import sl.gov.statistics.fieldmonitor.sync.SyncScheduler
 import sl.gov.statistics.fieldmonitor.ui.LabelValue
 import sl.gov.statistics.fieldmonitor.util.Time
@@ -48,13 +49,15 @@ data class SyncUi(val state: SyncStateEntity?, val pending: Int, val rejected: L
 class SyncViewModel @Inject constructor(
     db: AppDatabase,
     errors: ErrorRepository,
+    mefm: MefmRepository,
     session: SessionStore,
     private val scheduler: SyncScheduler,
 ) : ViewModel() {
     val deviceId = session.deviceId
+    private val pending = combine(errors.observePendingCount(), mefm.pendingVisits(), mefm.pendingCheckins()) { a, b, c -> a + b + c }
     val ui: Flow<SyncUi> = combine(
         db.syncStateDao().observe(),
-        errors.observePendingCount(),
+        pending,
         errors.observeRejected(),
         scheduler.observeSyncRunning().map { infos -> infos.any { it.state == WorkInfo.State.RUNNING } },
     ) { s, p, r, running -> SyncUi(s, p, r, running) }

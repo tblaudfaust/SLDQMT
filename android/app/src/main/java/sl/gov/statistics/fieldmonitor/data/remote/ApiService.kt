@@ -25,4 +25,17 @@ interface ApiService {
         @Query("reference_version") referenceVersion: String?,
         @Query("limit") limit: Int = 500,
     ): PullResponse
+
+    // ---- M&E Field Monitoring (District M&E Officers) ----
+    @POST("mefm/sync/push")
+    suspend fun mefmPush(@Body body: MefmPushRequest): MefmPushResponse
+
+    @GET("mefm/sync/pull")
+    suspend fun mefmPull(
+        @Query("device_id") deviceId: String,
+        @Query("cursor") cursor: String?,
+        @Query("frame_version") frameVersion: String?,
+        @Query("form_version") formVersion: String?,
+        @Query("limit") limit: Int = 500,
+    ): MefmPullResponse
 }

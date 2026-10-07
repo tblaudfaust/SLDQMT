@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.permissions import DEFAULT_ROLE_PERMISSIONS, PERMISSIONS
-from app.models import RolePermission, User, UserPermission
+from app.models import Setting, RolePermission, User, UserPermission
 from app.models.user import Role
 
 
@@ -73,17 +73,25 @@ def effective_permissions(db: Session, user: User) -> set[str]:
 
 
 def seed_defaults(db: Session) -> None:
+    """Grant the default rights. On a database seeded earlier this adds only what is new: a
+    permission code that did not exist yet (a new feature), and the full default set of a role
+    whose defaults were never seeded (a new role such as the District M&E Officer). Rights an
+    administrator revoked are never re-added; the setting `rbac_seeded_roles` remembers which
+    roles have had their defaults."""
     known = set(db.execute(select(RolePermission.code).distinct()).scalars().all())
-    if known:
-        # Already seeded: only grant rights that did not exist when the table was seeded
-        # (a new feature's permission), never re-add one an administrator revoked.
-        for role, codes in DEFAULT_ROLE_PERMISSIONS.items():
-            for code in codes:
-                if code not in known:
-                    db.add(RolePermission(role=role, code=code))
-        db.flush()
-        return
+    marker = db.get(Setting, "rbac_seeded_roles")
+    # Databases from before the M&E module carry no marker: their original roles are seeded, the M&E roles are not.
+    seeded_roles = set(marker.value.split(",")) if marker else ({"ADMIN", "NATIONAL_DQM", "REGIONAL", "DISTRICT_DQM", "FIELD_MONITOR"} if known else set())
+    existing = {(r.role.value, r.code) for r in db.execute(select(RolePermission)).scalars()}
     for role, codes in DEFAULT_ROLE_PERMISSIONS.items():
         for code in codes:
-            db.add(RolePermission(role=role, code=code))
+            if (role.value, code) in existing:
+                continue
+            if not known or code not in known or role.value not in seeded_roles:
+                db.add(RolePermission(role=role, code=code))
+    roles_now = ",".join(sorted(r.value for r in DEFAULT_ROLE_PERMISSIONS))
+    if marker is None:
+        db.add(Setting(key="rbac_seeded_roles", value=roles_now))
+    else:
+        marker.value = roles_now
     db.flush()
