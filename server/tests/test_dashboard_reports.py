@@ -11,7 +11,7 @@ def seeded(client, geo, monitor):
     errors = [
         make_error(geo, status="RESOLVED", hours_ago=30),
         make_error(geo, hours_ago=1),  # due in ~3 h, not overdue
-        make_error(geo, hours_ago=12, last_action_at=(now - timedelta(hours=12)).isoformat()),  # overdue
+        make_error(geo, hours_ago=48, last_action_at=(now - timedelta(hours=48)).isoformat()),  # overdue at any time of day (the quiet window defers due times by hours, not days)
     ]
     r = client.post("/api/v1/sync/push", json={"device_id": monitor["device_id"], "errors": errors}, headers=monitor["headers"])
     assert r.json()["applied"] == 3
