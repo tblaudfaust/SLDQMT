@@ -1,10 +1,22 @@
-"""Daily Evaluation: rounds, the lead trainer's daily class report and the summary the dashboard shows."""
+"""Daily Evaluation: rounds with their agenda, the Daily Facilitator Report and the summary the dashboard shows."""
 
 from datetime import date, datetime
 
 from pydantic import BaseModel, Field
 
 from app.schemas.common import ORMModel
+
+
+class AgendaItemIn(BaseModel):
+    day: int = Field(ge=1, le=60)
+    topic: str = Field(min_length=1, max_length=200)
+    planned_start: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    planned_end: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+
+
+class AgendaItemOut(AgendaItemIn):
+    id: int
+    position: int
 
 
 class RoundIn(BaseModel):
@@ -35,58 +47,88 @@ class RoundOut(ORMModel):
     status: str
     created_at: datetime
     share_url: str | None = None
+    agenda_days: int = 0
+    agenda_items: int = 0
     reports: int = 0
     classes: int = 0
     days: int = 0
     last_report_date: date | None = None
-    attendance_rate: float | None = None
-    major_gaps: int = 0  # reports with at least one Major gaps rating
-    help_requests: int = 0
+    overall_mean: float | None = None
+    delivered_pct: float | None = None
+    open_escalations: int = 0
+    low_scores: int = 0  # reports with any criterion scored 1 or 2
 
 
-class ActionRow(BaseModel):
-    issue: str = Field(default="", max_length=1000)
-    action: str = Field(default="", max_length=1000)
-    owner_due: str = Field(default="", max_length=200)
+class SessionRow(BaseModel):
+    topic: str = Field(max_length=200)
+    planned_start: str | None = None
+    planned_end: str | None = None
+    actual_start: str | None = None
+    actual_end: str | None = None
+    delivered: str | None = None  # Y | P | N
+    reason: str | None = Field(default=None, max_length=500)
+    delta: int | None = None  # minutes over (+) / under (−), computed by the server
+
+
+class MaterialIssue(BaseModel):
+    item: str = Field(max_length=300)
+    type: str | None = None  # ERROR | MISMATCH | UNCLEAR | MISSING
+    severity: str | None = None  # H | M | L
+    correction: str | None = Field(default=None, max_length=1000)
+
+
+class Escalation(BaseModel):
+    issue: str = Field(max_length=1000)
+    raised_to: str | None = Field(default=None, max_length=160)
+    owner: str | None = Field(default=None, max_length=160)
+    needed_by: str | None = Field(default=None, max_length=40)
+    status: str | None = "OPEN"  # OPEN | IN_PROGRESS | RESOLVED
 
 
 class ReportIn(BaseModel):
-    """The form as the lead trainer submits it (public page) or a manager edits it."""
+    """The Daily Facilitator Report as sent from the public page or edited on the dashboard."""
 
-    report_date: date
-    training_day: int = Field(ge=1, le=60)
-    class_hall: str = Field(min_length=1, max_length=80)
-    venue: str | None = Field(default=None, max_length=160)
-    lead_trainer: str = Field(min_length=2, max_length=160)
     phase: str = Field(pattern="^(MASTER|TOT|FIELD)$")
+    platform_venue: str = Field(min_length=1, max_length=160)
+    class_hall: str = Field(min_length=1, max_length=80)
+    training_day: int = Field(ge=1, le=60)
+    report_date: date
+    lead_facilitator: str = Field(min_length=2, max_length=160)
+    co_facilitators: str | None = Field(default=None, max_length=300)
     district: str | None = Field(default=None, max_length=60)
-    expected: int = Field(ge=0, le=5000)
-    present: int = Field(ge=0, le=5000)
-    late: int = Field(default=0, ge=0, le=5000)
-    coverage: str = Field(pattern="^(ALL|SOME|NONE)$")
-    incomplete_topic: str | None = Field(default=None, max_length=2000)
+    sessions: list[SessionRow] = []
+    carried_over: list[str] = []
+    quiz_administered: bool | None = None
+    quiz_title: str | None = Field(default=None, max_length=200)
+    mean_score: float | None = Field(default=None, ge=0, le=100)
+    pass_rate: float | None = Field(default=None, ge=0, le=100)
+    quiz_comments: str | None = Field(default=None, max_length=1000)
     practice_minutes: int | None = Field(default=None, ge=0, le=1440)
-    practice_not_scheduled: bool = False
-    checks: list[str] = []
-    task_checked: str | None = Field(default=None, max_length=2000)
-    number_checked: int | None = Field(default=None, ge=0, le=5000)
-    number_met: int | None = Field(default=None, ge=0, le=5000)
-    criterion: str | None = Field(default=None, max_length=2000)
-    learning_gap: str | None = Field(default=None, max_length=2000)
-    followup_count: int | None = Field(default=None, ge=0, le=5000)
-    followup_not_assessed: bool = False
-    delivery_content: str = Field(pattern="^(GOOD|SOME|MAJOR)$")
-    delivery_participation: str = Field(pattern="^(GOOD|SOME|MAJOR)$")
-    delivery_time: str = Field(pattern="^(GOOD|SOME|MAJOR)$")
-    support: list[str] = []
-    support_other: str | None = Field(default=None, max_length=1000)
-    actions: list[ActionRow] = []
-    mgmt_help: bool = False
-    raised_to: str | None = Field(default=None, max_length=160)
+    practice_comments: str | None = Field(default=None, max_length=1000)
+    hardest_topics: list[str] = []
+    hardest_comments: str | None = Field(default=None, max_length=1000)
+    q_content: int | None = Field(default=None, ge=1, le=5)
+    q_content_evidence: str | None = Field(default=None, max_length=1000)
+    q_engagement: int | None = Field(default=None, ge=1, le=5)
+    q_engagement_evidence: str | None = Field(default=None, max_length=1000)
+    q_time: int | None = Field(default=None, ge=1, le=5)
+    q_time_evidence: str | None = Field(default=None, max_length=1000)
+    q_illustrations: int | None = Field(default=None, ge=1, le=5)
+    q_illustrations_evidence: str | None = Field(default=None, max_length=1000)
+    material_issues: list[MaterialIssue] = []
+    g_internet: int | None = Field(default=None, ge=1, le=5)
+    g_internet_details: str | None = Field(default=None, max_length=1000)
+    g_power: int | None = Field(default=None, ge=1, le=5)
+    g_power_details: str | None = Field(default=None, max_length=1000)
+    g_devices: int | None = Field(default=None, ge=0, le=5000)
+    g_devices_details: str | None = Field(default=None, max_length=1000)
+    g_food: int | None = Field(default=None, ge=1, le=5)
+    g_food_details: str | None = Field(default=None, max_length=1000)
+    escalations: list[Escalation] = []
 
 
 class PublicSubmitIn(ReportIn):
-    edit_token: str | None = None  # present when the same browser corrects a report it sent
+    edit_token: str | None = None
     report_id: int | None = None
 
 
@@ -94,51 +136,60 @@ class PublicSubmitOut(BaseModel):
     report_id: int
     edit_token: str
     submitted_at: datetime
+    overall: float
 
 
 class ReportOut(BaseModel):
-    """Every field of one report, with labels for the reports and the detail view."""
+    """Every field of one report, with labels and computed figures."""
 
     id: int
     round_id: int
-    report_date: date
-    training_day: int
-    class_hall: str
-    venue: str | None = None
-    lead_trainer: str
     phase: str
     phase_label: str
+    platform_venue: str
+    class_hall: str
+    training_day: int
+    report_date: date
+    lead_facilitator: str
+    co_facilitators: str | None = None
     district: str | None = None
-    expected: int
-    present: int
-    late: int
-    attendance_rate: float | None = None
-    coverage: str
-    coverage_label: str
-    incomplete_topic: str | None = None
-    practice_minutes: int | None = None
-    practice_not_scheduled: bool
-    checks: list[str]
-    checks_label: str
-    assessed: bool
-    task_checked: str | None = None
-    number_checked: int | None = None
-    number_met: int | None = None
+    sessions: list[SessionRow]
+    sessions_planned: int
+    sessions_delivered: int  # Y
+    sessions_partly: int
+    sessions_not: int
+    minutes_delta: int | None = None  # sum of the session deltas
+    carried_over: list[str]
+    quiz_administered: bool
+    quiz_title: str | None = None
+    mean_score: float | None = None
     pass_rate: float | None = None
-    criterion: str | None = None
-    learning_gap: str | None = None
-    followup_count: int | None = None
-    followup_not_assessed: bool
-    delivery_content: str
-    delivery_participation: str
-    delivery_time: str
-    major_gaps: int  # how many of the three areas are Major gaps
-    support: list[str]
-    support_label: str
-    support_other: str | None = None
-    actions: list[ActionRow]
-    mgmt_help: bool
-    raised_to: str | None = None
+    quiz_comments: str | None = None
+    practice_minutes: int | None = None
+    practice_comments: str | None = None
+    hardest_topics: list[str]
+    hardest_comments: str | None = None
+    q_content: int
+    q_content_evidence: str | None = None
+    q_engagement: int
+    q_engagement_evidence: str | None = None
+    q_time: int
+    q_time_evidence: str | None = None
+    q_illustrations: int
+    q_illustrations_evidence: str | None = None
+    overall: float
+    low_scores: int  # criteria scored 1 or 2
+    material_issues: list[MaterialIssue]
+    g_internet: int
+    g_internet_details: str | None = None
+    g_power: int
+    g_power_details: str | None = None
+    g_devices: int
+    g_devices_details: str | None = None
+    g_food: int
+    g_food_details: str | None = None
+    escalations: list[Escalation]
+    open_escalations: int
     submitted_at: datetime
     updated_at: datetime
     edited_by_name: str | None = None
@@ -152,50 +203,60 @@ class CountRow(BaseModel):
 
 
 class GroupRow(BaseModel):
-    """Attendance, agenda, learning and delivery for one training day, class, district, trainer or phase."""
+    """Coverage, learning, quality and logistics for one day, class, district, facilitator or phase."""
 
     key: str
     label: str
     reports: int
-    expected: int
-    present: int
-    late: int
-    attendance_rate: float | None = None
-    late_rate: float | None = None
-    agenda_all: int
-    agenda_all_pct: float | None = None
-    assessed: int
-    checked: int
-    met: int
+    sessions: int
+    delivered: int
+    partly: int
+    not_delivered: int
+    delivered_pct: float | None = None
+    minutes_delta: int
+    carried_over: int
+    quizzes: int
+    mean_score: float | None = None
     pass_rate: float | None = None
-    followup: int
-    major_gaps: int
-    support_problems: int
-    help_requests: int
     practice_minutes_avg: float | None = None
+    q_content: float | None = None
+    q_engagement: float | None = None
+    q_time: float | None = None
+    q_illustrations: float | None = None
+    overall: float | None = None
+    low_scores: int
+    material_issues: int
+    high_severity: int
+    internet: float | None = None
+    power: float | None = None
+    devices_short: int
+    food: float | None = None
+    escalations: int
+    open_escalations: int
 
 
-class IssueRow(BaseModel):
+class TopicRow(BaseModel):
+    """One agenda topic across every report: how often it was delivered, carried over or found hardest."""
+
+    topic: str
+    day: int | None = None
+    planned: int
+    delivered: int
+    partly: int
+    not_delivered: int
+    minutes_delta: int
+    carried_over: int
+    hardest: int
+
+
+class LogRow(BaseModel):
     report_id: int
     report_date: date
     training_day: int
     class_hall: str
     district: str | None = None
-    lead_trainer: str
-    text: str
-    extra: str | None = None  # the next action, or the person it was raised to
-
-
-class ActionOut(BaseModel):
-    report_id: int
-    report_date: date
-    training_day: int
-    class_hall: str
-    district: str | None = None
-    lead_trainer: str
-    issue: str
-    action: str
-    owner_due: str
+    lead_facilitator: str
+    fields: dict[str, str | None]
 
 
 class Summary(BaseModel):
@@ -204,39 +265,49 @@ class Summary(BaseModel):
     reports: int
     classes: int
     days: int
-    trainers: int
+    facilitators: int
     districts: int
-    expected: int
-    present: int
-    late: int
-    attendance_rate: float | None = None
-    late_rate: float | None = None
-    coverage: list[CountRow]
-    agenda_all_pct: float | None = None
-    practice_minutes_avg: float | None = None
-    practice_not_scheduled: int
-    checks: list[CountRow]
-    assessed: int
-    checked: int
-    met: int
+    sessions: int
+    delivered: int
+    partly: int
+    not_delivered: int
+    delivered_pct: float | None = None
+    minutes_delta: int
+    carried_over: int
+    quizzes: int
+    mean_score: float | None = None
     pass_rate: float | None = None
-    followup: int
-    followup_not_assessed: int
-    delivery: dict[str, list[CountRow]]  # content / participation / time → Good / Some / Major
-    reports_with_major_gaps: int
-    support: list[CountRow]
-    help_requests: int
-    actions_total: int
+    practice_minutes_avg: float | None = None
+    practice_na: int
+    quality: dict[str, float | None]  # content / engagement / time / illustrations / overall means
+    quality_distribution: dict[str, list[CountRow]]  # per criterion, scores 5..1
+    overall_distribution: list[CountRow]  # overall rounded 5..1
+    low_scores: int  # reports with any criterion at 1 or 2
+    material_issues: int
+    issues_by_type: list[CountRow]
+    issues_by_severity: list[CountRow]
+    logistics: dict[str, float | None]  # internet / power / food means
+    devices_short: int
+    escalations: int
+    open_escalations: int
+    escalations_by_status: list[CountRow]
     by_day: list[GroupRow]
     by_class: list[GroupRow]
     by_district: list[GroupRow]
-    by_trainer: list[GroupRow]
+    by_facilitator: list[GroupRow]
     by_phase: list[GroupRow]
-    incomplete_topics: list[IssueRow]
-    learning_gaps: list[IssueRow]
-    help_requested: list[IssueRow]
-    actions: list[ActionOut]
+    topics: list[TopicRow]
+    hardest_topics: list[CountRow]
+    issues_log: list[LogRow]
+    escalations_log: list[LogRow]
+    evidence_log: list[LogRow]  # scores of 1, 2 or 5 with their evidence
+    carried_over_log: list[LogRow]
     latest: list[ReportOut]
+
+
+class EscalationStatusIn(BaseModel):
+    index: int = Field(ge=0, le=20)
+    status: str = Field(pattern="^(OPEN|IN_PROGRESS|RESOLVED)$")
 
 
 class PublicRound(BaseModel):
@@ -246,4 +317,5 @@ class PublicRound(BaseModel):
     period_end: date | None = None
     description: str | None = None
     status: str
+    agenda: list[AgendaItemOut]
     form: dict

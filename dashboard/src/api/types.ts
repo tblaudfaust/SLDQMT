@@ -562,6 +562,7 @@ export interface MeEvaluation {
   trainees: number;
   trainers: number;
 }
+export interface MeDailyAgendaItem { id?: number; day: number; position?: number; topic: string; planned_start: string | null; planned_end: string | null }
 export interface MeDailyRound {
   id: number;
   title: string;
@@ -573,79 +574,90 @@ export interface MeDailyRound {
   status: "OPEN" | "CLOSED";
   created_at: string;
   share_url: string | null;
+  agenda_days: number;
+  agenda_items: number;
   reports: number;
   classes: number;
   days: number;
   last_report_date: string | null;
-  attendance_rate: number | null;
-  major_gaps: number;
-  help_requests: number;
+  overall_mean: number | null;
+  delivered_pct: number | null;
+  open_escalations: number;
+  low_scores: number;
 }
-export interface MeDailyAction { issue: string; action: string; owner_due: string }
+export interface MeDailySession { topic: string; planned_start: string | null; planned_end: string | null; actual_start: string | null; actual_end: string | null; delivered: "Y" | "P" | "N" | null; reason: string | null; delta: number | null }
+export interface MeDailyMaterialIssue { item: string; type: "ERROR" | "MISMATCH" | "UNCLEAR" | "MISSING" | null; severity: "H" | "M" | "L" | null; correction: string | null }
+export interface MeDailyEscalation { issue: string; raised_to: string | null; owner: string | null; needed_by: string | null; status: "OPEN" | "IN_PROGRESS" | "RESOLVED" | null }
 export interface MeDailyReport {
   id: number;
   round_id: number;
-  report_date: string;
-  training_day: number;
-  class_hall: string;
-  venue: string | null;
-  lead_trainer: string;
   phase: "MASTER" | "TOT" | "FIELD";
   phase_label: string;
+  platform_venue: string;
+  class_hall: string;
+  training_day: number;
+  report_date: string;
+  lead_facilitator: string;
+  co_facilitators: string | null;
   district: string | null;
-  expected: number;
-  present: number;
-  late: number;
-  attendance_rate: number | null;
-  coverage: "ALL" | "SOME" | "NONE";
-  coverage_label: string;
-  incomplete_topic: string | null;
-  practice_minutes: number | null;
-  practice_not_scheduled: boolean;
-  checks: string[];
-  checks_label: string;
-  assessed: boolean;
-  task_checked: string | null;
-  number_checked: number | null;
-  number_met: number | null;
+  sessions: MeDailySession[];
+  sessions_planned: number;
+  sessions_delivered: number;
+  sessions_partly: number;
+  sessions_not: number;
+  minutes_delta: number | null;
+  carried_over: string[];
+  quiz_administered: boolean;
+  quiz_title: string | null;
+  mean_score: number | null;
   pass_rate: number | null;
-  criterion: string | null;
-  learning_gap: string | null;
-  followup_count: number | null;
-  followup_not_assessed: boolean;
-  delivery_content: "GOOD" | "SOME" | "MAJOR";
-  delivery_participation: "GOOD" | "SOME" | "MAJOR";
-  delivery_time: "GOOD" | "SOME" | "MAJOR";
-  major_gaps: number;
-  support: string[];
-  support_label: string;
-  support_other: string | null;
-  actions: MeDailyAction[];
-  mgmt_help: boolean;
-  raised_to: string | null;
+  quiz_comments: string | null;
+  practice_minutes: number | null;
+  practice_comments: string | null;
+  hardest_topics: string[];
+  hardest_comments: string | null;
+  q_content: number; q_content_evidence: string | null;
+  q_engagement: number; q_engagement_evidence: string | null;
+  q_time: number; q_time_evidence: string | null;
+  q_illustrations: number; q_illustrations_evidence: string | null;
+  overall: number;
+  low_scores: number;
+  material_issues: MeDailyMaterialIssue[];
+  g_internet: number; g_internet_details: string | null;
+  g_power: number; g_power_details: string | null;
+  g_devices: number; g_devices_details: string | null;
+  g_food: number; g_food_details: string | null;
+  escalations: MeDailyEscalation[];
+  open_escalations: number;
   submitted_at: string;
   updated_at: string;
   edited_by_name: string | null;
 }
 export interface MeDailyCount { code: string; label: string; count: number; pct: number }
 export interface MeDailyGroup {
-  key: string; label: string; reports: number; expected: number; present: number; late: number; attendance_rate: number | null; late_rate: number | null;
-  agenda_all: number; agenda_all_pct: number | null; assessed: number; checked: number; met: number; pass_rate: number | null; followup: number;
-  major_gaps: number; support_problems: number; help_requests: number; practice_minutes_avg: number | null;
+  key: string; label: string; reports: number; sessions: number; delivered: number; partly: number; not_delivered: number; delivered_pct: number | null; minutes_delta: number; carried_over: number;
+  quizzes: number; mean_score: number | null; pass_rate: number | null; practice_minutes_avg: number | null;
+  q_content: number | null; q_engagement: number | null; q_time: number | null; q_illustrations: number | null; overall: number | null; low_scores: number;
+  material_issues: number; high_severity: number; internet: number | null; power: number | null; devices_short: number; food: number | null; escalations: number; open_escalations: number;
 }
-export interface MeDailyIssue { report_id: number; report_date: string; training_day: number; class_hall: string; district: string | null; lead_trainer: string; text: string; extra: string | null }
-export interface MeDailyActionRow extends MeDailyAction { report_id: number; report_date: string; training_day: number; class_hall: string; district: string | null; lead_trainer: string }
+export interface MeDailyTopic { topic: string; day: number | null; planned: number; delivered: number; partly: number; not_delivered: number; minutes_delta: number; carried_over: number; hardest: number }
+export interface MeDailyLog { report_id: number; report_date: string; training_day: number; class_hall: string; district: string | null; lead_facilitator: string; fields: Record<string, string | null> }
 export interface MeDailySummary {
   round: MeDailyRound;
   filters: Record<string, string | null>;
-  reports: number; classes: number; days: number; trainers: number; districts: number;
-  expected: number; present: number; late: number; attendance_rate: number | null; late_rate: number | null;
-  coverage: MeDailyCount[]; agenda_all_pct: number | null; practice_minutes_avg: number | null; practice_not_scheduled: number;
-  checks: MeDailyCount[]; assessed: number; checked: number; met: number; pass_rate: number | null; followup: number; followup_not_assessed: number;
-  delivery: Record<"content" | "participation" | "time", MeDailyCount[]>; reports_with_major_gaps: number;
-  support: MeDailyCount[]; help_requests: number; actions_total: number;
-  by_day: MeDailyGroup[]; by_class: MeDailyGroup[]; by_district: MeDailyGroup[]; by_trainer: MeDailyGroup[]; by_phase: MeDailyGroup[];
-  incomplete_topics: MeDailyIssue[]; learning_gaps: MeDailyIssue[]; help_requested: MeDailyIssue[]; actions: MeDailyActionRow[];
+  reports: number; classes: number; days: number; facilitators: number; districts: number;
+  sessions: number; delivered: number; partly: number; not_delivered: number; delivered_pct: number | null; minutes_delta: number; carried_over: number;
+  quizzes: number; mean_score: number | null; pass_rate: number | null; practice_minutes_avg: number | null; practice_na: number;
+  quality: Record<"content" | "engagement" | "time" | "illustrations" | "overall", number | null>;
+  quality_distribution: Record<"content" | "engagement" | "time" | "illustrations", MeDailyCount[]>;
+  overall_distribution: MeDailyCount[];
+  low_scores: number;
+  material_issues: number; issues_by_type: MeDailyCount[]; issues_by_severity: MeDailyCount[];
+  logistics: Record<"internet" | "power" | "food", number | null>; devices_short: number;
+  escalations: number; open_escalations: number; escalations_by_status: MeDailyCount[];
+  by_day: MeDailyGroup[]; by_class: MeDailyGroup[]; by_district: MeDailyGroup[]; by_facilitator: MeDailyGroup[]; by_phase: MeDailyGroup[];
+  topics: MeDailyTopic[]; hardest_topics: MeDailyCount[];
+  issues_log: MeDailyLog[]; escalations_log: MeDailyLog[]; evidence_log: MeDailyLog[]; carried_over_log: MeDailyLog[];
   latest: MeDailyReport[];
 }
 export interface MeRespondent {

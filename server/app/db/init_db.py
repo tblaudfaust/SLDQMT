@@ -105,6 +105,18 @@ def recover_half_rebuilds() -> None:
                 conn.execute(text(f'ALTER TABLE "{table}__old" RENAME TO "{table}"'))
 
 
+# Tables of a first version that was replaced before any data went in; dropped when still empty.
+RETIRED_TABLES = ["me_daily_report"]
+
+
+def drop_retired_tables() -> None:
+    insp = inspect(engine)
+    with engine.begin() as conn:
+        for table in RETIRED_TABLES:
+            if insp.has_table(table) and conn.execute(text(f'SELECT COUNT(*) FROM "{table}"')).scalar() == 0:
+                conn.execute(text(f'DROP TABLE "{table}"'))
+
+
 def add_missing_enum_values() -> None:
     """PostgreSQL stores Role as the enum type user_role; a value added to the Python enum
     (such as ME) must be added to the type too. SQLite stores plain strings."""
@@ -135,6 +147,7 @@ def _init_schema_and_seed(db: Session) -> None:
     Base.metadata.create_all(bind=engine)
     add_missing_columns()
     relax_not_null()
+    drop_retired_tables()
     add_missing_enum_values()
 
     for key, value in DEFAULT_SETTINGS.items():

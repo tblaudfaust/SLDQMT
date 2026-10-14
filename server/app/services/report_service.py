@@ -33,6 +33,9 @@ REPORT_KINDS = {
 }
 
 
+PDF_MAX_COLUMNS = 18  # wider tables are left to the Excel export
+
+
 @dataclass
 class Sheet:
     name: str
@@ -273,6 +276,11 @@ def to_pdf(report: Report) -> bytes:
     cell_style.leading = 10
     for sheet in report.sheets:
         story.append(Paragraph(sheet.name, styles["Heading2"]))
+        if len(sheet.headers) > PDF_MAX_COLUMNS:
+            # a table this wide cannot be read on a page: it is in the Excel export
+            story.append(Paragraph(f"This table has {len(sheet.headers)} columns and {len(sheet.rows)} rows; open the Excel export to read it.", styles["Normal"]))
+            story.append(Spacer(1, 6 * mm))
+            continue
         data = [[Paragraph(str(h), cell_style) for h in sheet.headers]]
         for row in sheet.rows:
             data.append([Paragraph(str(_fmt(v)), cell_style) for v in row])

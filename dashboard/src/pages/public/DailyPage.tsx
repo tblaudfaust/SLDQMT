@@ -3,24 +3,25 @@ import { useParams } from "react-router-dom";
 import clsx from "clsx";
 import { CalendarCheck, ClipboardCheck, Pencil, Timer, Users } from "lucide-react";
 import { ApiError, api } from "../../api/client";
-import { DailyReportForm, emptyValues, toPayload, validate, type DailySpec, type DailyValues } from "./DailyReportForm";
+import type { MeDailyAgendaItem } from "../../api/types";
+import { DailyReportForm, emptyValues, sessionsForDay, toPayload, validate, type DailySpec, type DailyValues } from "./DailyReportForm";
 import { PageWatermark } from "./EvaluatePage";
 
 /* ------------------------------------------------------------------------------------------------
- * The public Daily Trainer Class Evaluation page: /daily/<token>. No sign-in. The lead trainer sends
- * one form per class each day; a sent report can be corrected from the same device.
+ * The public Daily Facilitator Report page: /daily/<token>. No sign-in. The lead facilitator sends
+ * one report per class each day; a sent report can be corrected from the same device.
  * ---------------------------------------------------------------------------------------------- */
 
-type Round = { title: string; phase: string; period_start: string | null; period_end: string | null; description: string | null; status: string; form: DailySpec };
-type Sent = { report_id: number; edit_token: string; report_date: string; training_day: string; class_hall: string; values: DailyValues; sent_at: string };
+type Round = { title: string; phase: string; period_start: string | null; period_end: string | null; description: string | null; status: string; agenda: MeDailyAgendaItem[]; form: DailySpec };
+type Sent = { report_id: number; edit_token: string; report_date: string; training_day: string; class_hall: string; overall: number; values: DailyValues; sent_at: string };
 type Store = { draft: DailyValues | null; sent: Sent[] };
 
-const PHASE_LABEL: Record<string, string> = { MASTER: "Master training", TOT: "Training of trainers", FIELD: "Field staff training" };
+const PHASE_LABEL: Record<string, string> = { MASTER: "Master Training", TOT: "Training of Trainers", FIELD: "Field Staff Training" };
 const fmtDate = (d: string | null) => (d ? new Date(d + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "");
 
 export default function DailyPage() {
   const { token = "" } = useParams();
-  const key = `me-daily-${token}`;
+  const key = `me-daily2-${token}`;
   const [round, setRound] = useState<Round | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [store, setStore] = useState<Store>(() => { try { const s = localStorage.getItem(key); return s ? (JSON.parse(s) as Store) : { draft: null, sent: [] }; } catch { return { draft: null, sent: [] }; } });
@@ -45,12 +46,13 @@ export default function DailyPage() {
     setBusy(true); setServerErrors([]);
     try {
       const body = { ...toPayload(values), ...(editing ? { report_id: editing.report_id, edit_token: editing.edit_token } : {}) };
-      const r = await api.post<{ report_id: number; edit_token: string; submitted_at: string }>(`/public/daily/${token}/submit`, body);
-      const sent: Sent = { report_id: r.report_id, edit_token: r.edit_token, report_date: values.report_date, training_day: values.training_day, class_hall: values.class_hall, values, sent_at: new Date().toISOString() };
+      const r = await api.post<{ report_id: number; edit_token: string; submitted_at: string; overall: number }>(`/public/daily/${token}/submit`, body);
+      const sent: Sent = { report_id: r.report_id, edit_token: r.edit_token, report_date: values.report_date, training_day: values.training_day, class_hall: values.class_hall, overall: r.overall, values, sent_at: new Date().toISOString() };
       setStore((s) => ({ draft: null, sent: [sent, ...s.sent.filter((x) => x.report_id !== sent.report_id)].slice(0, 30) }));
       setDone(sent); setEditing(null);
-      // the next form keeps the trainer, venue, class, phase and district; counts and answers start blank
-      setValues({ ...emptyValues(values.phase), class_hall: values.class_hall, venue: values.venue, lead_trainer: values.lead_trainer, district: values.district, training_day: String(Number(values.training_day || 0) + 1) });
+      // the next report keeps the facilitator, venue, class, phase and district; the next day's agenda is loaded
+      const nextDay = Number(values.training_day || 0) + 1;
+      setValues({ ...emptyValues(values.phase), platform_venue: values.platform_venue, class_hall: values.class_hall, lead_facilitator: values.lead_facilitator, co_facilitators: values.co_facilitators, district: values.district, training_day: String(nextDay), sessions: sessionsForDay(round.agenda, nextDay) });
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
       const detail = err instanceof ApiError ? (err.body as { detail?: { errors?: string[]; message?: string } | string } | undefined)?.detail : undefined;
@@ -64,12 +66,12 @@ export default function DailyPage() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top_left,_#2a6aa6_0%,_#1F4E79_45%,_#0f3557_100%)] px-3 py-6 text-slate-800 sm:px-6 sm:py-10">
       <PageWatermark />
-      <div className="relative mx-auto max-w-3xl">
+      <div className="relative mx-auto max-w-4xl">
         <header className="mb-5 flex items-center gap-3 text-white">
           <img src="/statsl-logo.png" alt="Statistics Sierra Leone" className="h-12 w-12 rounded-full bg-white p-0.5 shadow" />
           <div>
             <div className="text-xs uppercase tracking-[0.25em] text-sky-200">Statistics Sierra Leone · 2026 PHC</div>
-            <div className="text-lg font-bold leading-tight">Daily Trainer Class Evaluation</div>
+            <div className="text-lg font-bold leading-tight">Daily Facilitator Report</div>
           </div>
         </header>
         {loadError ? (
@@ -86,14 +88,14 @@ export default function DailyPage() {
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"><ClipboardCheck size={26} /></div>
                   <div>
                     <h2 className="text-lg font-bold text-navy">Report received — thank you</h2>
-                    <p className="text-sm text-slate-600">{done.class_hall}, day {done.training_day}, {fmtDate(done.report_date)}. The form below is ready for the next class or day. To correct this report, use <b>My sent reports</b> at the bottom of the page.</p>
+                    <p className="text-sm text-slate-600">{done.class_hall}, day {done.training_day}, {fmtDate(done.report_date)} · overall class rating {done.overall.toFixed(2)}. The form below is ready for the next day. To correct this report, use <b>My sent reports</b> at the bottom of the page.</p>
                   </div>
                 </div>
               </Card>
             )}
             <Card className="overflow-hidden p-0 sm:p-0">
               <div className="bg-gradient-to-br from-navy via-[#245a8c] to-[#1b7f6b] px-5 py-6 text-white sm:px-8">
-                <div className="text-xs uppercase tracking-[0.3em] text-sky-100/80">2026 Population and Housing Census</div>
+                <div className="text-xs uppercase tracking-[0.3em] text-sky-100/80">2026 Population and Housing Census, Sierra Leone</div>
                 <h1 className="mt-1 text-2xl font-bold leading-tight sm:text-3xl">{round.title}</h1>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                   <span className="rounded-full bg-white/15 px-3 py-1 font-semibold">{PHASE_LABEL[round.phase] ?? round.phase}</span>
@@ -102,9 +104,9 @@ export default function DailyPage() {
                 <p className="mt-4 max-w-2xl text-sm text-sky-50/90">{round.description || round.form.intro}</p>
                 <div className="mt-5 grid gap-2 sm:grid-cols-3">
                   {[
-                    { icon: <Users size={18} />, title: "Who sends it", text: "The lead trainer, one form per class each day." },
-                    { icon: <Timer size={18} />, title: "3 to 5 minutes", text: "Within 2 hours of class close. Use counts from registers or checks." },
-                    { icon: <CalendarCheck size={18} />, title: "Every day", text: "Your name, class and district stay filled in for the next day." },
+                    { icon: <Users size={18} />, title: "Who sends it", text: "The lead facilitator, one report per class each day." },
+                    { icon: <Timer size={18} />, title: "Within 2 hours", text: "Of class close. Complete every field; write N/A and the reason where not applicable." },
+                    { icon: <CalendarCheck size={18} />, title: "Agenda loaded", text: round.agenda.length ? `${round.agenda.length} sessions over ${new Set(round.agenda.map((a) => a.day)).size} days are pre-filled by training day.` : "Add each session with its planned and actual times." },
                   ].map((b) => (
                     <div key={b.title} className="rounded-xl bg-white/10 p-3 backdrop-blur-sm">
                       <div className="flex items-center gap-2 text-sm font-semibold">{b.icon} {b.title}</div>
@@ -126,7 +128,7 @@ export default function DailyPage() {
                     <ul className="mt-1 list-disc pl-5">{serverErrors.map((x) => <li key={x}>{x}</li>)}</ul>
                   </div>
                 )}
-                <DailyReportForm spec={round.form} values={values} onChange={setValues} onSubmit={submit} busy={busy} submitLabel={editing ? "Send the correction" : "Send today's report"} errors={errors} />
+                <DailyReportForm spec={round.form} agenda={round.agenda} values={values} onChange={setValues} onSubmit={submit} busy={busy} submitLabel={editing ? "Send the correction" : "Send today's report"} errors={errors} />
               </div>
             </Card>
             {store.sent.length > 0 && (
@@ -135,7 +137,7 @@ export default function DailyPage() {
                 <ul className="mt-2 divide-y divide-slate-100 text-sm">
                   {store.sent.map((s) => (
                     <li key={s.report_id} className="flex items-center justify-between gap-3 py-2">
-                      <span><b>{s.class_hall}</b> · day {s.training_day} · {fmtDate(s.report_date)} <span className="text-slate-400">· sent {new Date(s.sent_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span></span>
+                      <span><b>{s.class_hall}</b> · day {s.training_day} · {fmtDate(s.report_date)} · rating {s.overall?.toFixed(2)} <span className="text-slate-400">· sent {new Date(s.sent_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span></span>
                       <button type="button" className={clsx("pub-btn-ghost py-1.5 text-sm", editing?.report_id === s.report_id && "text-navy")} onClick={() => startEdit(s)}><Pencil size={14} /> Correct</button>
                     </li>
                   ))}

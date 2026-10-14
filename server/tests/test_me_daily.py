@@ -1,5 +1,6 @@
-"""Daily Evaluation: rounds shared by link, the lead trainer's daily class report with its rules,
-the summary with every detail, the export, and access limited to the me_daily rights."""
+"""Daily Evaluation: rounds with an agenda shared by link, the Daily Facilitator Report with its rules
+(sessions with planned/actual times and computed minutes, evidence for scores 1, 2 and 5, logs),
+the summary with every indicator, exports, escalation follow-up and access by the me_daily rights."""
 
 from datetime import date, timedelta
 
@@ -12,92 +13,113 @@ def me_user(client, admin, username="me.officer", role="ME"):
     return auth(login(client, username, "Password123")["access_token"])
 
 
+AGENDA = [
+    {"day": 1, "topic": "Census concepts and reference night", "planned_start": "09:00", "planned_end": "10:30"},
+    {"day": 1, "topic": "Household listing on CAPI", "planned_start": "11:00", "planned_end": "13:00"},
+    {"day": 2, "topic": "Household questionnaire: roster and demographics", "planned_start": "09:00", "planned_end": "12:00"},
+]
+
+
 def report(**over):
     body = {
-        "report_date": date.today().isoformat(), "training_day": 1, "class_hall": "Hall 2", "venue": "Bo Teachers College", "lead_trainer": "Fatmata Koroma", "phase": "FIELD", "district": "Bo",
-        "expected": 40, "present": 36, "late": 4, "coverage": "SOME", "incomplete_topic": "Household listing practical, time ran out", "practice_minutes": 90, "practice_not_scheduled": False,
-        "checks": ["QUIZ", "PRACTICAL"], "task_checked": "Household roster on CAPI", "number_checked": 36, "number_met": 29, "criterion": "8 of 10 quiz items and a complete roster",
-        "learning_gap": "Relationship to head codes confused", "followup_count": 7, "followup_not_assessed": False,
-        "delivery_content": "GOOD", "delivery_participation": "SOME", "delivery_time": "MAJOR", "support": ["DEVICES", "INTERNET_POWER"], "support_other": None,
-        "actions": [{"issue": "6 tablets not charged, 30 minutes lost", "action": "Charge overnight at the college office", "owner_due": "Logistics, tonight"}],
-        "mgmt_help": True, "raised_to": "District coordinator",
+        "phase": "FIELD", "platform_venue": "Bo Teachers College, Hall 2", "class_hall": "Hall 2", "training_day": 1, "report_date": date.today().isoformat(),
+        "lead_facilitator": "Fatmata Koroma", "co_facilitators": "Ibrahim Conteh", "district": "Bo",
+        "sessions": [
+            {"topic": "Census concepts and reference night", "planned_start": "09:00", "planned_end": "10:30", "actual_start": "09:15", "actual_end": "10:50", "delivered": "Y", "reason": ""},
+            {"topic": "Household listing on CAPI", "planned_start": "11:00", "planned_end": "13:00", "actual_start": "11:10", "actual_end": "12:40", "delivered": "P", "reason": "Tablets not charged; practical cut short"},
+        ],
+        "carried_over": ["Household listing on CAPI"],
+        "quiz_administered": True, "quiz_title": "Day 1 quiz", "mean_score": 72.5, "pass_rate": 81, "quiz_comments": None,
+        "practice_minutes": 60, "practice_comments": None, "hardest_topics": ["Household listing on CAPI"], "hardest_comments": "Structure numbering confused",
+        "q_content": 4, "q_content_evidence": None, "q_engagement": 5, "q_engagement_evidence": "All 36 trainees did the listing walk; 12 questions asked", "q_time": 2, "q_time_evidence": "Session 1 started 15 min late, practical lost 30 min",
+        "q_illustrations": 4, "q_illustrations_evidence": None,
+        "material_issues": [{"item": "Enumerator manual ch. 4, p. 31", "type": "ERROR", "severity": "H", "correction": "Replace the household definition with the reference-night rule"}],
+        "g_internet": 3, "g_internet_details": "Slow after 11:00", "g_power": 2, "g_power_details": "Generator out 11:00 to 11:40; tablets ran on battery", "g_devices": 6, "g_devices_details": "6 trainees shared tablets", "g_food": 4, "g_food_details": None,
+        "escalations": [{"issue": "6 tablets short in Hall 2", "raised_to": "District coordinator", "owner": "Logistics", "needed_by": "tomorrow 08:00", "status": "OPEN"}],
     }
     body.update(over)
     return body
 
 
-def test_rounds_reports_summary_export_and_access(client, admin):
+def test_rounds_agenda_reports_summary_export_and_access(client, admin):
     me = me_user(client, admin)
-    # a plain M&E officer created with the ME role has the daily rights; a district DQM does not
-    r = client.post("/api/v1/me/daily/rounds", json={"title": "Field staff training, Southern region", "phase": "FIELD", "period_start": "2026-10-12", "period_end": "2026-10-23", "description": "Send one form per class each day."}, headers=me)
+    r = client.post("/api/v1/me/daily/rounds", json={"title": "Field staff training, Southern region", "phase": "FIELD", "period_start": "2026-10-12", "period_end": "2026-10-23"}, headers=me)
     assert r.status_code == 201, r.text
     rd = r.json()
-    assert rd["status"] == "OPEN" and rd["reports"] == 0 and rd["token"]
     token = rd["token"]
     assert client.post("/api/v1/me/daily/rounds", json={"title": "field staff training, southern region", "phase": "FIELD"}, headers=me).status_code == 409
     dqm = me_user(client, admin, "dqm.bo", "DISTRICT_DQM")
     assert client.get("/api/v1/me/daily/rounds", headers=dqm).status_code == 403
 
-    # public page and submissions
+    # agenda: the drop-down of topics on the form
+    a = client.put(f"/api/v1/me/daily/rounds/{rd['id']}/agenda", json=AGENDA, headers=me)
+    assert a.status_code == 200 and len(a.json()) == 3 and a.json()[1]["position"] == 2, a.text
+    assert client.put(f"/api/v1/me/daily/rounds/{rd['id']}/agenda", json=[{"day": 1, "topic": "x", "planned_start": "10:00", "planned_end": "09:00"}], headers=me).status_code == 400
     pub = client.get(f"/api/v1/public/daily/{token}")
-    assert pub.status_code == 200 and pub.json()["form"]["phases"][2]["value"] == "FIELD" and pub.json()["status"] == "OPEN"
+    assert pub.status_code == 200 and len(pub.json()["agenda"]) == 3 and pub.json()["form"]["evidence_scores"] == [1, 2, 5]
     assert client.get("/api/v1/public/daily/not-a-token").status_code == 404
-    bad = client.post(f"/api/v1/public/daily/{token}/submit", json=report(present=50, number_met=40, coverage="ALL", support=["NONE", "OTHER"], actions=[{"issue": "a", "action": ""}, {"issue": "b", "action": "c"}, {"issue": "d", "action": "e"}]))
+
+    # rules
+    bad = client.post(f"/api/v1/public/daily/{token}/submit", json=report(sessions=[{"topic": "Census concepts", "planned_start": "09:00", "planned_end": "08:00", "delivered": "N", "reason": ""}], q_time=1, q_time_evidence="", quiz_title="", g_devices=None,
+                                                                            material_issues=[{"item": "", "type": None, "severity": "X", "correction": ""}], escalations=[{"issue": "", "raised_to": "CCIT", "status": "OPEN"}]))
     assert bad.status_code == 422, bad.text
     errs = bad.json()["detail"]["errors"]
-    assert "Present cannot exceed the expected trainees" in errs and "The number meeting the criterion cannot exceed the number checked" in errs
-    assert "None cannot be combined with a support problem" in errs and "Record at most 2 priority actions" in errs
+    assert "Session 1: planned end must be after planned start" in errs and "Session 1: give the reason when a session is partly or not delivered" in errs
+    assert "D: give the quiz / assessment title" in errs and any("evidence / justification is required for a score of 1" in x for x in errs)
+    assert "G: give the number of devices short (0 if none)" in errs and "F issue 1: give the item (manual chapter, quiz, questionnaire ref.)" in errs
+    assert "H escalation 1: describe the issue requiring management / CCIT action" in errs
     assert client.post(f"/api/v1/public/daily/{token}/submit", json=report(report_date=(date.today() + timedelta(days=1)).isoformat())).status_code == 400
+
+    # a good report: minutes over/under computed, overall = mean of the four
     ok = client.post(f"/api/v1/public/daily/{token}/submit", json=report())
     assert ok.status_code == 200, ok.text
     first = ok.json()
-    # the same browser corrects its report; another device cannot
-    fixed = client.post(f"/api/v1/public/daily/{token}/submit", json={**report(present=37), "report_id": first["report_id"], "edit_token": first["edit_token"]})
-    assert fixed.status_code == 200 and fixed.json()["report_id"] == first["report_id"]
+    assert first["overall"] == 3.75
+    rows = client.get(f"/api/v1/me/daily/rounds/{rd['id']}/reports", headers=me).json()
+    x = rows[0]
+    assert x["sessions"][0]["delta"] == 5 and x["sessions"][1]["delta"] == -30 and x["minutes_delta"] == -25
+    assert x["sessions_delivered"] == 1 and x["sessions_partly"] == 1 and x["low_scores"] == 1 and x["open_escalations"] == 1
+    # same device corrects; another device cannot
+    assert client.post(f"/api/v1/public/daily/{token}/submit", json={**report(g_devices=4), "report_id": first["report_id"], "edit_token": first["edit_token"]}).status_code == 200
     assert client.post(f"/api/v1/public/daily/{token}/submit", json={**report(), "report_id": first["report_id"], "edit_token": "wrong"}).status_code == 403
-    client.post(f"/api/v1/public/daily/{token}/submit", json=report(class_hall="Hall 3", lead_trainer="Mohamed Sesay", expected=38, present=38, late=0, coverage="ALL", incomplete_topic=None, checks=["NOT_ASSESSED"], number_checked=None, number_met=None, task_checked=None, criterion=None, learning_gap="None", followup_count=None, followup_not_assessed=True, delivery_content="GOOD", delivery_participation="GOOD", delivery_time="GOOD", support=["NONE"], actions=[], mgmt_help=False, raised_to=None))
-    client.post(f"/api/v1/public/daily/{token}/submit", json=report(training_day=2, report_date=date.today().isoformat(), present=35, late=1, district="Bonthe", practice_minutes=None, practice_not_scheduled=True))
+    client.post(f"/api/v1/public/daily/{token}/submit", json=report(class_hall="Hall 3", lead_facilitator="Mohamed Sesay", sessions=[dict(s, delivered="Y", actual_start=s["planned_start"], actual_end=s["planned_end"], reason="") for s in report()["sessions"]],
+                                                                   carried_over=[], quiz_administered=False, quiz_title=None, mean_score=None, pass_rate=None, practice_minutes=None, practice_comments="N/A: no tablets until day 2",
+                                                                   hardest_topics=[], q_time=4, q_time_evidence=None, material_issues=[], g_power=5, g_devices=0, escalations=[]))
+    client.post(f"/api/v1/public/daily/{token}/submit", json=report(training_day=2, district="Bonthe", sessions=[{"topic": "Household questionnaire: roster and demographics", "planned_start": "09:00", "planned_end": "12:00", "actual_start": "09:00", "actual_end": "12:30", "delivered": "Y", "reason": ""}],
+                                                                   carried_over=[], hardest_topics=["Household questionnaire: roster and demographics"], q_content=5, q_content_evidence="Trainees quoted the rule unprompted", q_time=3, q_time_evidence=None, escalations=[{"issue": "Projector failed", "raised_to": "CCIT", "owner": "ICT", "needed_by": "today", "status": "RESOLVED"}]))
 
-    # summary: every detail
+    # summary: every indicator
     s = client.get(f"/api/v1/me/daily/rounds/{rd['id']}/summary", headers=me).json()
-    assert s["reports"] == 3 and s["classes"] == 2 and s["days"] == 2 and s["trainers"] == 2 and s["districts"] == 2
-    assert s["expected"] == 118 and s["present"] == 110 and s["attendance_rate"] == 93.2 and s["late"] == 5
-    assert [c["count"] for c in s["coverage"]] == [1, 2, 0] and s["agenda_all_pct"] == 33.3
-    assert s["practice_minutes_avg"] == 90.0 and s["practice_not_scheduled"] == 1
-    assert s["assessed"] == 2 and s["checked"] == 72 and s["met"] == 58 and s["pass_rate"] == 80.6 and s["followup"] == 14 and s["followup_not_assessed"] == 1
-    assert [c["count"] for c in s["delivery"]["time"]] == [1, 0, 2] and s["reports_with_major_gaps"] == 2
-    assert next(c for c in s["support"] if c["code"] == "DEVICES")["count"] == 2 and s["help_requests"] == 2 and s["actions_total"] == 2
-    assert [g["label"] for g in s["by_day"]] == ["Day 1", "Day 2"] and s["by_day"][0]["reports"] == 2 and s["by_day"][0]["attendance_rate"] == 96.2
-    assert {g["label"] for g in s["by_class"]} == {"Hall 2", "Hall 3"} and {g["label"] for g in s["by_district"]} == {"Bo", "Bonthe"}
-    assert len(s["incomplete_topics"]) == 2 and len(s["learning_gaps"]) == 2 and len(s["help_requested"]) == 2 and s["actions"][0]["owner_due"] == "Logistics, tonight"
-    assert s["latest"][0]["pass_rate"] == 80.6 and s["latest"][0]["major_gaps"] == 1 and s["round"]["reports"] == 3
-    # filters narrow every figure
+    assert s["reports"] == 3 and s["classes"] == 2 and s["days"] == 2 and s["facilitators"] == 2 and s["districts"] == 2
+    assert s["sessions"] == 5 and s["delivered"] == 4 and s["partly"] == 1 and s["delivered_pct"] == 80.0 and s["minutes_delta"] == 5 and s["carried_over"] == 1
+    assert s["quizzes"] == 2 and s["mean_score"] == 72.5 and s["pass_rate"] == 81.0 and s["practice_minutes_avg"] == 60.0 and s["practice_na"] == 1
+    assert s["quality"]["content"] == 4.33 and s["quality"]["time"] == 3.0 and s["quality"]["overall"] == 4.08 and s["low_scores"] == 1
+    assert s["quality_distribution"]["time"][3]["count"] == 1  # one score of 2
+    assert s["material_issues"] == 2 and s["issues_by_severity"][0]["count"] == 2
+    assert s["logistics"]["power"] == 3.0 and s["devices_short"] == 10 and s["escalations"] == 2 and s["open_escalations"] == 1
+    assert [g["label"] for g in s["by_day"]] == ["Day 1", "Day 2"] and s["by_day"][0]["reports"] == 2 and s["by_day"][0]["delivered_pct"] == 75.0
+    topics = {t["topic"]: t for t in s["topics"]}
+    assert topics["Household listing on CAPI"]["partly"] == 1 and topics["Household listing on CAPI"]["carried_over"] == 1 and topics["Household listing on CAPI"]["hardest"] == 1 and topics["Household listing on CAPI"]["day"] == 1
+    assert s["hardest_topics"][0]["count"] == 1 and len(s["issues_log"]) == 2 and len(s["escalations_log"]) == 2 and len(s["evidence_log"]) == 5 and len(s["carried_over_log"]) == 1
     f = client.get(f"/api/v1/me/daily/rounds/{rd['id']}/summary?district=Bonthe", headers=me).json()
     assert f["reports"] == 1 and f["filters"]["district"] == "Bonthe"
-    assert client.get(f"/api/v1/me/daily/rounds/{rd['id']}/summary?class_hall=hall%203", headers=me).json()["reports"] == 1
+    assert client.get(f"/api/v1/me/daily/rounds/{rd['id']}/summary?facilitator=mohamed%20sesay", headers=me).json()["reports"] == 1
 
-    # reports list, manager edit and delete, export
-    rows = client.get(f"/api/v1/me/daily/rounds/{rd['id']}/reports", headers=me).json()
-    assert len(rows) == 3 and rows[0]["checks_label"] and "phase_label" in rows[0]
+    # escalation follow-up, manager edit, export, delete, close
     rid = first["report_id"]
-    e = client.put(f"/api/v1/me/daily/rounds/{rd['id']}/reports/{rid}", json=report(present=30), headers=me)
-    assert e.status_code == 200 and e.json()["present"] == 30 and e.json()["edited_by_name"] == "me.officer"
+    e = client.patch(f"/api/v1/me/daily/rounds/{rd['id']}/reports/{rid}/escalation", json={"index": 0, "status": "RESOLVED"}, headers=me)
+    assert e.status_code == 200 and e.json()["open_escalations"] == 0 and e.json()["edited_by_name"] == "me.officer"
+    assert client.get(f"/api/v1/me/daily/rounds/{rd['id']}/summary", headers=me).json()["open_escalations"] == 0
+    assert client.put(f"/api/v1/me/daily/rounds/{rd['id']}/reports/{rid}", json=report(q_engagement=3, q_engagement_evidence=None), headers=me).json()["overall"] == 3.25
     assert client.get(f"/api/v1/me/daily/rounds/{rd['id']}/reports/{rid}", headers=dqm).status_code == 403
     x = client.get(f"/api/v1/me/daily/rounds/{rd['id']}/export?format=xlsx", headers=me)
     assert x.status_code == 200 and x.headers["content-type"].startswith("application/vnd.openxmlformats")
     assert client.get(f"/api/v1/me/daily/rounds/{rd['id']}/export?format=pdf&district=Bo", headers=me).status_code == 200
     assert client.delete(f"/api/v1/me/daily/rounds/{rd['id']}/reports/{rid}", headers=me).status_code == 204
     assert client.get(f"/api/v1/me/daily/rounds/{rd['id']}/summary", headers=me).json()["reports"] == 2
-    # a round with reports cannot be deleted; closing stops submissions
     assert client.delete(f"/api/v1/me/daily/rounds/{rd['id']}", headers=me).status_code == 409
     assert client.patch(f"/api/v1/me/daily/rounds/{rd['id']}", json={"status": "CLOSED"}, headers=me).status_code == 200
     assert client.post(f"/api/v1/public/daily/{token}/submit", json=report()).status_code == 409
-    # a right granted to another account opens the module to it
-    uid = next(u["id"] for u in client.get("/api/v1/admin/users", headers=admin).json() if u["username"] == "dqm.bo")
-    g = client.put(f"/api/v1/admin/users/{uid}/permissions", json={"grant": ["me_daily.view"], "revoke": []}, headers=admin)
-    if g.status_code == 200:
-        dqm2 = auth(login(client, "dqm.bo", "Password123")["access_token"])
-        assert client.get("/api/v1/me/daily/rounds", headers=dqm2).status_code == 200
 
 
 def test_daily_evaluation_admin_role(client, admin):
@@ -107,8 +129,7 @@ def test_daily_evaluation_admin_role(client, admin):
     perms = set(d["user"]["permissions"])
     assert {"me_daily.view", "me_daily.manage"} <= perms and not {"me.view", "mefm.view", "dashboard.view"} & perms
     h = auth(d["access_token"])
-    r = client.post("/api/v1/me/daily/rounds", json={"title": "Master training, Freetown", "phase": "MASTER"}, headers=h)
-    assert r.status_code == 201
+    assert client.post("/api/v1/me/daily/rounds", json={"title": "Master training, Freetown", "phase": "MASTER"}, headers=h).status_code == 201
     assert client.get("/api/v1/me/daily/rounds", headers=h).status_code == 200
     assert client.get("/api/v1/me/evaluations", headers=h).status_code == 403
     assert client.get("/api/v1/mefm/overview", headers=h).status_code == 403
