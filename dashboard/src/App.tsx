@@ -28,6 +28,9 @@ import ExitCheckoutsPage from "./pages/exit/ExitCheckoutsPage";
 import ExitSummaryPage from "./pages/exit/ExitSummaryPage";
 import MeEvaluationsPage from "./pages/me/MeEvaluationsPage";
 import MeResultsPage from "./pages/me/MeResultsPage";
+import MeDailyPage from "./pages/me/MeDailyPage";
+import MeDailyResultsPage from "./pages/me/MeDailyResultsPage";
+import DailyPage from "./pages/public/DailyPage";
 import EvaluatePage from "./pages/public/EvaluatePage";
 import MefmHomePage from "./pages/mefm/MefmHomePage";
 
@@ -45,6 +48,7 @@ function Home() {
   const { can } = useAuth();
   if (can("dashboard.view")) return <DashboardPage />;
   if (can("me.view")) return <Navigate to="/me/evaluations" replace />;
+  if (can("me_daily.view")) return <Navigate to="/me/daily" replace />;
   if (can("mefm.view")) return <Navigate to="/mefm" replace />;
   if (can("daily_reports.view")) return <Navigate to="/dqm/reports" replace />;
   return <Navigate to="/resources" replace />;
@@ -72,6 +76,7 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/evaluate/:token" element={<EvaluatePage />} />
+            <Route path="/daily/:token" element={<DailyPage />} />
             <Route element={<RequireAuth />}>
               <Route element={<Layout />}>
                 <Route index element={<Home />} />
@@ -94,6 +99,10 @@ export default function App() {
                 <Route element={<RequirePerm code="me.view" />}>
                   <Route path="me/evaluations" element={<MeEvaluationsPage />} />
                   <Route path="me/evaluations/:id" element={<MeResultsPage />} />
+                </Route>
+                <Route element={<RequirePerm code="me_daily.view" />}>
+                  <Route path="me/daily" element={<MeDailyPage />} />
+                  <Route path="me/daily/:id" element={<MeDailyResultsPage />} />
                 </Route>
                 <Route element={<RequirePerm code="users.manage" />}><Route path="admin/users" element={<UsersPage />} /></Route>
                 <Route element={<RequirePerm code="roles.manage" />}><Route path="admin/roles" element={<RolesPage />} /></Route>

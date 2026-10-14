@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1 import admin, auth, dashboard, devices, dqm_reports, exit_checkouts, me, mefm, reports, resources, sync
+from app.api.v1 import admin, auth, dashboard, devices, dqm_reports, exit_checkouts, me, me_daily, mefm, reports, resources, sync
 
 api_router = APIRouter()
 api_router.include_router(auth.router)
@@ -12,5 +12,6 @@ api_router.include_router(resources.router)
 api_router.include_router(dqm_reports.router)
 api_router.include_router(exit_checkouts.router)
 api_router.include_router(me.router)
+api_router.include_router(me_daily.router)
 api_router.include_router(mefm.router)
 api_router.include_router(admin.router)

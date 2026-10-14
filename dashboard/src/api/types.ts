@@ -562,6 +562,92 @@ export interface MeEvaluation {
   trainees: number;
   trainers: number;
 }
+export interface MeDailyRound {
+  id: number;
+  title: string;
+  phase: "MASTER" | "TOT" | "FIELD";
+  period_start: string | null;
+  period_end: string | null;
+  description: string | null;
+  token: string;
+  status: "OPEN" | "CLOSED";
+  created_at: string;
+  share_url: string | null;
+  reports: number;
+  classes: number;
+  days: number;
+  last_report_date: string | null;
+  attendance_rate: number | null;
+  major_gaps: number;
+  help_requests: number;
+}
+export interface MeDailyAction { issue: string; action: string; owner_due: string }
+export interface MeDailyReport {
+  id: number;
+  round_id: number;
+  report_date: string;
+  training_day: number;
+  class_hall: string;
+  venue: string | null;
+  lead_trainer: string;
+  phase: "MASTER" | "TOT" | "FIELD";
+  phase_label: string;
+  district: string | null;
+  expected: number;
+  present: number;
+  late: number;
+  attendance_rate: number | null;
+  coverage: "ALL" | "SOME" | "NONE";
+  coverage_label: string;
+  incomplete_topic: string | null;
+  practice_minutes: number | null;
+  practice_not_scheduled: boolean;
+  checks: string[];
+  checks_label: string;
+  assessed: boolean;
+  task_checked: string | null;
+  number_checked: number | null;
+  number_met: number | null;
+  pass_rate: number | null;
+  criterion: string | null;
+  learning_gap: string | null;
+  followup_count: number | null;
+  followup_not_assessed: boolean;
+  delivery_content: "GOOD" | "SOME" | "MAJOR";
+  delivery_participation: "GOOD" | "SOME" | "MAJOR";
+  delivery_time: "GOOD" | "SOME" | "MAJOR";
+  major_gaps: number;
+  support: string[];
+  support_label: string;
+  support_other: string | null;
+  actions: MeDailyAction[];
+  mgmt_help: boolean;
+  raised_to: string | null;
+  submitted_at: string;
+  updated_at: string;
+  edited_by_name: string | null;
+}
+export interface MeDailyCount { code: string; label: string; count: number; pct: number }
+export interface MeDailyGroup {
+  key: string; label: string; reports: number; expected: number; present: number; late: number; attendance_rate: number | null; late_rate: number | null;
+  agenda_all: number; agenda_all_pct: number | null; assessed: number; checked: number; met: number; pass_rate: number | null; followup: number;
+  major_gaps: number; support_problems: number; help_requests: number; practice_minutes_avg: number | null;
+}
+export interface MeDailyIssue { report_id: number; report_date: string; training_day: number; class_hall: string; district: string | null; lead_trainer: string; text: string; extra: string | null }
+export interface MeDailyActionRow extends MeDailyAction { report_id: number; report_date: string; training_day: number; class_hall: string; district: string | null; lead_trainer: string }
+export interface MeDailySummary {
+  round: MeDailyRound;
+  filters: Record<string, string | null>;
+  reports: number; classes: number; days: number; trainers: number; districts: number;
+  expected: number; present: number; late: number; attendance_rate: number | null; late_rate: number | null;
+  coverage: MeDailyCount[]; agenda_all_pct: number | null; practice_minutes_avg: number | null; practice_not_scheduled: number;
+  checks: MeDailyCount[]; assessed: number; checked: number; met: number; pass_rate: number | null; followup: number; followup_not_assessed: number;
+  delivery: Record<"content" | "participation" | "time", MeDailyCount[]>; reports_with_major_gaps: number;
+  support: MeDailyCount[]; help_requests: number; actions_total: number;
+  by_day: MeDailyGroup[]; by_class: MeDailyGroup[]; by_district: MeDailyGroup[]; by_trainer: MeDailyGroup[]; by_phase: MeDailyGroup[];
+  incomplete_topics: MeDailyIssue[]; learning_gaps: MeDailyIssue[]; help_requested: MeDailyIssue[]; actions: MeDailyActionRow[];
+  latest: MeDailyReport[];
+}
 export interface MeRespondent {
   id: number;
   email: string | null; // anonymous when null

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { BarChart3, ClipboardCheck, ClipboardList, FileText, FolderDown, KeyRound, Lock, LogOut, Settings, Smartphone, Tablet, Users, UsersRound, ScrollText, Database, Map, GraduationCap } from "lucide-react";
+import { BarChart3, CalendarCheck, ClipboardCheck, ClipboardList, FileText, FolderDown, KeyRound, Lock, LogOut, Settings, Smartphone, Tablet, Users, UsersRound, ScrollText, Database, Map, GraduationCap } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "../auth/AuthContext";
 import { isMeSite } from "../brand";
@@ -63,10 +63,11 @@ export default function Layout() {
               <NavLink to={isNational ? "/dqm/exit/summary/national" : isRegionalUp ? "/dqm/exit/summary/region" : "/dqm/exit/summary/district"} className={link}><BarChart3 size={16} /> Exit summary</NavLink>
             </>
           )}
-          {(can("me.view") || can("mefm.view")) && (
+          {(can("me.view") || can("me_daily.view") || can("mefm.view")) && (
             <>
               <div className="px-3 pt-5 pb-1 text-base font-bold text-white">Monitoring &amp; Evaluation</div>
               {can("me.view") && <NavLink to="/me/evaluations" className={link}><GraduationCap size={16} /> Training evaluations</NavLink>}
+              {can("me_daily.view") && <NavLink to="/me/daily" className={link}><CalendarCheck size={16} /> Daily Evaluation</NavLink>}
               {can("mefm.view") && <NavLink to="/mefm" className={link}><Map size={16} /> Field monitoring</NavLink>}
             </>
           )}

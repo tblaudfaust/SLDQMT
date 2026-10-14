@@ -405,7 +405,7 @@ function ThankYou({ ev }: { ev: Evaluation }) {
 
 /** Faint repeating background around the card: the census emblem and small M&E motifs
  *  (a checklist, a bar chart, a graduation cap, a group of trainees). Decorative only. */
-function PageWatermark() {
+export function PageWatermark() {
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 select-none">
       <svg className="absolute inset-0 h-full w-full text-white" fill="currentColor">
