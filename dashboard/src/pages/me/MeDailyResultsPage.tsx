@@ -3,11 +3,12 @@ import { Fragment, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import clsx from "clsx";
 import { Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Copy, Download, ExternalLink, Pencil, Trash2 } from "lucide-react";
+import { Copy, Download, ExternalLink, Pencil, QrCode, Trash2 } from "lucide-react";
 import { ApiError, api, download, fmt, fmtDate, qs } from "../../api/client";
 import type { MeDailyCount, MeDailyGroup, MeDailyReport, MeDailySummary } from "../../api/types";
 import { useAuth } from "../../auth/AuthContext";
 import { Card, Empty, ErrorBox, KpiTile, Spinner } from "../../components/ui";
+import QrDialog from "../../components/QrDialog";
 import { DailyReportForm, toPayload, validate, type DailySpec, type DailyValues } from "../public/DailyReportForm";
 import { PHASE_LABEL, dailyLink } from "./MeDailyPage";
 
@@ -30,6 +31,7 @@ export default function MeDailyResultsPage() {
   const [open, setOpen] = useState<number | null>(null);
   const [edit, setEdit] = useState<MeDailyReport | null>(null);
   const [error, setError] = useState<unknown>(null);
+  const [qr, setQr] = useState(false);
   const invalidate = () => qc.invalidateQueries({ queryKey: ["me-daily"] });
   const remove = useMutation({ mutationFn: (r: MeDailyReport) => api.delete(`/me/daily/rounds/${id}/reports/${r.id}`), onSuccess: invalidate, onError: setError });
   if (res.isLoading) return <Spinner />;
@@ -57,6 +59,7 @@ export default function MeDailyResultsPage() {
             {(r.period_start || r.period_end) && <span className="text-slate-500">{fmtDate(r.period_start)}{r.period_end ? ` – ${fmtDate(r.period_end)}` : ""}</span>}
             <button className="text-navy" onClick={() => navigator.clipboard.writeText(dailyLink(r))}><Copy size={12} className="mr-1 inline" />Copy link</button>
             <a className="text-navy" href={dailyLink(r)} target="_blank" rel="noreferrer"><ExternalLink size={12} className="mr-1 inline" />Open form</a>
+            <button className="text-navy" onClick={() => setQr(true)}><QrCode size={12} className="mr-1 inline" />QR code</button>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -200,6 +203,7 @@ export default function MeDailyResultsPage() {
         </div>
       )}
 
+      {qr && <QrDialog url={dailyLink(r)} title={r.title} subtitle="Daily Trainer Class Evaluation · one form per class each day" onClose={() => setQr(false)} />}
       {edit && spec.data && (
         <EditDialog roundId={Number(id)} report={edit} spec={spec.data} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); invalidate(); }} />
       )}

@@ -2,11 +2,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import clsx from "clsx";
-import { BarChart3, Copy, ExternalLink, Link2, Lock, Plus, Trash2, Unlock } from "lucide-react";
+import { BarChart3, Copy, ExternalLink, Link2, Lock, Plus, QrCode, Trash2, Unlock } from "lucide-react";
 import { ApiError, api, fmtDate } from "../../api/client";
 import type { MeDailyRound } from "../../api/types";
 import { useAuth } from "../../auth/AuthContext";
 import { Card, Empty, ErrorBox, Field, KpiTile, Spinner } from "../../components/ui";
+import QrDialog from "../../components/QrDialog";
 
 interface Form { id?: number; title: string; phase: "MASTER" | "TOT" | "FIELD"; period_start: string; period_end: string; description: string }
 const empty: Form = { title: "", phase: "FIELD", period_start: "", period_end: "", description: "" };
@@ -23,6 +24,7 @@ export default function MeDailyPage() {
   const [form, setForm] = useState<Form | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [copied, setCopied] = useState<number | null>(null);
+  const [qr, setQr] = useState<MeDailyRound | null>(null);
   const invalidate = () => qc.invalidateQueries({ queryKey: ["me-daily"] });
   const save = useMutation({
     mutationFn: (f: Form) => {
@@ -88,9 +90,11 @@ export default function MeDailyPage() {
                 <span className="truncate font-mono text-slate-600">{dailyLink(r)}</span>
                 <button className="ml-auto shrink-0 text-navy" onClick={() => copy(r)} title="Copy the link for the lead trainers"><Copy size={14} /> {copied === r.id ? "Copied" : "Copy"}</button>
                 <a className="shrink-0 text-navy" href={dailyLink(r)} target="_blank" rel="noreferrer" title="Open the form page"><ExternalLink size={14} /></a>
+                <button className="shrink-0 text-navy" onClick={() => setQr(r)} title="QR code for the lead trainers"><QrCode size={14} /></button>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Link to={`/me/daily/${r.id}`} className="btn-primary"><BarChart3 size={16} /> Reports</Link>
+                <button className="btn-outline" onClick={() => setQr(r)}><QrCode size={16} /> QR code</button>
                 {can("me_daily.manage") && (
                   <>
                     <button className="btn-outline" onClick={() => { setForm({ id: r.id, title: r.title, phase: r.phase, period_start: r.period_start ?? "", period_end: r.period_end ?? "", description: r.description ?? "" }); setError(null); }}>Edit</button>
@@ -105,6 +109,7 @@ export default function MeDailyPage() {
           ))}
         </div>
       )}
+      {qr && <QrDialog url={dailyLink(qr)} title={qr.title} subtitle="Daily Trainer Class Evaluation · one form per class each day" onClose={() => setQr(null)} />}
       {form && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4" onClick={() => setForm(null)}>
           <form className="w-full max-w-lg rounded-lg bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()} onSubmit={(e) => { e.preventDefault(); save.mutate(form); }}>
