@@ -13,7 +13,7 @@ export type DailySpec = {
   title: string; subtitle: string; intro: string; instructions: string; scale_text: string;
   phases: Opt[]; scale: Opt[]; delivered: Opt[]; quality: Opt[]; issue_types: Opt[]; severities: Opt[]; escalation_status: Opt[]; logistics: Opt[]; districts: string[]; evidence_scores: number[];
 };
-export type SessionValue = { topic: string; planned_start: string; planned_end: string; actual_start: string; actual_end: string; delivered: string; reason: string };
+export type SessionValue = { topic: string; planned_start: string; planned_end: string; actual_start: string; actual_end: string; delivered: string; reason: string; details?: string; responsible?: string };
 export type IssueValue = { item: string; type: string; severity: string; correction: string };
 export type EscalationValue = { issue: string; raised_to: string; owner: string; needed_by: string; status: string };
 export type DailyValues = {
@@ -45,7 +45,7 @@ export function emptyValues(phase = "FIELD"): DailyValues {
 
 /** The agenda rows of a training day, as pre-filled session rows. */
 export function sessionsForDay(agenda: MeDailyAgendaItem[], day: number): SessionValue[] {
-  return agenda.filter((a) => a.day === day).map((a) => ({ topic: a.topic, planned_start: a.planned_start ?? "", planned_end: a.planned_end ?? "", actual_start: "", actual_end: "", delivered: "", reason: "" }));
+  return agenda.filter((a) => a.day === day).map((a) => ({ topic: a.topic, planned_start: a.planned_start ?? "", planned_end: a.planned_end ?? "", actual_start: "", actual_end: "", delivered: "", reason: "", details: a.details ?? undefined, responsible: a.responsible ?? undefined }));
 }
 
 const mins = (t: string) => (/^([01]\d|2[0-3]):[0-5]\d$/.test(t) ? Number(t.slice(0, 2)) * 60 + Number(t.slice(3)) : null);
@@ -175,6 +175,7 @@ export function DailyReportForm({ spec, agenda, values, onChange, onSubmit, busy
                     <span className="mb-1 block text-xs font-medium text-slate-600">Session / topic {i + 1}</span>
                     <input className="pub-input bg-white" list={`topics-${i}`} value={s.topic} onChange={(e) => setSession(i, { topic: e.target.value })} placeholder="Topic from the agenda" />
                     <datalist id={`topics-${i}`}>{allTopics.map((t) => <option key={t} value={t} />)}</datalist>
+                    {(s.details || s.responsible) && <div className="mt-1 text-xs text-slate-500">{s.details}{s.details && s.responsible ? " · " : ""}{s.responsible && <span className="text-slate-400">Responsible: {s.responsible}</span>}</div>}
                   </div>
                   <button type="button" className="mt-5 text-sm text-red-700" onClick={() => set("sessions", v.sessions.filter((_, j) => j !== i))}>Remove</button>
                 </div>

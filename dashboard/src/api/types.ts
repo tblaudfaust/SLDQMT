@@ -562,7 +562,8 @@ export interface MeEvaluation {
   trainees: number;
   trainers: number;
 }
-export interface MeDailyAgendaItem { id?: number; day: number; position?: number; topic: string; planned_start: string | null; planned_end: string | null }
+export interface MeDailyAgendaItem { id?: number; day: number; position?: number; topic: string; planned_start: string | null; planned_end: string | null; details?: string | null; responsible?: string | null }
+export interface MeDailyAgendaTemplate { key: string; title: string; phase: string; source: string | null; days: number; day_titles: Record<string, string>; items: MeDailyAgendaItem[] }
 export interface MeDailyRound {
   id: number;
   title: string;

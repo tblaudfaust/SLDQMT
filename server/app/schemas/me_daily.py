@@ -12,6 +12,8 @@ class AgendaItemIn(BaseModel):
     topic: str = Field(min_length=1, max_length=200)
     planned_start: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
     planned_end: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    details: str | None = Field(default=None, max_length=4000)
+    responsible: str | None = Field(default=None, max_length=200)
 
 
 class AgendaItemOut(AgendaItemIn):
@@ -25,6 +27,24 @@ class RoundIn(BaseModel):
     period_start: date | None = None
     period_end: date | None = None
     description: str | None = Field(default=None, max_length=2000)
+    agenda_template: str | None = None  # a bundled agenda to load at creation, e.g. MASTER_10_DAYS
+
+
+class AgendaTemplate(BaseModel):
+    key: str
+    title: str
+    phase: str
+    source: str | None = None
+    days: int
+    day_titles: dict[str, str] = {}
+    items: list[AgendaItemIn]
+
+
+class AgendaParseOut(BaseModel):
+    items: list[AgendaItemIn]
+    days: int
+    day_titles: dict[str, str] = {}
+    warnings: list[str] = []
 
 
 class RoundUpdate(BaseModel):

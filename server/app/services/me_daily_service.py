@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import json
 import secrets
+from pathlib import Path
 from collections import defaultdict
 from datetime import date, datetime, timezone
 
@@ -13,12 +14,15 @@ from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core import agenda_import
 from app.core import me_daily_form as form
 from app.core.config import settings
 from app.models import MeDailyAgendaItem, MeDailyFacilitatorReport, MeDailyRound, User
 from app.schemas.me_daily import (
     AgendaItemIn,
     AgendaItemOut,
+    AgendaParseOut,
+    AgendaTemplate,
     CountRow,
     Escalation,
     GroupRow,
@@ -65,7 +69,38 @@ def _live(round_id: int):
 
 
 def agenda_out(r: MeDailyRound) -> list[AgendaItemOut]:
-    return [AgendaItemOut(id=a.id, day=a.day, position=a.position, topic=a.topic, planned_start=a.planned_start, planned_end=a.planned_end) for a in r.agenda]
+    return [AgendaItemOut(id=a.id, day=a.day, position=a.position, topic=a.topic, planned_start=a.planned_start, planned_end=a.planned_end, details=a.details, responsible=a.responsible) for a in r.agenda]
+
+
+DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+
+
+def agenda_templates() -> list[AgendaTemplate]:
+    """The bundled agendas (app/data/agenda_*.json), ready to load into a training."""
+    out = []
+    for path in sorted(DATA_DIR.glob("agenda_*.json")):
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        items = [AgendaItemIn(**x) for x in raw["items"]]
+        out.append(AgendaTemplate(key=raw["key"], title=raw["title"], phase=raw.get("phase", "MASTER"), source=raw.get("source"), days=len({i.day for i in items}), day_titles=raw.get("day_titles", {}), items=items))
+    return out
+
+
+def agenda_template(key: str) -> AgendaTemplate:
+    for t in agenda_templates():
+        if t.key == key:
+            return t
+    raise HTTPException(404, f"No agenda template called {key}")
+
+
+def parse_agenda_file(filename: str, data: bytes) -> AgendaParseOut:
+    try:
+        parsed = agenda_import.parse_file(filename, data)
+    except Exception as e:  # a workbook that is not an agenda
+        raise HTTPException(400, f"Could not read {filename}: {e}") from e
+    items = [AgendaItemIn(**r.as_dict()) for r in parsed.rows]
+    if not items:
+        raise HTTPException(400, "No session found: the file needs DAY headings and rows with a time (08:30 - 10:00) and an activity, or the columns day, topic, planned_start, planned_end")
+    return AgendaParseOut(items=items, days=len({i.day for i in items}), day_titles={str(k): v for k, v in parsed.day_titles.items()}, warnings=parsed.warnings)
 
 
 def to_out(db: Session, r: MeDailyRound) -> RoundOut:
@@ -116,6 +151,8 @@ def create_round(db: Session, user: User, body: RoundIn) -> MeDailyRound:
                      description=(body.description or "").strip() or None, token=secrets.token_urlsafe(18), status="OPEN", created_by=user.id)
     db.add(r)
     db.flush()
+    if body.agenda_template:
+        set_agenda(db, r, agenda_template(body.agenda_template).items)
     return r
 
 
@@ -146,7 +183,8 @@ def set_agenda(db: Session, r: MeDailyRound, items: list[AgendaItemIn]) -> MeDai
     positions: dict[int, int] = defaultdict(int)
     for a in items:
         positions[a.day] += 1
-        db.add(MeDailyAgendaItem(round_id=r.id, day=a.day, position=positions[a.day], topic=a.topic.strip(), planned_start=a.planned_start, planned_end=a.planned_end))
+        db.add(MeDailyAgendaItem(round_id=r.id, day=a.day, position=positions[a.day], topic=a.topic.strip(), planned_start=a.planned_start, planned_end=a.planned_end,
+                                 details=(a.details or "").strip() or None, responsible=(a.responsible or "").strip() or None))
     db.flush()
     db.refresh(r)
     return r

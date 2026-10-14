@@ -1,0 +1,588 @@
+{
+ "key": "MASTER_10_DAYS",
+ "title": "SLPHC 2026 Master Training agenda (10 days)",
+ "phase": "MASTER",
+ "source": "MT_SLPHC_Master_Training_Agenda_v1.xlsx",
+ "day_titles": {
+  "1": "OFFICIAL OPENING AND GENERAL INFORMATION",
+  "2": "THEORITICAL CONCEPTS",
+  "3": "CAPI PRACTICE 1 (EA NAVIGATION & LISTING)",
+  "4": "CAPI PRACTICE 2 (REGULAR HOUSEHOLD ENUMERATION)",
+  "5": "CAPI PRACTICE 3 (INSTITUTIONAL, SPECIAL POPULATION, RE-INTERVIEW, MOP-UP, DQM, & CLOSURE)",
+  "6": "FIELD PRACTICE 1 (LISTING & RE-LISTING)",
+  "7": "FIELD PRACTICE 2 (ENUMERATION & RE-INTERVIEWING)",
+  "8": "FIELD PRACTICE 3 (DQM FINDINGS, MOP-UP SIMULATION, CLOSURE)",
+  "9": "PRESENTATION",
+  "10": "CLOSE, ADMINISTRATIVE ANNOUNCEMENT & DEPLOYMENT"
+ },
+ "items": [
+  {
+   "day": 1,
+   "topic": "Tablet Distribution and Use",
+   "planned_start": "08:30",
+   "planned_end": "10:00",
+   "details": null,
+   "responsible": "Moses Johnson & Facilitators"
+  },
+  {
+   "day": 1,
+   "topic": "Official Opening",
+   "planned_start": "10:00",
+   "planned_end": "11:00",
+   "details": null,
+   "responsible": "All"
+  },
+  {
+   "day": 1,
+   "topic": "Trainees proceed to training halls",
+   "planned_start": "11:00",
+   "planned_end": "11:10",
+   "details": null,
+   "responsible": "James Medo"
+  },
+  {
+   "day": 1,
+   "topic": "PREVENTION OF SEXUAL EXPLOITATION, ABUSE AND HARASSMENT (PSEAH)",
+   "planned_start": "11:10",
+   "planned_end": "11:40",
+   "details": null,
+   "responsible": "HQ Stats SL District Coordinator"
+  },
+  {
+   "day": 1,
+   "topic": "Assessment (Comprehensive, on tablet)",
+   "planned_start": "11:40",
+   "planned_end": "13:00",
+   "details": null,
+   "responsible": "Trainees"
+  },
+  {
+   "day": 1,
+   "topic": "Chapter 1 – General Information about the Census",
+   "planned_start": "14:00",
+   "planned_end": "14:15",
+   "details": "1.8 Confidentiality of Information; 1.9 Oath of Secrecy; 1.10 Rights and Responsibilities of Respondents / Chapter 1 – General Information about the Census: / 1.1 Introduction; 1.2 Population Census versus Housing Census; 1.3 History of Census Taking in Sierra Leone; 1.4 Essential Features of a Census; 1.5 Objectives of the 2026 Population and Housing Census; 1.6 Uses of Census Data-Why are we conducting the 2026 Census? 1.7 Legal Framework; 1.11 Summary",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 1,
+   "topic": "Chapter 2 – Census Organization and Operational Structure",
+   "planned_start": "14:15",
+   "planned_end": "14:45",
+   "details": "2.1 Introduction; 2.2 Objectives of the Census Organization; 2.3 National Census Governance Structure; 2.4 National Census Steering Committee; 2.5 Census Advisory Committee (CAC); 2.6 Census Technical Committee (CTC); 2.7 Census Secretariat; 2.8 National Census Technical Support Team; 2.9 Regional Census Coordination; 2.10 District Census Office; 2.15 Supervisory Area Level; 2.18 Communication and Reporting Channels / Chapter 2 – Census Organization and Operational Structure: / 2.11 District Census Officer (Administration); 2.12 District Census Coordinator (Technical); 2.13 District Technical Support Teams; 2.14 District Field Monitors; 2.15 Supervisory Area Level; 2.16 Field Supervisor; 2.17 Enumerators; 2.19 Accountability Framework",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 1,
+   "topic": "Chapter 4 – General Instructions for Enumerators",
+   "planned_start": "14:45",
+   "planned_end": "15:15",
+   "details": "4.1 Introduction 4.2 Role of the Enumerator / 4.3 Code of Conduct; 4.4 Confidentiality of Information; 4.5 Identification and Introduction; 4.6 Handling Refusals; 4.7 Handling Difficult Situations; 4.8 Daily Work Planning; 4.9 Use and Care of Census Equipment; 4.10 Data Synchronization Procedures; 4.11 Health and Safety",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 1,
+   "topic": "Chapter 13 – Leadership and Duties of the Field Supervisor",
+   "planned_start": "15:15",
+   "planned_end": "16:15",
+   "details": "13.2 Role and Main Responsibilities of the Field Supervisor",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 1,
+   "topic": "Chapter 3 – Key Census Concepts and Definitions",
+   "planned_start": "16:15",
+   "planned_end": "17:30",
+   "details": "3.1 Introduction; 3.2 Population Census; 3.3 Housing Census; 3.4 Essential Features of the Census; 3.5 Census Night; 3.6 Census Reference Period; 3.7 De Facto Enumeration; 3.8 Census Administrative Boundaries; 3.9 Types of Localities; 3.10 Census Locality Classes - (Rural/Urban); 3.11 Supervisory Area (SA); 3.12 Enumeration Area (EA); 3.13 Building; 3.14 Building Use; 3.16 Head of Household; 3.17 Place of Usual Residence; 3.18 Building Numbering and Household Listing",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 1,
+   "topic": "Chapter 7 – Use of Maps, GIS and Enumeration Area Boundaries in the Census",
+   "planned_start": "17:30",
+   "planned_end": "18:00",
+   "details": "7.1 Objectives of Census Mapping; 7.2 Geographic Information System (GIS) & Census Cartography; 7.3 Definition of Mapping Concepts; 7.4 Elements of Census Maps and Symbolization;",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 1,
+   "topic": "Daily Debriefing",
+   "planned_start": "18:00",
+   "planned_end": "19:00",
+   "details": null,
+   "responsible": "Facilitators"
+  },
+  {
+   "day": 2,
+   "topic": "Assessment",
+   "planned_start": "08:30",
+   "planned_end": "09:00",
+   "details": null,
+   "responsible": "Trainees"
+  },
+  {
+   "day": 2,
+   "topic": "Recap",
+   "planned_start": "09:00",
+   "planned_end": "09:30",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 2,
+   "topic": "Chapter 6 – Preliminary Work in the Enumeration Area: Supervisor and Enumerators Pre-Field Activities",
+   "planned_start": "09:30",
+   "planned_end": "10:00",
+   "details": "6.1 Introduction; 6.2 Objectives of Preliminary Work; 6.3 Community Entry Procedures; 6.4 Meeting Community Leaders; 6.5 Reconnaissance of the Enumeration Area (EA); 6.6 Identifying Settlements within the EA; 6.7 Identification of Special Population Groups; 6.8 Route Planning",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 2,
+   "topic": "Chapter 7 – Use of Maps, GIS and Enumeration Area Boundaries in the Census",
+   "planned_start": "10:00",
+   "planned_end": "10:30",
+   "details": "7.5 EA Map Interpretation and Navigation; 7.5.1 Map Deployment and EA Codes; 7.5.5 Building Numbering (Chalking);7.5.6.1 EA Assignment and Information Review; 7.6 Enumerator Must / Must Not Rules; 7.7 Mapping and Navigating Special Areas; 7.8 MAP Navigation in CAPI; 7.9 Conclusion",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 2,
+   "topic": "Chapter 10 – Enumeration of Institutional and Special Population Groups on Census Night",
+   "planned_start": "10:30",
+   "planned_end": "11:00",
+   "details": "10.1 Introduction; 10.2 Enumeration of population in conventional households (Main Questionnaire); 10.3 Enumeration of homeless households; 10.4 Enumeration of institutional (Group Quarter) population; 10.5 Enumerating floating population; 10.6 Objectives of Special Population Enumeration; 10.7 General Principles for Enumerating Special Population Groups; 10.8 Summary",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 2,
+   "topic": "Chapter 9 – Achieving Complete Coverage",
+   "planned_start": "11:00",
+   "planned_end": "11:30",
+   "details": "9.1 Introduction; 9.2 What complete coverage implies; 9.3 Importance of Complete Coverage; 9.4 How to ensure Complete Coverage; 9.5 Other Key Activities to Ensure Complete Coverage; 9.6 Coverage of Hard-to-Reach and Hard-to-Count Areas and Populations; 9.7 Monitoring of completion rate; 9.8 Types of Coverage Errors; 9.9 Principles for Achieving Complete Coverage; 9.10 Coverage Verification by Enumerators and Supervisors; 9.11 Preventing Duplication Across EAs; 9.12 Quality Assurance Measures; 9.13 Common Coverage Problems; 9.14 Coverage Checklist for Enumerators; 9.15 Consequences of Poor Coverage; 9.16 Summary",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 2,
+   "topic": "Chapter 8 – Building Numbering and Household Listing",
+   "planned_start": "11:30",
+   "planned_end": "12:30",
+   "details": "8.1 Introduction; 8.2 Pre-Enumeration Building Numbering and Household Listing; 8.3 The Listing Form; 8.4 Listing Procedure; 8.5 Completing the Household Listing Questionnaire",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 2,
+   "topic": "Chapter 11 – How to Complete the Census Questionnaires",
+   "planned_start": "12:30",
+   "planned_end": "13:00",
+   "details": "11.1 Introduction / 11.2 Objectives of the Census Questionaire / 11.3 Geographic Identification",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 2,
+   "topic": "Chapter 11 – How to Complete the Census Questionnaires",
+   "planned_start": "14:00",
+   "planned_end": "17:00",
+   "details": "HOUSEHOLD QUESTIONNAIRE / 11.4 Population Characteristics; / 11.5 Economic Activities / 11.13 Fertility / 11.6 Mortality / 11.7 Housing Characteristics and Amenities; / 11.8 Household Main Source of Information / 11.9 Ownership of Household Durables; / 11.10 Emigrations from the Household over The Last 5 Years; / 11.11 Agriculture at Household Levels",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 2,
+   "topic": "Part B. Floating Questionnaire; Part C. Institutional Questionnaire; Part D. Diplomatic Questionnaire",
+   "planned_start": "17:30",
+   "planned_end": "18:00",
+   "details": null,
+   "responsible": null
+  },
+  {
+   "day": 2,
+   "topic": "Daily briefing",
+   "planned_start": "18:00",
+   "planned_end": "19:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 3,
+   "topic": "Assessment",
+   "planned_start": "08:30",
+   "planned_end": "09:00",
+   "details": null,
+   "responsible": "Trainees"
+  },
+  {
+   "day": 3,
+   "topic": "Recap",
+   "planned_start": "09:00",
+   "planned_end": "09:30",
+   "details": null,
+   "responsible": "All"
+  },
+  {
+   "day": 3,
+   "topic": "CAPI",
+   "planned_start": "09:30",
+   "planned_end": "10:30",
+   "details": "Chapter 5 – Tablet and CAPI Application Use: / 5.9 Introduction to the CAPI Application; 5.10 Why use CAPI in 2026 SLPHC Data Collection; 5.11 Benefits of CAPI Over Paper Questionnaire; 5.12 Data Flow in 2026 PHC CAPI Application Operations; 5.22 Supervisor’s Menu — GIS Resource; 5.28 Enumerator Menu — GIS Resource; 5.32 Syncing and Application Modes; 5.34 Supervisor Menu - Switching From Training Mode To Census Mode;",
+   "responsible": "Trainees"
+  },
+  {
+   "day": 3,
+   "topic": "Team Formation and Assignment Creation",
+   "planned_start": "10:30",
+   "planned_end": "11:30",
+   "details": null,
+   "responsible": "DSD"
+  },
+  {
+   "day": 3,
+   "topic": "Chapter 7 – Use of Maps, GIS and Enumeration Area Boundaries in the Census",
+   "planned_start": "11:30",
+   "planned_end": "12:30",
+   "details": "7.8 MAP Navigation in CAPI",
+   "responsible": "Trainees"
+  },
+  {
+   "day": 3,
+   "topic": "Chapter 4 – General Instructions for Enumerators",
+   "planned_start": "12:30",
+   "planned_end": "13:00",
+   "details": "4.5 Identification and Introduction; 4.6 Handling Refusals; 4.7 Handling Difficult Situations; 4.9 Use and Care of Census Equipment",
+   "responsible": "Trainees"
+  },
+  {
+   "day": 3,
+   "topic": "Chapter 5 – Tablet and CAPI Application Use",
+   "planned_start": "14:00",
+   "planned_end": "18:00",
+   "details": "5.35 Listing Application / Practical Session / Mock Interview Scenario 1 / Scenario / Re-listing / Review and syncronisation",
+   "responsible": "Trainees"
+  },
+  {
+   "day": 3,
+   "topic": "Daily briefing",
+   "planned_start": "18:00",
+   "planned_end": "19:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 4,
+   "topic": "Recap Day 4 & Quiz 5",
+   "planned_start": "08:30",
+   "planned_end": "09:30",
+   "details": null,
+   "responsible": "All"
+  },
+  {
+   "day": 4,
+   "topic": "Chapter 5 – Tablet and CAPI Application Use",
+   "planned_start": "09:30",
+   "planned_end": "10:00",
+   "details": "5.36 Completing The Household Questionnaire using CAPI; / 5.37 Review Using The Overview Pane",
+   "responsible": "Trainees"
+  },
+  {
+   "day": 4,
+   "topic": "Completing SLPHC2026 Household Questionnaire (Concept Chapter 11 – How to Complete the Census Questionnaires, scenarios listed the previous day)",
+   "planned_start": "10:00",
+   "planned_end": "13:00",
+   "details": null,
+   "responsible": "Trainees"
+  },
+  {
+   "day": 4,
+   "topic": "Completing SLPHC2026 Household Questionnaire (Concept Chapter 11 – How to Complete the Census Questionnaires/ new scenarios - simple to complex)",
+   "planned_start": "14:00",
+   "planned_end": "18:00",
+   "details": "Modules for Role Play (Regular) / Economic Activity / Fertility / Mortality / Review and syncronisation",
+   "responsible": "Trainees"
+  },
+  {
+   "day": 4,
+   "topic": "Daily briefing",
+   "planned_start": "18:00",
+   "planned_end": "19:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 5,
+   "topic": "Recap Day 5 & Quiz 6",
+   "planned_start": "09:00",
+   "planned_end": "09:30",
+   "details": null,
+   "responsible": "All"
+  },
+  {
+   "day": 5,
+   "topic": "Census Night Enumeration of Special Populations (Concept / Chapter 10 – Enumeration of Institutional and Special Population Groups on Census Night, Scenerio, Role Play)",
+   "planned_start": "09:30",
+   "planned_end": "13:00",
+   "details": "homeless households or persons / institutional or group-quarter populations / floating populations / Review and syncronisation",
+   "responsible": "Trainees"
+  },
+  {
+   "day": 5,
+   "topic": "Re-interview (Concept / Chapter 14 – Re-Interview Processes and Procedures- practice on existing data)",
+   "planned_start": "14:00",
+   "planned_end": "18:00",
+   "details": "Review (re-interview) and syncronisation / Mop-up (scenerio) / Field Closure (Class Prcatrice): Chapter 15 - Field closure and mop up procedure / Coverage check - Chapter 9 – Achieving Complete Coverage / Data Quality Check - Chapter 12 – Field Data Quality Management / Individual Team Briefing (Post Classwork)",
+   "responsible": "Trainees"
+  },
+  {
+   "day": 5,
+   "topic": "Daily briefing",
+   "planned_start": "18:00",
+   "planned_end": "19:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 6,
+   "topic": "Recap Day 6 & Quiz 7",
+   "planned_start": "08:30",
+   "planned_end": "09:30",
+   "details": null,
+   "responsible": "All"
+  },
+  {
+   "day": 6,
+   "topic": "Pre-field Activities",
+   "planned_start": "09:30",
+   "planned_end": "10:30",
+   "details": "Teams formation / Assignment creation / Fetch GIS resources",
+   "responsible": "Trainees"
+  },
+  {
+   "day": 6,
+   "topic": "Listing",
+   "planned_start": "10:30",
+   "planned_end": "13:00",
+   "details": "EA Location / Reconnaissance / Household entry / Listing",
+   "responsible": "Trainees"
+  },
+  {
+   "day": 6,
+   "topic": "Listing",
+   "planned_start": "14:00",
+   "planned_end": "15:00",
+   "details": null,
+   "responsible": "Trainees"
+  },
+  {
+   "day": 6,
+   "topic": "Review and Syncronisation (Enumarators to Supervisors to HQ)",
+   "planned_start": "15:00",
+   "planned_end": "15:30",
+   "details": null,
+   "responsible": null
+  },
+  {
+   "day": 6,
+   "topic": "Re-listing (supervisors) and listing (enumerators) continuation",
+   "planned_start": "15:30",
+   "planned_end": "17:00",
+   "details": null,
+   "responsible": null
+  },
+  {
+   "day": 6,
+   "topic": "Review and Syncronisation (Enumarators to Supervisors to HQ)",
+   "planned_start": "17:00",
+   "planned_end": "18:00",
+   "details": "Teams end-of-day briefing",
+   "responsible": null
+  },
+  {
+   "day": 6,
+   "topic": "Daily briefing",
+   "planned_start": "18:00",
+   "planned_end": "19:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 7,
+   "topic": "Recap Day 7 & Quiz 8",
+   "planned_start": "08:30",
+   "planned_end": "09:30",
+   "details": null,
+   "responsible": "All"
+  },
+  {
+   "day": 7,
+   "topic": "Feedback (listing)",
+   "planned_start": "09:30",
+   "planned_end": "10:00",
+   "details": null,
+   "responsible": "Trainees"
+  },
+  {
+   "day": 7,
+   "topic": "Enumeration",
+   "planned_start": "10:00",
+   "planned_end": "13:00",
+   "details": null,
+   "responsible": null
+  },
+  {
+   "day": 7,
+   "topic": "Review and Syncronisation (Enumarators to Supervisors to HQ)",
+   "planned_start": "14:00",
+   "planned_end": "14:30",
+   "details": null,
+   "responsible": "Trainees"
+  },
+  {
+   "day": 7,
+   "topic": "Re-interview (supervisors) and enumeration (enumerators) continuation",
+   "planned_start": "14:30",
+   "planned_end": "17:00",
+   "details": null,
+   "responsible": null
+  },
+  {
+   "day": 7,
+   "topic": "Review and Syncronisation (Enumarators to Supervisors to HQ)",
+   "planned_start": "17:00",
+   "planned_end": "18:00",
+   "details": "Teams end-of-day briefing",
+   "responsible": null
+  },
+  {
+   "day": 7,
+   "topic": "Daily briefing",
+   "planned_start": "18:00",
+   "planned_end": "19:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 8,
+   "topic": "Recap Day 8 & Quiz 9",
+   "planned_start": "08:30",
+   "planned_end": "09:30",
+   "details": null,
+   "responsible": "All"
+  },
+  {
+   "day": 8,
+   "topic": "Feedback (enumeration)",
+   "planned_start": "09:30",
+   "planned_end": "10:00",
+   "details": null,
+   "responsible": "All"
+  },
+  {
+   "day": 8,
+   "topic": "DQM findings",
+   "planned_start": "10:00",
+   "planned_end": "11:00",
+   "details": null,
+   "responsible": null
+  },
+  {
+   "day": 8,
+   "topic": "Mop-up simulation",
+   "planned_start": "11:00",
+   "planned_end": "12:00",
+   "details": null,
+   "responsible": null
+  },
+  {
+   "day": 8,
+   "topic": "Closure",
+   "planned_start": "12:00",
+   "planned_end": "13:00",
+   "details": null,
+   "responsible": null
+  },
+  {
+   "day": 8,
+   "topic": "Final exam (Comprehensive)",
+   "planned_start": "14:00",
+   "planned_end": "16:00",
+   "details": null,
+   "responsible": "Trainees"
+  },
+  {
+   "day": 8,
+   "topic": "Correction",
+   "planned_start": "16:00",
+   "planned_end": "17:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 8,
+   "topic": "Presentation distribution / assignment",
+   "planned_start": "17:00",
+   "planned_end": "18:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 8,
+   "topic": "Daily briefing",
+   "planned_start": "18:00",
+   "planned_end": "19:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 9,
+   "topic": "Presentation and adjudication",
+   "planned_start": "08:30",
+   "planned_end": "13:00",
+   "details": null,
+   "responsible": "Trainees"
+  },
+  {
+   "day": 9,
+   "topic": "Training on Communications and PR",
+   "planned_start": "14:00",
+   "planned_end": "15:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 9,
+   "topic": "Specialized Training (Supervisors, Field Monitors, M&E Officers, Field Coordinators)",
+   "planned_start": "15:00",
+   "planned_end": "18:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 9,
+   "topic": "Daily briefing",
+   "planned_start": "18:00",
+   "planned_end": "19:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 10,
+   "topic": "Close, administrative announcement & deployment",
+   "planned_start": "09:30",
+   "planned_end": "13:00",
+   "details": null,
+   "responsible": null
+  },
+  {
+   "day": 10,
+   "topic": "Close, administrative announcement & deployment",
+   "planned_start": "14:00",
+   "planned_end": "18:00",
+   "details": null,
+   "responsible": null
+  },
+  {
+   "day": 10,
+   "topic": "Daily briefing",
+   "planned_start": "18:00",
+   "planned_end": "19:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  }
+ ]
+}

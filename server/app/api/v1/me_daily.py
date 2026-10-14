@@ -2,14 +2,14 @@
 
 from datetime import date, datetime, timezone
 
-from fastapi import APIRouter, Depends, Query, Request, Response
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, Response, UploadFile
 from sqlalchemy.orm import Session
 
 from app.api.deps import audit, require_perm
 from app.core import me_daily_form
 from app.db.session import get_db
 from app.models import User
-from app.schemas.me_daily import AgendaItemIn, AgendaItemOut, EscalationStatusIn, PublicRound, PublicSubmitIn, PublicSubmitOut, ReportIn, ReportOut, RoundIn, RoundOut, RoundUpdate, Summary
+from app.schemas.me_daily import AgendaItemIn, AgendaItemOut, AgendaParseOut, AgendaTemplate, EscalationStatusIn, PublicRound, PublicSubmitIn, PublicSubmitOut, ReportIn, ReportOut, RoundIn, RoundOut, RoundUpdate, Summary
 from app.services import me_daily_service as svc
 from app.services import report_service
 
@@ -26,6 +26,21 @@ def _filters(district: str | None = Query(default=None, max_length=60), class_ha
 @router.get("/me/daily/form")
 def form_spec(_: User = Depends(view)):
     return me_daily_form.public_spec()
+
+
+@router.get("/me/daily/agenda-templates", response_model=list[AgendaTemplate])
+def agenda_templates(_: User = Depends(view)):
+    """Bundled agendas, e.g. the 10-day Master Training agenda, ready to load into a training."""
+    return svc.agenda_templates()
+
+
+@router.post("/me/daily/agenda/parse", response_model=AgendaParseOut)
+async def parse_agenda(file: UploadFile = File(...), _: User = Depends(manage)):
+    """Read an agenda workbook (the Master Training layout) or a CSV into rows for the agenda editor; nothing is saved."""
+    data = await file.read()
+    if len(data) > 5_000_000:
+        raise HTTPException(413, "The file is larger than 5 MB")
+    return svc.parse_agenda_file(file.filename or "agenda.xlsx", data)
 
 
 @router.get("/me/daily/rounds", response_model=list[RoundOut])

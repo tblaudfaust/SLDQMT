@@ -41,6 +41,8 @@ class MeDailyAgendaItem(Base):
     topic: Mapped[str] = mapped_column(String(200), nullable=False)
     planned_start: Mapped[str | None] = mapped_column(String(5))  # HH:MM
     planned_end: Mapped[str | None] = mapped_column(String(5))
+    details: Mapped[str | None] = mapped_column(Text)  # the chapter sections the session covers
+    responsible: Mapped[str | None] = mapped_column(String(200))
 
     round: Mapped[MeDailyRound] = relationship(back_populates="agenda")
 

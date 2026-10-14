@@ -134,3 +134,42 @@ def test_daily_evaluation_admin_role(client, admin):
     assert client.get("/api/v1/me/evaluations", headers=h).status_code == 403
     assert client.get("/api/v1/mefm/overview", headers=h).status_code == 403
     assert client.get("/api/v1/admin/users", headers=h).status_code == 403
+
+
+def test_agenda_template_and_upload(client, admin):
+    """The bundled 10-day Master Training agenda loads at creation; an agenda workbook in the same layout can be uploaded."""
+    import io
+
+    from openpyxl import Workbook
+
+    me = me_user(client, admin)
+    t = client.get("/api/v1/me/daily/agenda-templates", headers=me).json()
+    assert [x["key"] for x in t] == ["MASTER_10_DAYS"] and t[0]["days"] == 10 and len(t[0]["items"]) == 71 and t[0]["day_titles"]["3"].startswith("CAPI PRACTICE 1")
+    r = client.post("/api/v1/me/daily/rounds", json={"title": "Master training, Freetown, cohort 1", "phase": "MASTER", "agenda_template": "MASTER_10_DAYS"}, headers=me)
+    assert r.status_code == 201 and r.json()["agenda_items"] == 71 and r.json()["agenda_days"] == 10, r.text
+    agenda = client.get(f"/api/v1/me/daily/rounds/{r.json()['id']}/agenda", headers=me).json()
+    day2 = [a for a in agenda if a["day"] == 2]
+    assert day2[0]["topic"] == "Assessment" and day2[0]["planned_start"] == "08:30" and any("8.1 Introduction" in (a["details"] or "") for a in day2)
+    assert client.post("/api/v1/me/daily/rounds", json={"title": "x y z", "phase": "MASTER", "agenda_template": "NOPE"}, headers=me).status_code == 404
+    # the public page carries the agenda with details
+    pub = client.get(f"/api/v1/public/daily/{r.json()['token']}").json()
+    assert len(pub["agenda"]) == 71 and pub["agenda"][0]["responsible"] == "Moses Johnson & Facilitators"
+
+    # upload: a workbook in the Master Training layout
+    wb = Workbook()
+    ws = wb.active
+    for row in [["DAY1 - OPENING"], ["TIME", "D", "DURATION", "ACTIVITY", "RESPONSIBLE PERSON(S)"], ["08:00 - 08:30", "5hrs", "30mins", "Attendance and breakfast", "All"],
+                ["08:30 – 10:00", None, "1hr 30mins", "·   Chapter 1 – General Information:", "All Facilitators"], [None, None, None, "1.1 Introduction; 1.2 Objectives", None],
+                ["13:00 - 14:00", "1hr", "1hr", "Lunch", "All"], ["DAY2 - CONCEPTS"], ["09:00 - 12:00", None, "3hrs", "Chapter 11 – Questionnaires", "All Facilitators"]]:
+        ws.append(row)
+    buf = io.BytesIO()
+    wb.save(buf)
+    up = client.post("/api/v1/me/daily/agenda/parse", files={"file": ("agenda.xlsx", buf.getvalue(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}, headers=me)
+    assert up.status_code == 200, up.text
+    parsed = up.json()
+    assert parsed["days"] == 2 and [i["topic"] for i in parsed["items"]] == ["Chapter 1 – General Information", "Chapter 11 – Questionnaires"]
+    assert parsed["items"][0]["planned_start"] == "08:30" and parsed["items"][0]["planned_end"] == "10:00" and parsed["items"][0]["details"] == "1.1 Introduction; 1.2 Objectives"
+    csv_text = "day,topic,planned_start,planned_end\n1,Opening,09:00,10:00\n2,Listing practical,10:00,13:00\n"
+    up = client.post("/api/v1/me/daily/agenda/parse", files={"file": ("agenda.csv", csv_text, "text/csv")}, headers=me)
+    assert up.status_code == 200 and len(up.json()["items"]) == 2 and up.json()["items"][1]["planned_end"] == "13:00"
+    assert client.post("/api/v1/me/daily/agenda/parse", files={"file": ("x.csv", "nothing here\n", "text/csv")}, headers=me).status_code == 400
