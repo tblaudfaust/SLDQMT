@@ -13,7 +13,7 @@ export type DailySpec = {
   title: string; subtitle: string; intro: string; instructions: string; scale_text: string;
   phases: Opt[]; scale: Opt[]; delivered: Opt[]; quality: Opt[]; issue_types: Opt[]; severities: Opt[]; escalation_status: Opt[]; logistics: Opt[]; districts: string[]; evidence_scores: number[];
 };
-export type SessionValue = { topic: string; planned_start: string; planned_end: string; actual_start: string; actual_end: string; delivered: string; reason: string; details?: string; responsible?: string };
+export type SessionValue = { topic: string; planned_start: string; planned_end: string; actual_start: string; actual_end: string; delivered: string; reason: string; details?: string; responsible?: string; other?: boolean };
 export type IssueValue = { item: string; type: string; severity: string; correction: string };
 export type EscalationValue = { issue: string; raised_to: string; owner: string; needed_by: string; status: string };
 export type DailyValues = {
@@ -130,8 +130,18 @@ export function DailyReportForm({ spec, agenda, values, onChange, onSubmit, busy
   const [touched, setTouched] = useState(false);
   const day = Number(v.training_day);
   const dayAgenda = agenda.filter((a) => a.day === day);
-  const allTopics = Array.from(new Set([...agenda.map((a) => a.topic), ...v.sessions.map((s) => s.topic.trim()).filter(Boolean)]));
-  const dayTopics = Array.from(new Set([...dayAgenda.map((a) => a.topic), ...v.sessions.map((s) => s.topic.trim()).filter(Boolean)]));
+  const agendaDays = Array.from(new Set(agenda.map((a) => a.day))).sort((a, b) => a - b);
+  const groups: { label: string; topics: string[] }[] = [
+    ...(day >= 1 && dayAgenda.length ? [{ label: `Day ${day} (today)`, topics: Array.from(new Set(dayAgenda.map((a) => a.topic))) }] : []),
+    ...agendaDays.filter((d) => d !== day || !dayAgenda.length).map((d) => ({ label: `Day ${d}`, topics: Array.from(new Set(agenda.filter((a) => a.day === d).map((a) => a.topic))) })),
+  ];
+  const typed = v.sessions.map((s) => s.topic.trim()).filter((t) => t && !agenda.some((a) => a.topic === t));
+  if (typed.length) groups.push({ label: "Typed on this form", topics: Array.from(new Set(typed)) });
+  const pickSession = (i: number, topic: string) => {
+    if (topic === "__other") { setSession(i, { topic: "", other: true, details: undefined, responsible: undefined }); return; }
+    const a = agenda.find((x) => x.topic === topic && x.day === day) ?? agenda.find((x) => x.topic === topic);
+    setSession(i, { topic, other: false, planned_start: a?.planned_start ?? v.sessions[i].planned_start, planned_end: a?.planned_end ?? v.sessions[i].planned_end, details: a?.details ?? undefined, responsible: a?.responsible ?? undefined });
+  };
   const setSession = (i: number, patch: Partial<SessionValue>) => set("sessions", v.sessions.map((s, j) => (j === i ? { ...s, ...patch } : s)));
   const setDay = (d: string) => {
     const n = Number(d);
@@ -173,8 +183,16 @@ export function DailyReportForm({ spec, agenda, values, onChange, onSubmit, busy
                 <div className="mb-2 flex items-start gap-2">
                   <div className="flex-1">
                     <span className="mb-1 block text-xs font-medium text-slate-600">Session / topic {i + 1}</span>
-                    <input className="pub-input bg-white" list={`topics-${i}`} value={s.topic} onChange={(e) => setSession(i, { topic: e.target.value })} placeholder="Topic from the agenda" />
-                    <datalist id={`topics-${i}`}>{allTopics.map((t) => <option key={t} value={t} />)}</datalist>
+                    {agenda.length > 0 && (
+                      <select className="pub-input bg-white" value={s.other || (s.topic && !agenda.some((a) => a.topic === s.topic)) ? "__other" : s.topic} onChange={(e) => pickSession(i, e.target.value)}>
+                        <option value="">Choose the session from the agenda…</option>
+                        {groups.filter((g) => g.label !== "Typed on this form").map((g) => <optgroup key={g.label} label={g.label}>{g.topics.map((t) => <option key={t} value={t}>{t}</option>)}</optgroup>)}
+                        <option value="__other">Other (not on the agenda)</option>
+                      </select>
+                    )}
+                    {(agenda.length === 0 || s.other || (s.topic && !agenda.some((a) => a.topic === s.topic))) && (
+                      <input className="pub-input mt-1 bg-white" value={s.topic} onChange={(e) => setSession(i, { topic: e.target.value })} placeholder={agenda.length ? "Type the topic" : "Topic"} />
+                    )}
                     {(s.details || s.responsible) && <div className="mt-1 text-xs text-slate-500">{s.details}{s.details && s.responsible ? " · " : ""}{s.responsible && <span className="text-slate-400">Responsible: {s.responsible}</span>}</div>}
                   </div>
                   <button type="button" className="mt-5 text-sm text-red-700" onClick={() => set("sessions", v.sessions.filter((_, j) => j !== i))}>Remove</button>
@@ -209,7 +227,7 @@ export function DailyReportForm({ spec, agenda, values, onChange, onSubmit, busy
             {dayAgenda.length > 0 && v.sessions.length === 0 && <button type="button" className="pub-btn-ghost border border-slate-300" onClick={() => set("sessions", sessionsForDay(agenda, day))}>Load day {day} agenda</button>}
           </div>
         </div>
-        <Multi label="Content carried to next day" options={allTopics} values={v.carried_over} onToggle={(t) => toggleIn("carried_over", t)} empty="None" />
+        <TopicPicker label="Content carried to next day" groups={groups} values={v.carried_over} onToggle={(t) => toggleIn("carried_over", t)} />
       </Section>
 
       <Section icon={<BookOpenCheck size={18} />} code="D" title="Participant performance and learning">
@@ -231,7 +249,7 @@ export function DailyReportForm({ spec, agenda, values, onChange, onSubmit, busy
           <L label="Practical / CAPI hands-on time (minutes)"><input className="pub-input" type="number" min={0} inputMode="numeric" value={v.practice_minutes} onChange={(e) => set("practice_minutes", e.target.value)} /></L>
           <L label="Comments (write N/A and the reason if none)"><input className="pub-input" value={v.practice_comments} onChange={(e) => set("practice_comments", e.target.value)} /></L>
         </div>
-        <Multi label="Topics participants found hardest" options={dayTopics} values={v.hardest_topics} onToggle={(t) => toggleIn("hardest_topics", t)} empty="None" />
+        <TopicPicker label="Topics participants found hardest" groups={groups} values={v.hardest_topics} onToggle={(t) => toggleIn("hardest_topics", t)} />
         <L label="Comments"><input className="pub-input" value={v.hardest_comments} onChange={(e) => set("hardest_comments", e.target.value)} placeholder="What made them hard" /></L>
       </Section>
 
@@ -248,10 +266,19 @@ export function DailyReportForm({ spec, agenda, values, onChange, onSubmit, busy
             </div>
           );
         })}
-        <div className="flex items-center justify-between rounded-xl bg-navy px-4 py-3 text-white">
-          <span className="text-sm font-medium">Overall class rating (mean of 1–5)</span>
-          <span className="text-2xl font-bold">{(() => { const xs = (["content", "engagement", "time", "illustrations"] as QKey[]).map((k) => Number(v[`q_${k}`])).filter((x) => x > 0); return xs.length === 4 ? (xs.reduce((a, b) => a + b, 0) / 4).toFixed(2) : "—"; })()}</span>
-        </div>
+        {(() => {
+          const xs = (["content", "engagement", "time", "illustrations"] as QKey[]).map((k) => Number(v[`q_${k}`])).filter((x) => x > 0);
+          const mean = xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
+          return (
+            <div className="flex items-center justify-between rounded-xl bg-navy px-4 py-3 text-white">
+              <div>
+                <div className="text-sm font-medium">Overall class rating (mean of 1–5)</div>
+                <div className="text-xs text-sky-100/80">{xs.length === 4 ? "Computed from the four scores above." : `Computed automatically: ${xs.length} of 4 criteria rated so far.`}</div>
+              </div>
+              <span className="text-2xl font-bold">{mean === null ? "—" : mean.toFixed(2)}</span>
+            </div>
+          );
+        })()}
       </Section>
 
       <Section icon={<AlertTriangle size={18} />} code="F" title="Materials and assessment issues log">
@@ -347,14 +374,26 @@ function Choice({ label, options, value, onPick }: { label: string; options: Opt
   );
 }
 
-function Multi({ label, options, values, onToggle, empty }: { label: string; options: string[]; values: string[]; onToggle: (v: string) => void; empty: string }) {
+function TopicPicker({ label, groups, values, onToggle }: { label: string; groups: { label: string; topics: string[] }[]; values: string[]; onToggle: (v: string) => void }) {
+  const [other, setOther] = useState("");
+  const available = groups.map((g) => ({ ...g, topics: g.topics.filter((t) => !values.includes(t)) })).filter((g) => g.topics.length);
   return (
     <div>
-      <span className="mb-1 block text-sm font-medium text-slate-700">{label} <span className="text-xs font-normal text-slate-400">(tick all that apply)</span></span>
-      {options.length === 0 ? <p className="text-xs text-slate-400">Add the sessions above first.</p> : (
-        <div className="flex flex-wrap gap-2">
-          {options.map((t) => <button type="button" key={t} onClick={() => onToggle(t)} className={clsx("rounded-xl border px-3 py-1.5 text-sm font-medium transition", values.includes(t) ? "border-navy bg-navy text-white" : "border-slate-300 bg-white text-slate-700 hover:bg-sky-50")}>{t}</button>)}
-          {values.length === 0 && <span className="self-center text-xs text-slate-400">{empty}</span>}
+      <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
+      {values.length > 0 && (
+        <div className="mb-2 flex flex-wrap gap-2">
+          {values.map((t) => <span key={t} className="inline-flex items-center gap-1 rounded-xl bg-navy px-3 py-1.5 text-sm font-medium text-white">{t}<button type="button" className="ml-1 text-sky-200 hover:text-white" onClick={() => onToggle(t)} aria-label={`Remove ${t}`}>×</button></span>)}
+        </div>
+      )}
+      <select className="pub-input" value="" onChange={(e) => { if (e.target.value === "__other") { setOther(" "); return; } if (e.target.value) onToggle(e.target.value); }}>
+        <option value="">{values.length ? "Add another topic from the agenda…" : "None · choose a topic from the agenda to add it"}</option>
+        {available.map((g) => <optgroup key={g.label} label={g.label}>{g.topics.map((t) => <option key={t} value={t}>{t}</option>)}</optgroup>)}
+        <option value="__other">Other (not on the agenda)</option>
+      </select>
+      {other !== "" && (
+        <div className="mt-2 flex gap-2">
+          <input className="pub-input" value={other.trim()} onChange={(e) => setOther(e.target.value || " ")} placeholder="Type the topic" />
+          <button type="button" className="pub-btn px-4" onClick={() => { if (other.trim()) onToggle(other.trim()); setOther(""); }}>Add</button>
         </div>
       )}
     </div>
