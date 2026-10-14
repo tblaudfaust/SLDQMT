@@ -79,7 +79,7 @@ export default function MeDailyResultsPage() {
         <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
           <select className="input" value={f.district} onChange={(e) => setF({ ...f, district: e.target.value })}><option value="">All districts</option>{lists.by_district.map((g) => <option key={g.key} value={g.key}>{g.label} ({g.reports})</option>)}</select>
           <select className="input" value={f.class_hall} onChange={(e) => setF({ ...f, class_hall: e.target.value })}><option value="">All classes</option>{lists.by_class.map((g) => <option key={g.key} value={g.label}>{g.label} ({g.reports})</option>)}</select>
-          <select className="input" value={f.facilitator} onChange={(e) => setF({ ...f, facilitator: e.target.value })}><option value="">All lead facilitators</option>{lists.by_facilitator.map((g) => <option key={g.key} value={g.label}>{g.label} ({g.reports})</option>)}</select>
+          <select className="input" value={f.facilitator} onChange={(e) => setF({ ...f, facilitator: e.target.value })}><option value="">All leads</option>{lists.by_facilitator.map((g) => <option key={g.key} value={g.label}>{g.label} ({g.reports})</option>)}</select>
           <select className="input" value={f.phase} onChange={(e) => setF({ ...f, phase: e.target.value })}><option value="">All phases</option>{lists.by_phase.map((g) => <option key={g.key} value={g.key}>{g.label} ({g.reports})</option>)}</select>
           <input className="input" type="date" value={f.date_from} onChange={(e) => setF({ ...f, date_from: e.target.value })} title="From date" />
           <input className="input" type="date" value={f.date_to} onChange={(e) => setF({ ...f, date_to: e.target.value })} title="To date" />
@@ -174,7 +174,7 @@ export default function MeDailyResultsPage() {
       {tab === "day" && <GroupTable rows={d.by_day} label="Training day" />}
       {tab === "class" && <GroupTable rows={d.by_class} label="Class / hall" />}
       {tab === "district" && <GroupTable rows={d.by_district} label="District" />}
-      {tab === "facilitator" && <GroupTable rows={d.by_facilitator} label="Lead facilitator" />}
+      {tab === "facilitator" && <GroupTable rows={d.by_facilitator} label="Lead" />}
 
       {tab === "topics" && (
         <Card title="Agenda topics across every report">
@@ -194,7 +194,7 @@ export default function MeDailyResultsPage() {
           {d.latest.length === 0 ? <Empty text="No report matches" /> : (
             <div className="overflow-x-auto">
               <table className="table">
-                <thead><tr><th>Date</th><th>Day</th><th>Class / hall</th><th>District</th><th>Lead facilitator</th><th>Sessions Y / P / N</th><th className="text-right">Min ±</th><th className="text-right">Quiz pass</th><th>Quality C · E · T · I</th><th className="text-right">Overall</th><th className="text-right">Issues</th><th className="text-right">Escalations</th>{can("me_daily.manage") && <th />}</tr></thead>
+                <thead><tr><th>Date</th><th>Day</th><th>Class / hall</th><th>District</th><th>Lead</th><th>Sessions Y / P / N</th><th className="text-right">Min ±</th><th className="text-right">Quiz pass</th><th>Quality C · E · T · I</th><th className="text-right">Overall</th><th className="text-right">Issues</th><th className="text-right">Escalations</th>{can("me_daily.manage") && <th />}</tr></thead>
                 <tbody>
                   {d.latest.map((x) => (
                     <Fragment key={x.id}>
@@ -234,7 +234,7 @@ export default function MeDailyResultsPage() {
         <Card title={`Escalations and decisions needed (${d.escalations_log.length})`}>
           {d.escalations_log.length === 0 ? <Empty text="Nothing raised to management / CCIT" /> : (
             <div className="overflow-x-auto"><table className="table">
-              <thead><tr><th>Date</th><th>Day</th><th>Class / hall</th><th>District</th><th>Lead facilitator</th><th>Issue requiring management / CCIT action</th><th>Raised to</th><th>Proposed owner</th><th>Needed by</th><th>Status</th></tr></thead>
+              <thead><tr><th>Date</th><th>Day</th><th>Class / hall</th><th>District</th><th>Lead</th><th>Issue requiring management / CCIT action</th><th>Raised to</th><th>Proposed owner</th><th>Needed by</th><th>Status</th></tr></thead>
               <tbody>{d.escalations_log.map((l, i) => (
                 <tr key={i}>
                   <td className="whitespace-nowrap">{fmtDate(l.report_date)}</td><td>{l.training_day}</td><td>{l.class_hall}</td><td>{l.district ?? ""}</td><td>{l.lead_facilitator}</td><td>{l.fields.issue}</td><td>{l.fields.raised_to}</td><td>{l.fields.owner}</td><td>{l.fields.needed_by}</td>
@@ -321,7 +321,7 @@ function LogCard({ title, rows, columns, highlight }: { title: string; rows: MeD
     <Card title={title}>
       {rows.length === 0 ? <Empty text="None recorded" /> : (
         <div className="overflow-x-auto"><table className="table">
-          <thead><tr><th>Date</th><th>Day</th><th>Class / hall</th><th>District</th><th>Lead facilitator</th>{columns.map(([k, label]) => <th key={k}>{label}</th>)}</tr></thead>
+          <thead><tr><th>Date</th><th>Day</th><th>Class / hall</th><th>District</th><th>Lead</th>{columns.map(([k, label]) => <th key={k}>{label}</th>)}</tr></thead>
           <tbody>{rows.map((l, i) => <tr key={i} className={highlight?.(l) ? "bg-red-50" : ""}><td className="whitespace-nowrap">{fmtDate(l.report_date)}</td><td>{l.training_day}</td><td>{l.class_hall}</td><td>{l.district ?? ""}</td><td>{l.lead_facilitator}</td>{columns.map(([k]) => <td key={k}>{l.fields[k] ?? ""}</td>)}</tr>)}</tbody>
         </table></div>
       )}
@@ -339,7 +339,7 @@ function ReportDetail({ x, canManage, onStatus }: { x: MeDailyReport; canManage:
         <h3 className="mb-1 text-xs font-bold uppercase tracking-wide text-slate-500">A · Identification</h3>
         {row("Phase · platform / venue", `${x.phase_label} · ${x.platform_venue}`)}
         {row("Class / hall · day · date", `${x.class_hall} · day ${x.training_day} · ${fmtDate(x.report_date)}`)}
-        {row("Lead facilitator · co-facilitators", `${x.lead_facilitator}${x.co_facilitators ? ` · ${x.co_facilitators}` : ""}`)}
+        {row("Lead · co-facilitators ID", `${x.lead_facilitator}${x.co_facilitators ? ` · ${x.co_facilitators}` : ""}`)}
         {row("District", x.district ?? "National / HQ")}
         {h("C · Schedule and content coverage")}
         <table className="table text-xs"><thead><tr><th>Session / topic</th><th>Planned</th><th>Actual</th><th>Delivered</th><th className="text-right">Min ±</th><th>Reason</th></tr></thead>

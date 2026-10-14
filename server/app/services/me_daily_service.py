@@ -460,7 +460,7 @@ def export(db: Session, r: MeDailyRound, **filters) -> report_service.Report:
                  g.q_content, g.q_engagement, g.q_time, g.q_illustrations, g.overall, g.low_scores, g.material_issues, g.high_severity, g.internet, g.power, g.devices_short, g.food, g.escalations, g.open_escalations] for g in groups]
 
     summary_rows = [
-        ["Reports", s.reports], ["Classes", s.classes], ["Training days", s.days], ["Lead facilitators", s.facilitators], ["Districts", s.districts],
+        ["Reports", s.reports], ["Classes", s.classes], ["Training days", s.days], ["Leads", s.facilitators], ["Districts", s.districts],
         ["Sessions planned", s.sessions], ["Fully delivered (Y)", s.delivered], ["Partly delivered (P)", s.partly], ["Not delivered (N)", s.not_delivered], ["Delivered %", s.delivered_pct],
         ["Minutes over (+) / under (−), all sessions", s.minutes_delta], ["Topics carried to the next day", s.carried_over],
         ["Quizzes / assessments administered", s.quizzes], ["Mean score % (average)", s.mean_score], ["Pass rate % (average)", s.pass_rate],
@@ -470,7 +470,7 @@ def export(db: Session, r: MeDailyRound, **filters) -> report_service.Report:
         ["Internet connectivity (mean 1–5)", s.logistics["internet"]], ["Power supply (mean 1–5)", s.logistics["power"]], ["Devices short (sum)", s.devices_short], ["Food & beverages (mean 1–5)", s.logistics["food"]],
         ["Escalations", s.escalations], ["Open escalations", s.open_escalations],
     ]
-    rep_headers = ["Report", "Date", "Day", "Phase", "Platform / venue", "Class / hall", "District", "Lead facilitator", "Co-facilitators", "Sessions", "Delivered Y", "Partly P", "Not delivered N", "Minutes over/under",
+    rep_headers = ["Report", "Date", "Day", "Phase", "Platform / venue", "Class / hall", "District", "Lead", "Co-facilitators ID", "Sessions", "Delivered Y", "Partly P", "Not delivered N", "Minutes over/under",
                    "Carried to next day", "Quiz administered", "Quiz title", "Mean score %", "Pass rate %", "Quiz comments", "Practice minutes", "Practice comments", "Hardest topics", "Hardest comments",
                    "Content accuracy and clarity", "Evidence", "Participant engagement", "Evidence", "Time management", "Evidence", "Illustrations and practice", "Evidence", "Overall",
                    "Materials issues", "Internet", "Internet details", "Power", "Power details", "Devices short", "Devices details", "Food & beverages", "Food details", "Escalations", "Open escalations", "Submitted", "Edited by"]
@@ -484,7 +484,7 @@ def export(db: Session, r: MeDailyRound, **filters) -> report_service.Report:
     session_rows = [[x.report_date, x.training_day, x.class_hall, x.district or "", x.lead_facilitator, sess.topic, sess.planned_start or "", sess.planned_end or "", sess.actual_start or "", sess.actual_end or "",
                      form.label("delivered", sess.delivered)[:1] if sess.delivered else "", sess.delta if sess.delta is not None else "", sess.reason or ""] for x in s.latest for sess in x.sessions]
     f = {k: v for k, v in s.filters.items() if v}
-    base = ["Date", "Day", "Class / hall", "District", "Lead facilitator"]
+    base = ["Date", "Day", "Class / hall", "District", "Lead"]
 
     def log(rows: list[LogRow], keys: list[tuple[str, str]]):
         return [[l.report_date, l.training_day, l.class_hall, l.district or "", l.lead_facilitator] + [l.fields.get(k) or "" for k, _ in keys] for l in rows]

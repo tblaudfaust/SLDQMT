@@ -162,8 +162,8 @@ export function DailyReportForm({ spec, agenda, values, onChange, onSubmit, busy
           <L label="Class / hall *"><input className="pub-input" value={v.class_hall} onChange={(e) => set("class_hall", e.target.value)} placeholder="e.g. Hall 2" /></L>
           <L label="Training day no. *"><input className="pub-input" type="number" min={1} max={60} inputMode="numeric" value={v.training_day} onChange={(e) => setDay(e.target.value)} placeholder="1, 2, 3…" /></L>
           <L label="Date *"><input className="pub-input" type="date" max={today()} value={v.report_date} onChange={(e) => set("report_date", e.target.value)} /></L>
-          <L label="Lead facilitator *"><input className="pub-input" value={v.lead_facilitator} onChange={(e) => set("lead_facilitator", e.target.value)} placeholder="Your name" autoComplete="name" /></L>
-          <L label="Co-facilitators"><input className="pub-input" value={v.co_facilitators} onChange={(e) => set("co_facilitators", e.target.value)} placeholder="Names, separated by commas" /></L>
+          <L label="Lead *"><input className="pub-input" value={v.lead_facilitator} onChange={(e) => set("lead_facilitator", e.target.value)} placeholder="Your name or ID" autoComplete="name" /></L>
+          <L label="Co-facilitators ID"><input className="pub-input" value={v.co_facilitators} onChange={(e) => set("co_facilitators", e.target.value)} placeholder="IDs, separated by commas" /></L>
           <L label="District">
             <select className="pub-input" value={v.district} onChange={(e) => set("district", e.target.value)}>
               <option value="">National / HQ</option>
