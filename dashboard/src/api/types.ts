@@ -1,4 +1,4 @@
-export type Role = "FIELD_MONITOR" | "DISTRICT_DQM" | "REGIONAL" | "NATIONAL_DQM" | "ADMIN" | "ME" | "ME_DISTRICT" | "ME_REGIONAL";
+export type Role = "FIELD_MONITOR" | "DISTRICT_DQM" | "REGIONAL" | "NATIONAL_DQM" | "ADMIN" | "ME" | "ME_DISTRICT" | "ME_REGIONAL" | "ME_DAILY";
 export type Status = "UNRESOLVED" | "RESOLVED";
 
 export interface User {

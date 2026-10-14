@@ -98,3 +98,18 @@ def test_rounds_reports_summary_export_and_access(client, admin):
     if g.status_code == 200:
         dqm2 = auth(login(client, "dqm.bo", "Password123")["access_token"])
         assert client.get("/api/v1/me/daily/rounds", headers=dqm2).status_code == 200
+
+
+def test_daily_evaluation_admin_role(client, admin):
+    """The Daily Evaluation Admin role sees the daily module only: no training evaluations, no field monitoring, no dashboard."""
+    assert client.post("/api/v1/admin/users", json={"username": "daily.admin", "password": "Password123", "full_name": "Daily Admin", "role": "ME_DAILY"}, headers=admin).status_code == 201
+    d = login(client, "daily.admin", "Password123")
+    perms = set(d["user"]["permissions"])
+    assert {"me_daily.view", "me_daily.manage"} <= perms and not {"me.view", "mefm.view", "dashboard.view"} & perms
+    h = auth(d["access_token"])
+    r = client.post("/api/v1/me/daily/rounds", json={"title": "Master training, Freetown", "phase": "MASTER"}, headers=h)
+    assert r.status_code == 201
+    assert client.get("/api/v1/me/daily/rounds", headers=h).status_code == 200
+    assert client.get("/api/v1/me/evaluations", headers=h).status_code == 403
+    assert client.get("/api/v1/mefm/overview", headers=h).status_code == 403
+    assert client.get("/api/v1/admin/users", headers=h).status_code == 403

@@ -11,6 +11,10 @@ const ROLES: { key: string; label: string; level: string }[] = [
   { key: "NATIONAL_DQM", label: "National DQM", level: "National" },
   { key: "ADMIN", label: "Administrator", level: "National" },
   { key: "FIELD_MONITOR", label: "Field Monitor", level: "District (tablet)" },
+  { key: "ME", label: "Monitoring & Evaluation", level: "National" },
+  { key: "ME_DAILY", label: "Daily Evaluation Admin", level: "National" },
+  { key: "ME_REGIONAL", label: "Regional M&E Officer", level: "Region" },
+  { key: "ME_DISTRICT", label: "District M&E Officer", level: "District (app)" },
 ];
 
 export default function RolesPage() {

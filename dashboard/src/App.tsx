@@ -58,6 +58,7 @@ function Home() {
 function NotForMe() {
   const { user } = useAuth();
   if (user?.role === "ME") return <Navigate to="/me/evaluations" replace />;
+  if (user?.role === "ME_DAILY") return <Navigate to="/me/daily" replace />;
   if (user?.role === "ME_DISTRICT" || user?.role === "ME_REGIONAL") return <Navigate to="/mefm" replace />;
   return <Outlet />;
 }

@@ -71,5 +71,6 @@ DEFAULT_ROLE_PERMISSIONS: dict[Role, list[str]] = {
     Role.ME: ["me.view", "me.manage", "me_daily.view", "me_daily.manage", "mefm.view", "mefm.review", "mefm.export", "mefm.manage"],
     Role.ME_DISTRICT: ["mefm.collect", "mefm.view", "sync.use"],
     Role.ME_REGIONAL: ["mefm.view", "mefm.review"],
+    Role.ME_DAILY: ["me_daily.view", "me_daily.manage"],
     Role.ADMIN: [code for code in PERMISSIONS if code != "sync.use"],
 }
