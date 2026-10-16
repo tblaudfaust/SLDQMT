@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import clsx from "clsx";
 import { ArrowLeft, ArrowRight, Building2, CheckCircle2, ClipboardCheck, ClipboardList, Laptop, Mail, MapPin, School, ShieldCheck, Timer, Users } from "lucide-react";
 import { ApiError, api } from "../../api/client";
+import SiteFooter from "../../components/SiteFooter";
 
 /* ------------------------------------------------------------------------------------------------
  * The public training evaluation page: /evaluate/<token>. No sign-in. Trainees and trainers
@@ -80,11 +81,7 @@ export default function EvaluatePage() {
           <Wizard ev={ev} token={token} saved={saved} setSaved={setSaved} />
         )}
         <p className="mt-6 text-center text-xs text-sky-100/70">Results are reported in aggregate only. This form does not replace the formal trainee assessment.</p>
-        <footer className="mt-8 border-t border-white/15 pt-5 text-center text-xs leading-relaxed text-sky-100/80">
-          <div className="font-semibold text-white">Statistics Sierra Leone (Stats SL)</div>
-          <div>A.J. Momoh Street / Tower Hill</div>
-          <div>P.M.B. 595, Freetown / Sierra Leone</div>
-        </footer>
+        <SiteFooter tone="dark" className="mt-8" />
       </div>
     </div>
   );

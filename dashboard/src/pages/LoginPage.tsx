@@ -3,6 +3,7 @@ import { isMeSite, siteSubtitle, siteTitle } from "../brand";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { ErrorBox } from "../components/ui";
+import SiteFooter from "../components/SiteFooter";
 
 export default function LoginPage() {
   const { user, login } = useAuth();
@@ -26,8 +27,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-navy">
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-navy">
       <LoginWatermark />
+      <div className="relative flex flex-1 items-center justify-center p-4">
       <form onSubmit={submit} className="relative w-full max-w-sm space-y-4 rounded-lg bg-white p-8 shadow-lg">
         <div className="flex flex-col items-center text-center">
           <img src="/statsl-logo.png" alt="Statistics Sierra Leone" className="mb-3 h-28 w-28" />
@@ -42,6 +44,8 @@ export default function LoginPage() {
         <button className="btn-primary w-full justify-center" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
         {!isMeSite && <p className="pt-2 text-center text-xs text-slate-500">The user manual and the tablet app are available after signing in.</p>}
       </form>
+      </div>
+      <SiteFooter tone="dark" className="relative" />
     </div>
   );
 }

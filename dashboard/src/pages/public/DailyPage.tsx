@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import clsx from "clsx";
 import { CalendarCheck, ClipboardCheck, Pencil, Timer, Users } from "lucide-react";
 import { ApiError, api } from "../../api/client";
+import SiteFooter from "../../components/SiteFooter";
 import type { MeDailyAgendaItem } from "../../api/types";
 import { DailyReportForm, emptyValues, sessionsForDay, toPayload, validate, type DailySpec, type DailyValues } from "./DailyReportForm";
 import { PageWatermark } from "./EvaluatePage";
@@ -147,11 +148,7 @@ export default function DailyPage() {
           </div>
         )}
         <p className="mt-6 text-center text-xs text-sky-100/70">Reports are seen only by the accounts granted access to the Daily Evaluation module.</p>
-        <footer className="mt-8 border-t border-white/15 pt-5 text-center text-xs leading-relaxed text-sky-100/80">
-          <div className="font-semibold text-white">Statistics Sierra Leone (Stats SL)</div>
-          <div>A.J. Momoh Street / Tower Hill</div>
-          <div>P.M.B. 595, Freetown / Sierra Leone</div>
-        </footer>
+        <SiteFooter tone="dark" className="mt-8" />
       </div>
     </div>
   );

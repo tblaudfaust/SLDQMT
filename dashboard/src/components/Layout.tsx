@@ -6,6 +6,7 @@ import { useAuth } from "../auth/AuthContext";
 import { isMeSite } from "../brand";
 import AnalyticsMenu from "./AnalyticsMenu";
 import ChangePasswordDialog from "./ChangePasswordDialog";
+import SiteFooter from "./SiteFooter";
 
 const roleLabel: Record<string, string> = {
   DISTRICT_DQM: "District DQM",
@@ -99,9 +100,12 @@ export default function Layout() {
           </div>
         </div>
       </aside>
-      <main className="flex-1 p-6">
-        <Outlet />
-      </main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <main className="flex-1 p-6">
+          <Outlet />
+        </main>
+        <SiteFooter tone="light" className="bg-white" />
+      </div>
       {(changePw || user?.must_change_password) && <ChangePasswordDialog forced={!!user?.must_change_password} onClose={() => { setChangePw(false); if (user?.must_change_password) void refreshUser(); }} />}
     </div>
   );
