@@ -25,12 +25,16 @@ def test_public_report_by_sa_code_handling_scoping_and_dashboard(client, admin, 
     ds = user(client, admin, "ds.wau", "DISTRICT_STATISTICIAN", [wau])
     ds_war = user(client, admin, "ds.war", "DISTRICT_STATISTICIAN", [war])
     viewer = user(client, admin, "incident.viewer", "INCIDENT_VIEWER")
+    ccit = user(client, admin, "ccit-lead", "INCIDENT_ADMIN")
 
     # SA codes uploaded by HQ (admin); a code matching a team code in the frame also resolves
     up = client.put("/api/v1/incidents/sa-codes", json=[{"sa_code": "000000000100", "district": "Western Area Urban", "team_code": "WAU-SA01", "sa_name": "Central 1", "supervisor_name": "Mohamed Kamara", "supervisor_phone": "076111111"},
                                                         {"sa_code": "000000000200", "district": "Nowhere"}], headers=admin)
     assert up.status_code == 200 and up.json()["created"] == 2 and up.json()["unknown_district"] == 1, up.text
     assert client.put("/api/v1/incidents/sa-codes", json=[], headers=ds).status_code == 403  # settings right is HQ only
+    assert client.put("/api/v1/incidents/sa-codes", json=[], headers=ccit).status_code == 200  # the CCIT-Lead runs the log
+    assert client.get("/api/v1/admin/users", headers=ccit).status_code == 403  # and nothing else
+    assert client.get("/api/v1/dashboard/summary", headers=ccit).status_code == 403
     s = client.get("/api/v1/public/incidents/sa/000000000100").json()
     assert s["recognised"] and s["district"] == "Western Area Urban" and s["sa_name"] == "Central 1" and s["team_code"] == "WAU-SA01"
     assert client.get("/api/v1/public/incidents/sa/12345").status_code == 400
@@ -111,6 +115,8 @@ def test_public_report_by_sa_code_handling_scoping_and_dashboard(client, admin, 
     assert client.get("/api/v1/incidents/export?format=xlsx", headers=admin).status_code == 200
     assert client.get("/api/v1/incidents/export?format=pdf&district_id=%d" % wau, headers=ds).status_code == 200
     assert client.get("/api/v1/incidents/export", headers=viewer).status_code == 403
+    assert client.get("/api/v1/incidents/export", headers=ccit).status_code == 200
+    assert client.get("/api/v1/incidents/dashboard", headers=ccit).json()["scope"] == "national"
     assert [c["sa_code"] for c in client.get("/api/v1/incidents/sa-codes", headers=ds).json()] == ["000000000100"]
     csv_text = "sa_code,district,supervisor_name,supervisor_phone\n000000000300,Western Area Rural,Aminata Bangura,076222222\n300,Western Area Rural,,\n"
     imp = client.post("/api/v1/incidents/sa-codes/import", files={"file": ("sa.csv", csv_text, "text/csv")}, headers=admin)

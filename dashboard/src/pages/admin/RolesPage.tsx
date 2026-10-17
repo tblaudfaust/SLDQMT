@@ -14,6 +14,7 @@ const ROLES: { key: string; label: string; level: string }[] = [
   { key: "ME", label: "Monitoring & Evaluation", level: "National" },
   { key: "ME_DAILY", label: "Daily Evaluation Admin", level: "National" },
   { key: "DISTRICT_STATISTICIAN", label: "District Statistician", level: "District" },
+  { key: "INCIDENT_ADMIN", label: "Incident Admin (CCIT-Lead)", level: "National" },
   { key: "INCIDENT_VIEWER", label: "Incident Viewer", level: "National" },
   { key: "ME_REGIONAL", label: "Regional M&E Officer", level: "Region" },
   { key: "ME_DISTRICT", label: "District M&E Officer", level: "District (app)" },

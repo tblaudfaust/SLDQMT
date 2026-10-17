@@ -3,10 +3,11 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import clsx from "clsx";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { AlertTriangle, ArrowUpRight, Clock, Download, Flame, Inbox, ShieldAlert, Siren } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, Clock, Download, Flame, Inbox, QrCode, ShieldAlert, Siren } from "lucide-react";
 import { ApiError, api, download, fmtDate, qs } from "../../api/client";
 import type { Incident, IncidentDashboard } from "../../api/types";
 import { useAuth } from "../../auth/AuthContext";
+import QrDialog from "../../components/QrDialog";
 import { Card, Empty, ErrorBox, Spinner } from "../../components/ui";
 import { CAT_COLOR, SEV, STATUS_COLOR, SeverityPill, StatusPill, ago, hours } from "./incidentUi";
 
@@ -18,6 +19,7 @@ export default function IncidentsDashboardPage() {
   const q = useQuery({ queryKey: ["incidents", "dashboard", query], queryFn: () => api.get<IncidentDashboard>(`/incidents/dashboard${query}`), refetchInterval: 60_000 });
   const all = useQuery({ queryKey: ["incidents", "dashboard", ""], queryFn: () => api.get<IncidentDashboard>("/incidents/dashboard") });
   const [error, setError] = useState<unknown>(null);
+  const [qr, setQr] = useState(false);
   if (q.isLoading) return <Spinner />;
   if (q.error || !q.data) return <ErrorBox error={q.error} />;
   const d = q.data;
@@ -29,9 +31,11 @@ export default function IncidentsDashboardPage() {
   const distData = d.by_district.filter((x) => x.total).sort((a, b) => b.open - a.open || b.total - a.total);
   const trend = d.trend.map((t) => ({ ...t, name: new Date(t.day + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) }));
   const filtered = Object.values(f).some(Boolean);
+  const publicUrl = `${window.location.origin}/report-incident`;
 
   return (
     <div className="max-w-7xl">
+      {qr && <QrDialog url={publicUrl} title="Report a census incident" subtitle="Supervisors and field staff open this link or scan the code; no account is needed. Print it for the district offices." onClose={() => setQr(false)} />}
       <div className="mb-4 overflow-hidden rounded-2xl bg-gradient-to-br from-navy via-[#245a8c] to-[#7f1d1d] px-6 py-5 text-white shadow">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -41,6 +45,7 @@ export default function IncidentsDashboardPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             {can("incidents.report") && <Link to="/incidents/register?new=1" className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-navy shadow hover:bg-sky-50"><Siren size={16} /> Report an incident</Link>}
+            <button className="inline-flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2 text-sm font-semibold text-white hover:bg-white/25" onClick={() => setQr(true)} title="The link and QR code supervisors use to report an incident without an account"><QrCode size={16} /> Public reporting link</button>
             {can("incidents.export") && <button className="inline-flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2 text-sm font-semibold text-white hover:bg-white/25" onClick={() => exportFile("xlsx")}><Download size={16} /> Excel</button>}
             {can("incidents.export") && <button className="inline-flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2 text-sm font-semibold text-white hover:bg-white/25" onClick={() => exportFile("pdf")}><Download size={16} /> PDF brief</button>}
           </div>

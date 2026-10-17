@@ -411,7 +411,7 @@ def list_incidents(db: Session, user: User, f: dict, limit: int = 500) -> list[I
 
 def people(db: Session, user: User, district_id: int | None) -> list[PersonOut]:
     """Accounts an incident can be assigned to: District Statisticians and managers in scope."""
-    rows = db.execute(select(User).where(User.active.is_(True), User.role.in_([Role.DISTRICT_STATISTICIAN, Role.DISTRICT_DQM, Role.REGIONAL, Role.NATIONAL_DQM, Role.ADMIN, Role.ME])).order_by(User.full_name)).scalars().all()
+    rows = db.execute(select(User).where(User.active.is_(True), User.role.in_([Role.DISTRICT_STATISTICIAN, Role.INCIDENT_ADMIN, Role.DISTRICT_DQM, Role.REGIONAL, Role.NATIONAL_DQM, Role.ADMIN, Role.ME])).order_by(User.full_name)).scalars().all()
     out = []
     for u in rows:
         ids = district_ids_for(db, u)

@@ -80,5 +80,6 @@ DEFAULT_ROLE_PERMISSIONS: dict[Role, list[str]] = {
     Role.ME_DAILY: ["me_daily.view", "me_daily.manage"],
     Role.DISTRICT_STATISTICIAN: ["incidents.report", "incidents.view", "incidents.manage", "incidents.escalate", "incidents.export"],
     Role.INCIDENT_VIEWER: ["incidents.view"],
+    Role.INCIDENT_ADMIN: [code for code in PERMISSIONS if code.startswith("incidents.")],
     Role.ADMIN: [code for code in PERMISSIONS if code != "sync.use"],
 }

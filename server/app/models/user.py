@@ -20,11 +20,12 @@ class Role(str, enum.Enum):
     ME_DAILY = "ME_DAILY"  # Daily Evaluation Admin: runs the daily trainer class evaluations (national)
     DISTRICT_STATISTICIAN = "DISTRICT_STATISTICIAN"  # DS: owns the incidents of one district
     INCIDENT_VIEWER = "INCIDENT_VIEWER"  # reads the incident log nationally, changes nothing
+    INCIDENT_ADMIN = "INCIDENT_ADMIN"  # CCIT-Lead: runs the Census Incident Log nationally, and nothing else
 
 
 # Roles that see every district; a scope row never narrows them.
-UNSCOPED_ROLES = {Role.NATIONAL_DQM, Role.ADMIN, Role.ME, Role.ME_DAILY, Role.INCIDENT_VIEWER}
-WEB_ROLES = {Role.DISTRICT_DQM, Role.REGIONAL, Role.NATIONAL_DQM, Role.ADMIN, Role.ME, Role.ME_DISTRICT, Role.ME_REGIONAL, Role.ME_DAILY, Role.DISTRICT_STATISTICIAN, Role.INCIDENT_VIEWER}
+UNSCOPED_ROLES = {Role.NATIONAL_DQM, Role.ADMIN, Role.ME, Role.ME_DAILY, Role.INCIDENT_VIEWER, Role.INCIDENT_ADMIN}
+WEB_ROLES = {Role.DISTRICT_DQM, Role.REGIONAL, Role.NATIONAL_DQM, Role.ADMIN, Role.ME, Role.ME_DISTRICT, Role.ME_REGIONAL, Role.ME_DAILY, Role.DISTRICT_STATISTICIAN, Role.INCIDENT_VIEWER, Role.INCIDENT_ADMIN}
 
 
 class User(TimestampMixin, Base):
