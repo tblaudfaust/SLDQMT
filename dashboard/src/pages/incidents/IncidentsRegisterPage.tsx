@@ -159,7 +159,7 @@ function IncidentDrawer({ id, onClose }: { id: number; onClose: () => void }) {
                 {row("GPS", x.lat !== null ? `${x.lat?.toFixed(5)}, ${x.lng?.toFixed(5)}` : null)}
                 {row("Happened", fmt(x.occurred_at))}
                 {row("Reported", `${fmt(x.reported_at)} · ${x.reported_by_name ?? "public page"}`)}
-                {row("Reporter", [x.reporter_name, x.reporter_role_label, x.reporter_phone].filter(Boolean).join(" · "))}
+                {row("Reporter", [x.reporter_name, x.reporter_role_label, x.reporter_code && `code ${x.reporter_code}`, x.reporter_phone].filter(Boolean).join(" · "))}
                 <h3 className="mb-1 mt-3 text-xs font-bold uppercase tracking-wide text-slate-500">Handling</h3>
                 {row("Owner", x.owner_name ?? <span className="text-red-700">unassigned</span>)}
                 {row("Due", x.due_at ? `${fmt(x.due_at)}${x.overdue ? " · overdue" : ""}` : null)}

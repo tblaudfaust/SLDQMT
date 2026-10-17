@@ -36,7 +36,7 @@ export function validateIncident(v: IncidentValues): string[] {
   return e;
 }
 
-export function IncidentFields({ spec, values, onChange, publicStyle }: { spec: IncidentSpec; values: IncidentValues; onChange: (v: IncidentValues) => void; publicStyle?: boolean }) {
+export function IncidentFields({ spec, values, onChange, publicStyle, hideEa }: { spec: IncidentSpec; values: IncidentValues; onChange: (v: IncidentValues) => void; publicStyle?: boolean; hideEa?: boolean }) {
   const v = values;
   const set = <K extends keyof IncidentValues>(k: K, val: IncidentValues[K]) => onChange({ ...v, [k]: val });
   const input = publicStyle ? "pub-input" : "input";
@@ -87,7 +87,7 @@ export function IncidentFields({ spec, values, onChange, publicStyle }: { spec: 
         <L label="Help needed"><textarea className={input} rows={2} value={v.help_needed} onChange={(e) => set("help_needed", e.target.value)} placeholder="e.g. Replacement tablet; transport; a decision from HQ" /></L>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <L label="EA code (if one EA)"><input className={input} value={v.ea_code} onChange={(e) => set("ea_code", e.target.value)} placeholder="10-digit EA code" /></L>
+        {!hideEa && <L label="EA code (if one EA)"><input className={input} value={v.ea_code} onChange={(e) => set("ea_code", e.target.value)} placeholder="10-digit EA code" /></L>}
         <L label="Locality / place"><input className={input} value={v.locality} onChange={(e) => set("locality", e.target.value)} placeholder="Village, street or landmark" /></L>
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import re
 
+from app.core.me_form import DISTRICTS
+
 SEVERITIES = [("CRITICAL", "Critical"), ("MAJOR", "Major"), ("MINOR", "Minor")]
 SEVERITY_HELP = {"CRITICAL": "Stops enumeration or endangers people", "MAJOR": "Disrupts a team or a supervisory area", "MINOR": "Local, a workaround is in place"}
 STATUSES = [("NEW", "New"), ("ACKNOWLEDGED", "Acknowledged"), ("IN_PROGRESS", "In progress"), ("RESOLVED", "Resolved"), ("CLOSED", "Closed"), ("REJECTED", "Rejected")]
@@ -12,6 +14,12 @@ OPEN_STATUSES = {"NEW", "ACKNOWLEDGED", "IN_PROGRESS"}
 PHASES = [("PRE_FIELD", "Pre-field"), ("TRAINING", "Training"), ("LISTING", "Listing"), ("ENUMERATION", "Enumeration"), ("MOP_UP", "Mop-up"), ("POST", "Post-enumeration")]
 LEVELS = [("DISTRICT", "District"), ("REGION", "Region"), ("NATIONAL", "National")]
 REPORTER_ROLES = [("SUPERVISOR", "Field Supervisor"), ("ENUMERATOR", "Enumerator"), ("FIELD_MONITOR", "Field Monitor"), ("DQM", "District DQM"), ("ME", "M&E Officer"), ("DS", "District Statistician"), ("COORDINATOR", "District Coordinator"), ("OTHER", "Other")]
+# What the public page asks for after the role: code = application / staff code, sa = 12-digit SA code, ea = EA code, district = district pick-list
+ROLE_FIELDS = {
+    "SUPERVISOR": ["code", "sa"], "ENUMERATOR": ["code", "sa", "ea"], "FIELD_MONITOR": ["code", "district", "sa"], "DQM": ["code", "district", "sa"],
+    "ME": ["code", "district"], "DS": ["code", "district"], "COORDINATOR": ["code", "district"], "OTHER": ["district"],
+}
+ROLE_REQUIRED = {"SUPERVISOR": ["code", "sa"], "ENUMERATOR": ["code", "sa"], "FIELD_MONITOR": ["code", "district"], "DQM": ["code", "district"], "ME": ["code", "district"], "DS": ["code", "district"], "COORDINATOR": ["code", "district"], "OTHER": []}
 UPDATE_TYPES = [("COMMENT", "Comment"), ("STATUS", "Status change"), ("ASSIGN", "Owner assigned"), ("ESCALATE", "Escalated"), ("SEVERITY", "Severity changed"), ("REOPEN", "Reopened"), ("LINK", "Record linked"), ("CREATED", "Reported")]
 
 # Categories and sub-categories (the national level can extend them later through settings).
@@ -48,7 +56,7 @@ def public_spec() -> dict:
         "severities": [{"value": v, "label": lb, "help": SEVERITY_HELP[v]} for v, lb in SEVERITIES],
         "statuses": opts(STATUSES), "phases": opts(PHASES), "levels": opts(LEVELS), "reporter_roles": opts(REPORTER_ROLES),
         "categories": [{"value": c, "label": lb, "default_severity": sev, "subcategories": opts(subs)} for c, lb, subs, sev in CATEGORIES],
-        "sa_code_format": "12 digits, e.g. 000000000100",
+        "sa_code_format": "12 digits, e.g. 000000000100", "role_fields": ROLE_FIELDS, "role_required": ROLE_REQUIRED, "districts": DISTRICTS,
     }
 
 

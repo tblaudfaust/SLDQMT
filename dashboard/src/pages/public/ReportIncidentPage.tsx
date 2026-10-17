@@ -25,7 +25,8 @@ export default function ReportIncidentPage() {
   const [saCode, setSaCode] = useState("");
   const [sa, setSa] = useState<Sa | null>(null);
   const [saError, setSaError] = useState<string | null>(null);
-  const [reporter, setReporter] = useState({ name: "", role: "SUPERVISOR", phone: "" });
+  const [reporter, setReporter] = useState({ name: "", role: "SUPERVISOR", phone: "", code: "" });
+  const [district, setDistrict] = useState("");
   const [values, setValues] = useState<IncidentValues>(emptyIncident());
   const [busy, setBusy] = useState(false);
   const [serverErrors, setServerErrors] = useState<string[]>([]);
@@ -44,14 +45,21 @@ export default function ReportIncidentPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saCode]);
 
-  const errors = [...(saCode.length !== 12 ? ["Enter your 12-digit SA code"] : []), ...(reporter.name.trim().length < 2 ? ["Enter your name"] : []), ...(reporter.phone.replace(/\D/g, "").length < 8 ? ["Enter your phone number"] : []), ...validateIncident(values)];
+  const fields = spec?.role_fields[reporter.role] ?? ["code", "sa"];
+  const required = spec?.role_required[reporter.role] ?? ["code", "sa"];
+  const errors = [
+    ...(required.includes("code") && !reporter.code.trim() ? ["Enter your application code"] : []),
+    ...(required.includes("sa") && saCode.length !== 12 ? ["Enter your 12-digit SA code"] : []),
+    ...(saCode && saCode.length !== 12 ? ["The SA code has 12 digits"] : []),
+    ...(required.includes("district") && !district && saCode.length !== 12 ? ["Choose your district"] : []),
+    ...(reporter.name.trim().length < 2 ? ["Enter your name"] : []), ...(reporter.phone.replace(/\D/g, "").length < 8 ? ["Enter your phone number"] : []), ...validateIncident(values)];
 
   const submit = async () => {
     setTouched(true);
     if (errors.length) return;
     setBusy(true); setServerErrors([]);
     try {
-      const r = await api.post<{ number: string; track_token: string; district: string | null }>("/public/incidents", { ...incidentPayload(values), sa_code: saCode, reporter_name: reporter.name.trim(), reporter_role: reporter.role, reporter_phone: reporter.phone.trim() });
+      const r = await api.post<{ number: string; track_token: string; district: string | null }>("/public/incidents", { ...incidentPayload(values), sa_code: saCode || null, district: district || null, reporter_code: reporter.code.trim() || null, reporter_name: reporter.name.trim(), reporter_role: reporter.role, reporter_phone: reporter.phone.trim() });
       const s: Sent = { number: r.number, track_token: r.track_token, district: r.district, title: values.title, sent_at: new Date().toISOString() };
       setSent((p) => [s, ...p]); setDone(s); setValues(emptyIncident()); setTouched(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -88,28 +96,35 @@ export default function ReportIncidentPage() {
         <Card className="overflow-hidden p-0 sm:p-0">
           <div className="bg-gradient-to-br from-navy via-[#245a8c] to-[#7f1d1d] px-5 py-6 text-white sm:px-8">
             <h1 className="flex items-center gap-2 text-2xl font-bold"><Siren size={26} /> Report an incident</h1>
-            <p className="mt-2 max-w-2xl text-sm text-sky-50/90">For field supervisors and census staff. Enter your supervisory area code, say who you are, and describe what happened. The District Statistician is told immediately and management sees every open incident every day.</p>
+            <p className="mt-2 max-w-2xl text-sm text-sky-50/90">For field supervisors, enumerators and census staff. Say who you are, give your codes, and describe what happened. The District Statistician is told immediately and management sees every open incident every day.</p>
           </div>
           <div className="space-y-5 px-5 py-6 sm:px-8">
             {!spec ? <div className="animate-pulse text-slate-500">Loading…</div> : (
               <>
                 <section className="space-y-3">
                   <h2 className="border-b border-slate-200 pb-2 text-base font-bold text-navy">1. Who you are</h2>
-                  <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">Your SA code (12 digits) *</span>
-                    <input className={clsx("pub-input font-mono text-lg tracking-widest", saCode.length === 12 && !sa && saError && "border-red-400")} inputMode="numeric" value={saCode} onChange={(e) => setSaCode(e.target.value.replace(/\D/g, "").slice(0, 12))} placeholder="000000000100" />
+                  <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">Your role *</span>
+                    <select className="pub-input" value={reporter.role} onChange={(e) => { setReporter({ ...reporter, role: e.target.value }); setSaCode(""); setDistrict(""); }}>{spec.reporter_roles.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}</select>
                   </label>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {fields.includes("code") && <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">Your application code{required.includes("code") ? " *" : ""}</span><input className="pub-input font-mono" value={reporter.code} onChange={(e) => setReporter({ ...reporter, code: e.target.value })} placeholder="As on your appointment letter / ID" /></label>}
+                    {fields.includes("district") && <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">Your district{required.includes("district") ? " *" : ""}</span><select className="pub-input" value={district} onChange={(e) => setDistrict(e.target.value)}><option value="">Choose…</option>{spec.districts.map((d) => <option key={d} value={d}>{d}</option>)}</select></label>}
+                    {fields.includes("sa") && <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">SA code (12 digits){required.includes("sa") ? " *" : ""}</span>
+                      <input className={clsx("pub-input font-mono text-lg tracking-widest", saCode.length === 12 && !sa && saError && "border-red-400")} inputMode="numeric" value={saCode} onChange={(e) => setSaCode(e.target.value.replace(/\D/g, "").slice(0, 12))} placeholder="000000000100" />
+                    </label>}
+                    {fields.includes("ea") && <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">EA code</span><input className="pub-input font-mono" inputMode="numeric" value={values.ea_code} onChange={(e) => setValues({ ...values, ea_code: e.target.value.replace(/\D/g, "").slice(0, 10) })} placeholder="10-digit EA code" /></label>}
+                  </div>
                   {sa && sa.recognised && <div className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-900"><b>{sa.district}</b>{sa.sa_name ? ` · ${sa.sa_name}` : ""}{sa.team_code ? ` · ${sa.team_code}` : ""}{sa.supervisor_name ? ` · supervisor ${sa.supervisor_name}` : ""}</div>}
                   {sa && !sa.recognised && <div className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900">This SA code is not on the list yet. You can still report; HQ will set the district.</div>}
                   {saError && <div className="text-sm text-red-700">{saError}</div>}
-                  <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
                     <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">Your name *</span><input className="pub-input" value={reporter.name} onChange={(e) => setReporter({ ...reporter, name: e.target.value })} autoComplete="name" /></label>
-                    <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">Your role *</span><select className="pub-input" value={reporter.role} onChange={(e) => setReporter({ ...reporter, role: e.target.value })}>{spec.reporter_roles.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}</select></label>
                     <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">Your phone *</span><input className="pub-input" type="tel" value={reporter.phone} onChange={(e) => setReporter({ ...reporter, phone: e.target.value })} placeholder="076 123 456" autoComplete="tel" /></label>
                   </div>
                 </section>
                 <section className="space-y-3">
                   <h2 className="border-b border-slate-200 pb-2 text-base font-bold text-navy">2. The incident</h2>
-                  <IncidentFields spec={spec} values={values} onChange={setValues} publicStyle />
+                  <IncidentFields spec={spec} values={values} onChange={setValues} publicStyle hideEa={fields.includes("ea")} />
                 </section>
                 {(serverErrors.length > 0 || (touched && errors.length > 0)) && (
                   <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"><div className="font-semibold">Please complete before sending</div><ul className="mt-1 list-disc pl-5">{[...serverErrors, ...errors].map((e) => <li key={e}>{e}</li>)}</ul></div>

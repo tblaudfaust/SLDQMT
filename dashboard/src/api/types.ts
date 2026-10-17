@@ -668,7 +668,7 @@ export interface Incident {
   title: string; description: string; action_taken: string | null; help_needed: string | null;
   district_id: number | null; district: string | null; region: string | null; team_id: number | null; team_code: string | null; sa_code: string | null; sa_recognised: boolean;
   ea_code: string | null; locality: string | null; lat: number | null; lng: number | null;
-  occurred_at: string; reported_at: string; reported_by_name: string | null; reporter_name: string | null; reporter_role: string | null; reporter_role_label: string | null; reporter_phone: string | null;
+  occurred_at: string; reported_at: string; reported_by_name: string | null; reporter_name: string | null; reporter_role: string | null; reporter_role_label: string | null; reporter_phone: string | null; reporter_code: string | null;
   teams_affected: number | null; staff_affected: number | null; households_affected: number | null; days_lost: number | null; asset_tags: string | null; reference: string | null;
   level: "DISTRICT" | "REGION" | "NATIONAL"; owner_id: number | null; owner_name: string | null; due_at: string | null; overdue: boolean; unacknowledged_hours: number | null;
   acknowledged_at: string | null; resolved_at: string | null; closed_at: string | null; resolution: string | null; root_cause_fixed: boolean | null; lessons: string | null; reject_reason: string | null;
@@ -676,7 +676,7 @@ export interface Incident {
 }
 export interface IncidentSpec {
   severities: { value: string; label: string; help: string }[]; statuses: { value: string; label: string }[]; phases: { value: string; label: string }[]; levels: { value: string; label: string }[];
-  reporter_roles: { value: string; label: string }[]; categories: { value: string; label: string; default_severity: string; subcategories: { value: string; label: string }[] }[]; sa_code_format: string;
+  reporter_roles: { value: string; label: string }[]; categories: { value: string; label: string; default_severity: string; subcategories: { value: string; label: string }[] }[]; sa_code_format: string; role_fields: Record<string, string[]>; role_required: Record<string, string[]>; districts: string[];
 }
 export interface IncidentCount { code: string; label: string; count: number; pct: number }
 export interface IncidentDistrictRow { district_id: number; district: string; region: string; open: number; new: number; critical_open: number; overdue: number; resolved: number; total: number; per_100_eas: number | null; median_hours_to_resolve: number | null }

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import audit, require_perm
 from app.core import incidents as spec
 from app.db.session import get_db
-from app.models import User
+from app.models import District, User
 from app.schemas.incident import ActionIn, Dashboard, IncidentEdit, IncidentIn, IncidentOut, PersonOut, PublicIncidentIn, PublicIncidentOut, PublicTrackOut, SaCodeImportOut, SaCodeIn, SaCodeOut
 from app.services import incident_service as svc
 from app.services import report_service
@@ -159,8 +159,9 @@ def public_sa(sa_code: str, db: Session = Depends(get_db)):
 def public_report(body: PublicIncidentIn, db: Session = Depends(get_db)):
     inc, token = svc.public_report(db, body)
     db.commit()
-    row, team, district, recognised = svc._resolve_sa(db, body.sa_code)
-    return PublicIncidentOut(number=inc.number, track_token=token, district=district.name if district else None, sa_name=(row.sa_name if row and row.sa_name else (team.name if team else None)), sa_recognised=recognised, severity=inc.severity, status=inc.status)
+    row, team, _district, _rec = svc._resolve_sa(db, (body.sa_code or "").strip() or None)
+    district = db.get(District, inc.district_id) if inc.district_id else None
+    return PublicIncidentOut(number=inc.number, track_token=token, district=district.name if district else None, sa_name=(row.sa_name if row and row.sa_name else (team.name if team else None)), sa_recognised=inc.sa_recognised, severity=inc.severity, status=inc.status)
 
 
 @router.get("/public/incidents/{number}", response_model=PublicTrackOut)

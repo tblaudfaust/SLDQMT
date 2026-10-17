@@ -128,7 +128,7 @@ def _create(db: Session, data: dict, *, user: User | None, district: District | 
         raise HTTPException(400, "The incident time cannot be in the future")
     owner = default_owner(db, district.id if district else None)
     inc = Incident(
-        number=_number(db, district, now), reported_by=user.id if user else None, reporter_name=reporter.get("name"), reporter_role=reporter.get("role"), reporter_phone=reporter.get("phone"),
+        number=_number(db, district, now), reported_by=user.id if user else None, reporter_name=reporter.get("name"), reporter_role=reporter.get("role"), reporter_phone=reporter.get("phone"), reporter_code=reporter.get("code"),
         sa_code=sa_code, sa_recognised=recognised, district_id=district.id if district else None, team_id=team.id if team else None,
         ea_code=(data.get("ea_code") or "").strip() or None, locality=(data.get("locality") or "").strip() or None, lat=data.get("lat"), lng=data.get("lng"),
         phase=data["phase"], occurred_at=occurred, reported_at=now, category=data["category"], subcategory=data.get("subcategory") or None, severity=data["severity"],
@@ -162,20 +162,42 @@ def report(db: Session, user: User, body: IncidentIn) -> Incident:
         raise HTTPException(400, "Choose the district")
     if scope is not None and district.id not in scope:
         raise HTTPException(403, "You can only report incidents in your own district")
-    reporter = {"name": (body.reporter_name or "").strip() or None, "role": body.reporter_role, "phone": (body.reporter_phone or "").strip() or None}
+    reporter = {"name": (body.reporter_name or "").strip() or None, "role": body.reporter_role, "phone": (body.reporter_phone or "").strip() or None, "code": (body.reporter_code or "").strip() or None}
     return _create(db, body.model_dump(), user=user, district=district, team=team, sa_code=(body.sa_code or "").strip() or None, recognised=recognised, reporter=reporter)
 
 
 def public_report(db: Session, body: PublicIncidentIn) -> tuple[Incident, str]:
-    sa_row, team, district, recognised = _resolve_sa(db, body.sa_code)
+    role = body.reporter_role if body.reporter_role in dict(spec.REPORTER_ROLES) else "OTHER"
+    required = spec.ROLE_REQUIRED.get(role, [])
+    sa_code = (body.sa_code or "").strip() or None
+    code = (body.reporter_code or "").strip() or None
+    errors = []
+    if "code" in required and not code:
+        errors.append("Enter your application code")
+    if "sa" in required and not sa_code:
+        errors.append("Enter your 12-digit SA code")
+    if sa_code and not spec.SA_CODE_RE.match(sa_code):
+        errors.append("The SA code has 12 digits")
+    if errors:
+        raise HTTPException(422, {"message": "Please check the report", "errors": errors})
+    sa_row, team, district, recognised = svc_resolve(db, sa_code)
+    if district is None and body.district:
+        district = _district_by(db, body.district)
+        recognised = True if district is not None and sa_code is None else recognised
+    if "district" in required and district is None and sa_code is None:
+        raise HTTPException(422, {"message": "Please check the report", "errors": ["Choose your district"]})
     token = secrets.token_urlsafe(18)
-    reporter = {"name": body.reporter_name.strip(), "role": body.reporter_role if body.reporter_role in dict(spec.REPORTER_ROLES) else "SUPERVISOR", "phone": body.reporter_phone.strip()}
-    inc = _create(db, body.model_dump(), user=None, district=district, team=team, sa_code=body.sa_code, recognised=recognised, reporter=reporter)
+    reporter = {"name": body.reporter_name.strip(), "role": role, "phone": body.reporter_phone.strip(), "code": code}
+    inc = _create(db, body.model_dump(), user=None, district=district, team=team, sa_code=sa_code, recognised=recognised, reporter=reporter)
     inc.track_token_hash = _hash(token)
     if not recognised:
-        _log(db, inc, "COMMENT", text=f"SA code {body.sa_code} is not in the uploaded list: the district must be set by a manager")
+        _log(db, inc, "COMMENT", text=f"SA code {sa_code} is not in the uploaded list: the district must be set by a manager")
     db.flush()
     return inc, token
+
+
+def svc_resolve(db: Session, sa_code: str | None):
+    return _resolve_sa(db, sa_code)
 
 
 def public_track(db: Session, number: str, token: str) -> PublicTrackOut:
@@ -344,7 +366,7 @@ def to_out(inc: Incident, names: Names, with_updates: bool = False) -> IncidentO
         district_id=inc.district_id, district=district.name if district else None, region=names.regions.get(district.region_id) if district else None,
         team_id=inc.team_id, team_code=names.teams.get(inc.team_id), sa_code=inc.sa_code, sa_recognised=inc.sa_recognised, ea_code=inc.ea_code, locality=inc.locality, lat=inc.lat, lng=inc.lng,
         occurred_at=inc.occurred_at, reported_at=inc.reported_at, reported_by_name=names.users.get(inc.reported_by), reporter_name=inc.reporter_name, reporter_role=inc.reporter_role,
-        reporter_role_label=spec.label("reporter_role", inc.reporter_role) if inc.reporter_role else None, reporter_phone=inc.reporter_phone,
+        reporter_role_label=spec.label("reporter_role", inc.reporter_role) if inc.reporter_role else None, reporter_phone=inc.reporter_phone, reporter_code=inc.reporter_code,
         teams_affected=inc.teams_affected, staff_affected=inc.staff_affected, households_affected=inc.households_affected, days_lost=inc.days_lost, asset_tags=inc.asset_tags, reference=inc.reference,
         level=inc.level, owner_id=inc.owner_id, owner_name=names.users.get(inc.owner_id), due_at=inc.due_at, overdue=bool(open_ and due and due < now),
         unacknowledged_hours=_hours(inc.reported_at, now) if inc.status == "NEW" else None,
@@ -599,10 +621,10 @@ def export(db: Session, user: User, f: dict) -> report_service.Report:
     rows = db.execute(_query(db, user, f).options(selectinload(Incident.updates)).order_by(Incident.reported_at.desc())).scalars().all()
     names = Names(db, rows)
     outs = [to_out(x, names, with_updates=True) for x in rows]
-    headers = ["Number", "Status", "Severity", "Category", "Sub-category", "Phase", "Title", "Description", "District", "Region", "SA code", "SA / team", "EA code", "Locality", "Occurred", "Reported", "Reported by", "Reporter", "Reporter role", "Phone",
+    headers = ["Number", "Status", "Severity", "Category", "Sub-category", "Phase", "Title", "Description", "District", "Region", "SA code", "SA / team", "EA code", "Locality", "Occurred", "Reported", "Reported by", "Reporter", "Reporter role", "Phone", "Application code",
                "Teams affected", "Staff affected", "Households affected", "Days lost", "Tablets", "Reference", "Level", "Owner", "Due", "Overdue", "Acknowledged", "Hours to acknowledge", "Resolved", "Hours to resolve", "Closed", "Resolution", "Root cause fixed", "Lessons", "Reject reason", "Action taken on the spot", "Help needed"]
     reg = [[x.number, x.status_label, x.severity_label, x.category_label, x.subcategory_label or "", x.phase_label, x.title, x.description, x.district or "", x.region or "", x.sa_code or "", x.team_code or "", x.ea_code or "", x.locality or "", x.occurred_at, x.reported_at,
-            x.reported_by_name or "public page", x.reporter_name or "", x.reporter_role_label or "", x.reporter_phone or "", x.teams_affected, x.staff_affected, x.households_affected, x.days_lost, x.asset_tags or "", x.reference or "", spec.label("level", x.level), x.owner_name or "",
+            x.reported_by_name or "public page", x.reporter_name or "", x.reporter_role_label or "", x.reporter_phone or "", x.reporter_code or "", x.teams_affected, x.staff_affected, x.households_affected, x.days_lost, x.asset_tags or "", x.reference or "", spec.label("level", x.level), x.owner_name or "",
             x.due_at, "Yes" if x.overdue else "", x.acknowledged_at, x.hours_to_acknowledge, x.resolved_at, x.hours_to_resolve, x.closed_at, x.resolution or "", "" if x.root_cause_fixed is None else ("Yes" if x.root_cause_fixed else "No"), x.lessons or "", x.reject_reason or "", x.action_taken or "", x.help_needed or ""] for x in outs]
     updates = [[x.number, u.at, u.author or "", u.type_label, u.old_value or "", u.new_value or "", u.text or ""] for x in outs for u in x.updates]
     summary = [["Scope", d.scope], ["Incidents", d.total], ["Open", d.open], ["New, not acknowledged", d.new_unacknowledged], ["Critical open", d.critical_open], ["Overdue", d.overdue], ["Due today", d.due_today],

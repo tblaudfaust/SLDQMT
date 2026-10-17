@@ -21,6 +21,7 @@ class Incident(TimestampMixin, Base):
     reporter_name: Mapped[str | None] = mapped_column(String(160))
     reporter_role: Mapped[str | None] = mapped_column(String(32))
     reporter_phone: Mapped[str | None] = mapped_column(String(32))
+    reporter_code: Mapped[str | None] = mapped_column(String(40))  # application / staff code
     sa_code: Mapped[str | None] = mapped_column(String(16), index=True)  # the 12-digit code typed on the public page
     sa_recognised: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     track_token_hash: Mapped[str | None] = mapped_column(String(64))  # lets the public reporter follow the incident

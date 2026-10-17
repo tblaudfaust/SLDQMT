@@ -33,14 +33,17 @@ class IncidentIn(BaseModel):
     reporter_name: str | None = Field(default=None, max_length=160)  # on behalf of
     reporter_role: str | None = None
     reporter_phone: str | None = Field(default=None, max_length=32)
+    reporter_code: str | None = Field(default=None, max_length=40)
 
 
 class PublicIncidentIn(BaseModel):
     """A supervisor's report from the public page: identified by the SA code."""
 
-    sa_code: str = Field(min_length=12, max_length=12, pattern=r"^\d{12}$")
-    reporter_name: str = Field(min_length=2, max_length=160)
     reporter_role: str = "SUPERVISOR"
+    reporter_code: str | None = Field(default=None, max_length=40)  # application / staff code
+    sa_code: str | None = Field(default=None, max_length=12)  # required for supervisors and enumerators
+    district: str | None = Field(default=None, max_length=60)  # office staff pick their district
+    reporter_name: str = Field(min_length=2, max_length=160)
     reporter_phone: str = Field(min_length=8, max_length=32)
     ea_code: str | None = Field(default=None, max_length=16)
     locality: str | None = Field(default=None, max_length=200)
@@ -161,6 +164,7 @@ class IncidentOut(BaseModel):
     reporter_role: str | None = None
     reporter_role_label: str | None = None
     reporter_phone: str | None = None
+    reporter_code: str | None = None
     teams_affected: int | None = None
     staff_affected: int | None = None
     households_affected: int | None = None
