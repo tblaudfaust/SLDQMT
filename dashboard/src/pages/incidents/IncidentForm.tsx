@@ -36,14 +36,21 @@ export function validateIncident(v: IncidentValues): string[] {
   return e;
 }
 
+/** Field labels. Defined at module level: a component created inside the render would be a new type on every
+ *  keystroke, so React would remount the input and the user would lose focus after each character. */
+function PublicLabel({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
+  return <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>{children}{hint && <span className="mt-1 block text-xs text-slate-400">{hint}</span>}</label>;
+}
+function CompactLabel({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
+  return <label className="block"><span className="mb-1 block text-xs font-medium text-slate-700">{label}</span>{children}{hint && <span className="mt-1 block text-xs text-slate-400">{hint}</span>}</label>;
+}
+
 export function IncidentFields({ spec, values, onChange, publicStyle, hideEa }: { spec: IncidentSpec; values: IncidentValues; onChange: (v: IncidentValues) => void; publicStyle?: boolean; hideEa?: boolean }) {
   const v = values;
   const set = <K extends keyof IncidentValues>(k: K, val: IncidentValues[K]) => onChange({ ...v, [k]: val });
   const input = publicStyle ? "pub-input" : "input";
   const cat = spec.categories.find((c) => c.value === v.category);
-  const L = ({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) => (
-    <label className="block"><span className={clsx("mb-1 block font-medium text-slate-700", publicStyle ? "text-sm" : "text-xs")}>{label}</span>{children}{hint && <span className="mt-1 block text-xs text-slate-400">{hint}</span>}</label>
-  );
+  const L = publicStyle ? PublicLabel : CompactLabel;
   return (
     <div className="space-y-4">
       <div>
