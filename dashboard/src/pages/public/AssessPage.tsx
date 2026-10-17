@@ -53,7 +53,7 @@ export default function AssessPage() {
       const sent: Sent = { assessment_id: r.assessment_id, edit_token: r.edit_token, assessment_date: values.assessment_date, training_day: values.training_day, hall: values.hall, trainer_name: values.trainer_name, score_pct: r.score_pct, band: r.band, band_label: r.band_label, values, sent_at: new Date().toISOString() };
       setStore((s) => ({ draft: null, sent: [sent, ...s.sent.filter((x) => x.assessment_id !== sent.assessment_id)].slice(0, 40) }));
       setDone(sent); setEditing(null); setTouched(false);
-      // the next rating keeps the date, day, district, hall and monitor: the next trainer of the same hall
+      // the next rating keeps the date, day, district and hall: the next trainer of the same hall
       const day = Number(values.training_day);
       setValues({ ...emptyFacValues(), assessment_date: values.assessment_date, training_day: values.training_day, district: values.district, hall: values.hall, monitor_name: values.monitor_name, sections: sectionsForDay(round.agenda, day) });
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -106,7 +106,7 @@ export default function AssessPage() {
                 <p className="mt-4 max-w-2xl text-sm text-sky-50/90">{round.description || round.form.intro}</p>
                 <div className="mt-5 grid gap-2 sm:grid-cols-3">
                   {[
-                    { icon: <Users size={18} />, title: "Who rates", text: "The M&E monitor in the hall, each trainer once a day." },
+                    { icon: <Users size={18} />, title: "Who rates", text: "The M&E monitor in the hall: each trainer once a day, no name needed." },
                     { icon: <Star size={18} />, title: "Scale 1 to 4", text: "1 Poor · 2 Fair · 3 Good · 4 Excellent. Section A out of 20; section B on the chapters observed." },
                     { icon: <ClipboardCheck size={18} />, title: "Chapters loaded", text: round.agenda.length ? `${round.agenda.filter((a) => a.rated !== false).length} chapters over ${new Set(round.agenda.map((a) => a.day)).size} days are listed by training day.` : "Add the sections you observed." },
                   ].map((b) => (

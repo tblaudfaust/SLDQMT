@@ -57,7 +57,7 @@ class MeFacAssessment(TimestampMixin, Base):
     training_day: Mapped[int] = mapped_column(Integer, nullable=False)
     district: Mapped[str | None] = mapped_column(String(60))  # blank = national / HQ
     hall: Mapped[str] = mapped_column(String(80), nullable=False)
-    monitor_name: Mapped[str] = mapped_column(String(160), nullable=False)
+    monitor_name: Mapped[str | None] = mapped_column(String(160))  # no longer asked on the form
     trainer_name: Mapped[str] = mapped_column(String(160), nullable=False)
     # section A (1 to 4 each)
     s_technical: Mapped[int] = mapped_column(Integer, nullable=False)

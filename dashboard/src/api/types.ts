@@ -738,7 +738,7 @@ export interface MeFacRound {
 }
 export interface MeFacSectionRating { topic: string; rating: number | null }
 export interface MeFacAssessment {
-  id: number; round_id: number; assessment_date: string; training_day: number; district: string | null; hall: string; monitor_name: string; trainer_name: string;
+  id: number; round_id: number; assessment_date: string; training_day: number; district: string | null; hall: string; monitor_name: string | null; trainer_name: string;
   s_technical: number; s_clarity: number; s_practical: number; s_participation: number; s_time: number; section_a_total: number; section_a_band: string;
   sections: MeFacSectionRating[]; section_b_total: number; section_b_max: number; score_pct: number; band: string; band_label: string;
   strengths: string | null; improvements: string | null; comments: string | null; submitted_at: string; edited_by_name: string | null; lowest: number;

@@ -52,8 +52,9 @@ def test_rounds_agenda_ratings_summary_export_and_access(client, admin):
     assert f["section_a_total"] == 16 and f["score_pct"] == 82.1 and f["band"] == "GOOD"
     assert client.post(f"/api/v1/public/assess/{token}/submit", json=rating(assessment_date=(date.today() + timedelta(days=1)).isoformat())).status_code == 400
     assert client.post(f"/api/v1/public/assess/{token}/submit", json=rating(s_time=5)).status_code == 422
-    # the same monitor rating the same trainer in the same hall on the same day: refused, corrected instead
+    # the same trainer rated again in the same hall on the same day (whoever rates): refused, corrected instead
     assert client.post(f"/api/v1/public/assess/{token}/submit", json=rating(s_time=4)).status_code == 409
+    assert client.post(f"/api/v1/public/assess/{token}/submit", json=rating(monitor_name=None)).status_code == 409
     corrected = client.post(f"/api/v1/public/assess/{token}/submit", json={**rating(s_time=4), "assessment_id": f["assessment_id"], "edit_token": f["edit_token"]})
     assert corrected.status_code == 200 and corrected.json()["section_a_total"] == 18 and corrected.json()["band"] == "EXCELLENT"
     assert client.post(f"/api/v1/public/assess/{token}/submit", json={**rating(), "assessment_id": f["assessment_id"], "edit_token": "wrong"}).status_code == 403
@@ -61,10 +62,10 @@ def test_rounds_agenda_ratings_summary_export_and_access(client, admin):
     # more ratings: another hall, another district, a weak trainer, another day
     client.post(f"/api/v1/public/assess/{token}/submit", json=rating(hall="Hall 2", trainer_name="Fatmata Koroma", s_technical=2, s_clarity=2, s_practical=1, s_participation=2, s_time=2, sections=[]))
     client.post(f"/api/v1/public/assess/{token}/submit", json=rating(district="Kenema", hall="Hall A", monitor_name="Ibrahim Conteh", trainer_name="Sahr Bockarie", s_technical=4, s_clarity=4, s_practical=4, s_participation=4, s_time=4))
-    client.post(f"/api/v1/public/assess/{token}/submit", json=rating(district=None, hall="Main hall", monitor_name="Ibrahim Conteh", trainer_name="Aminata Sesay", training_day=3, sections=[{"topic": "Chapter 11 – Household questionnaire", "rating": 3}]))
+    client.post(f"/api/v1/public/assess/{token}/submit", json=rating(district=None, hall="Main hall", monitor_name=None, trainer_name="Aminata Sesay", training_day=3, sections=[{"topic": "Chapter 11 – Household questionnaire", "rating": 3}]))
 
     s = client.get(f"/api/v1/me/facilitators/rounds/{rd['id']}/summary", headers=me).json()
-    assert s["assessments"] == 4 and s["trainers"] == 4 and s["halls"] == 4 and s["districts"] == 3 and s["days"] == 2 and s["monitors"] == 2
+    assert s["assessments"] == 4 and s["trainers"] == 4 and s["halls"] == 4 and s["districts"] == 3 and s["days"] == 2 and s["monitors"] == 2  # the rating without a monitor name does not count
     assert [b["count"] for b in s["band_counts"]] == [2, 1, 1, 0]  # Excellent, Good, Fair (9 of 20), Needs improvement
     assert s["low_scores"] == 2 and len(s["needs_attention"]) == 2 and s["needs_attention"][0]["label"] == "Fatmata Koroma"  # Aminata has a 2 for time
     assert [g["label"] for g in s["by_district"]] == ["Bo", "Kenema", "National / HQ"]

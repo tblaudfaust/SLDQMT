@@ -57,15 +57,14 @@ export function validateFac(v: FacValues, spec: MeFacSpec): string[] {
   else if (v.assessment_date > today()) e.push("The date cannot be in the future");
   if (!v.training_day || Number(v.training_day) < 1) e.push("Choose the training day");
   if (v.hall.trim().length < 1) e.push("Enter the hall");
-  if (v.monitor_name.trim().length < 2) e.push("Enter your name (M&E monitor)");
   if (v.trainer_name.trim().length < 2) e.push("Enter the trainer's name");
   for (const c of spec.criteria) if (!v.scores[c.key]) e.push(`Rate: ${c.label}`);
   return e;
 }
 
-export function fromAssessment(x: { assessment_date: string; training_day: number; district: string | null; hall: string; monitor_name: string; trainer_name: string; s_technical: number; s_clarity: number; s_practical: number; s_participation: number; s_time: number; sections: { topic: string; rating: number | null }[]; strengths: string | null; improvements: string | null; comments: string | null }): FacValues {
+export function fromAssessment(x: { assessment_date: string; training_day: number; district: string | null; hall: string; monitor_name: string | null; trainer_name: string; s_technical: number; s_clarity: number; s_practical: number; s_participation: number; s_time: number; sections: { topic: string; rating: number | null }[]; strengths: string | null; improvements: string | null; comments: string | null }): FacValues {
   return {
-    assessment_date: x.assessment_date, training_day: String(x.training_day), district: x.district ?? "", hall: x.hall, monitor_name: x.monitor_name, trainer_name: x.trainer_name,
+    assessment_date: x.assessment_date, training_day: String(x.training_day), district: x.district ?? "", hall: x.hall, monitor_name: x.monitor_name ?? "", trainer_name: x.trainer_name,
     scores: { technical: String(x.s_technical), clarity: String(x.s_clarity), practical: String(x.s_practical), participation: String(x.s_participation), time: String(x.s_time) },
     sections: x.sections.map((s) => ({ topic: s.topic, rating: s.rating === null ? "" : String(s.rating) })), strengths: x.strengths ?? "", improvements: x.improvements ?? "", comments: x.comments ?? "",
   };
@@ -121,9 +120,8 @@ export function FacilitatorForm({ spec, agenda, values, onChange, onSubmit, busy
           <select className={input} value={v.district} onChange={(e) => set("district", e.target.value)}><option value="">National / HQ</option>{spec.districts.map((d) => <option key={d} value={d}>{d}</option>)}</select>
         </label>
       </div>
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         <label className="block"><span className={label}>Hall *</span><input className={input} value={v.hall} onChange={(e) => set("hall", e.target.value)} placeholder="e.g. Hall 2" maxLength={80} /></label>
-        <label className="block"><span className={label}>M&amp;E monitor (your name) *</span><input className={input} value={v.monitor_name} onChange={(e) => set("monitor_name", e.target.value)} maxLength={160} /></label>
         <label className="block"><span className={label}>Trainer's name *</span><input className={input} value={v.trainer_name} onChange={(e) => set("trainer_name", e.target.value)} maxLength={160} /></label>
       </div>
 

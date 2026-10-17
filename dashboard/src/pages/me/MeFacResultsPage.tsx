@@ -17,7 +17,7 @@ const pct = (v: number | null | undefined) => (v === null || v === undefined ? "
 const num = (v: number | null | undefined, d = 1) => (v === null || v === undefined ? "—" : v.toFixed(d));
 const CRIT = ["technical", "clarity", "practical", "participation", "time"] as const;
 const CRIT_SHORT: Record<string, string> = { technical: "Technical", clarity: "Clarity", practical: "Practical", participation: "Participation", time: "Time" };
-type Tab = "overview" | "district" | "hall" | "trainer" | "day" | "chapters" | "monitor" | "ratings";
+type Tab = "overview" | "district" | "hall" | "trainer" | "day" | "chapters" | "ratings";
 
 function BandPill({ band, label }: { band: string | null; label?: string | null }) {
   if (!band) return <span className="text-slate-400">—</span>;
@@ -33,7 +33,7 @@ export default function MeFacResultsPage() {
   const { id } = useParams();
   const { can } = useAuth();
   const qc = useQueryClient();
-  const [f, setF] = useState({ district: "", hall: "", trainer: "", monitor: "", training_day: "", date_from: "", date_to: "" });
+  const [f, setF] = useState({ district: "", hall: "", trainer: "", training_day: "", date_from: "", date_to: "" });
   const query = qs(f);
   const res = useQuery({ queryKey: ["me-fac", "summary", id, query], queryFn: () => api.get<MeFacSummary>(`/me/facilitators/rounds/${id}/summary${query}`) });
   const all = useQuery({ queryKey: ["me-fac", "summary", id, "all"], queryFn: () => api.get<MeFacSummary>(`/me/facilitators/rounds/${id}/summary`) });
@@ -109,20 +109,19 @@ export default function MeFacResultsPage() {
       <ErrorBox error={error instanceof ApiError ? error.message : error} />
 
       <Card className="mb-4">
-        <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-7">
+        <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
           <select className="input" value={f.district} onChange={(e) => setF({ ...f, district: e.target.value, hall: "" })}><option value="">All districts</option>{lists.by_district.map((g) => <option key={g.key} value={g.key === "HQ" ? "HQ" : g.label}>{g.label} ({g.assessments})</option>)}</select>
           <select className="input" value={f.hall} onChange={(e) => setF({ ...f, hall: e.target.value })}><option value="">All halls</option>{lists.by_hall.filter((g) => !f.district || (f.district === "HQ" ? g.district === "National / HQ" : g.district === f.district)).map((g) => <option key={g.key} value={g.hall ?? ""}>{g.label} ({g.assessments})</option>)}</select>
           <select className="input" value={f.trainer} onChange={(e) => setF({ ...f, trainer: e.target.value })}><option value="">All trainers</option>{lists.by_trainer.map((g) => <option key={g.key} value={g.label}>{g.label} ({g.assessments})</option>)}</select>
-          <select className="input" value={f.monitor} onChange={(e) => setF({ ...f, monitor: e.target.value })}><option value="">All monitors</option>{lists.by_monitor.map((g) => <option key={g.key} value={g.label}>{g.label} ({g.assessments})</option>)}</select>
           <select className="input" value={f.training_day} onChange={(e) => setF({ ...f, training_day: e.target.value })}><option value="">All days</option>{lists.by_day.map((g) => <option key={g.key} value={g.key}>{g.label} ({g.assessments})</option>)}</select>
           <input className="input" type="date" value={f.date_from} onChange={(e) => setF({ ...f, date_from: e.target.value })} title="From date" />
           <input className="input" type="date" value={f.date_to} onChange={(e) => setF({ ...f, date_to: e.target.value })} title="To date" />
         </div>
-        {filtered && <div className="mt-2 text-xs text-sky-900">Every figure and export on this page follows these filters. <button className="font-semibold underline" onClick={() => setF({ district: "", hall: "", trainer: "", monitor: "", training_day: "", date_from: "", date_to: "" })}>Clear</button></div>}
+        {filtered && <div className="mt-2 text-xs text-sky-900">Every figure and export on this page follows these filters. <button className="font-semibold underline" onClick={() => setF({ district: "", hall: "", trainer: "", training_day: "", date_from: "", date_to: "" })}>Clear</button></div>}
       </Card>
 
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-        <KpiTile label="Ratings" value={d.assessments} sub={`${d.trainers} trainers · ${d.monitors} monitors · ${d.days} days`} />
+        <KpiTile label="Ratings" value={d.assessments} sub={`${d.trainers} trainers · ${d.days} training days`} />
         <KpiTile label="Halls" value={d.halls} sub={`${d.districts} district${d.districts === 1 ? "" : "s"}`} />
         <KpiTile label="Mean score" value={pct(d.mean_pct)} tone={d.mean_pct === null ? "navy" : d.mean_pct < 45 ? "red" : d.mean_pct < 65 ? "amber" : "green"} sub={overallBand ? overallBand.label : "section A and the chapters rated"} />
         <KpiTile label="Section A" value={num(d.mean_a_total)} sub="mean of 20 · five criteria" />
@@ -131,7 +130,7 @@ export default function MeFacResultsPage() {
       </div>
 
       <div className="mb-4 flex flex-wrap gap-1 border-b border-slate-200">
-        {([["overview", "Overview"], ["district", `By district (${d.by_district.length})`], ["hall", `By hall (${d.by_hall.length})`], ["trainer", `By trainer (${d.by_trainer.length})`], ["day", "By day"], ["chapters", `Chapters (${d.topics.length})`], ["monitor", "By monitor"], ["ratings", `Ratings (${d.assessments})`]] as [Tab, string][]).map(([t, label]) => (
+        {([["overview", "Overview"], ["district", `By district (${d.by_district.length})`], ["hall", `By hall (${d.by_hall.length})`], ["trainer", `By trainer (${d.by_trainer.length})`], ["day", "By day"], ["chapters", `Chapters (${d.topics.length})`], ["ratings", `Ratings (${d.assessments})`]] as [Tab, string][]).map(([t, label]) => (
           <button key={t} onClick={() => setTab(t)} className={clsx("-mb-px border-b-2 px-3 py-2 text-sm font-medium", tab === t ? "border-navy text-navy" : "border-transparent text-slate-500 hover:text-slate-700")}>{label}</button>
         ))}
       </div>
@@ -240,28 +239,27 @@ export default function MeFacResultsPage() {
           </table>
         </Card>
       )}
-      {tab === "monitor" && <Card title="By M&E monitor"><GroupTable rows={d.by_monitor} first="Monitor" /></Card>}
 
       {tab === "ratings" && (
         <Card title="Ratings">
           {ratings.isLoading ? <Spinner /> : (
             <div className="overflow-x-auto">
               <table className="table">
-                <thead><tr><th>Date</th><th>Day</th><th>District · hall</th><th>Trainer</th><th>Monitor</th>{CRIT.map((c) => <th key={c} className="text-center">{CRIT_SHORT[c].slice(0, 4)}</th>)}<th className="text-right">A /20</th><th className="text-right">B</th><th className="text-right">Score</th><th>Band</th><th /></tr></thead>
+                <thead><tr><th>Date</th><th>Day</th><th>District · hall</th><th>Trainer</th>{CRIT.map((c) => <th key={c} className="text-center">{CRIT_SHORT[c].slice(0, 4)}</th>)}<th className="text-right">A /20</th><th className="text-right">B</th><th className="text-right">Score</th><th>Band</th><th /></tr></thead>
                 <tbody>
                   {(ratings.data ?? []).map((x) => (
                     <>
                       <tr key={x.id} className={clsx("cursor-pointer hover:bg-slate-50", open === x.id && "bg-sky-50")} onClick={() => setOpen(open === x.id ? null : x.id)}>
-                        <td className="whitespace-nowrap">{fmtDate(x.assessment_date)}</td><td>{x.training_day}</td><td>{x.district ?? "National / HQ"} · {x.hall}</td><td className="font-medium">{x.trainer_name}</td><td>{x.monitor_name}</td>
+                        <td className="whitespace-nowrap">{fmtDate(x.assessment_date)}</td><td>{x.training_day}</td><td>{x.district ?? "National / HQ"} · {x.hall}</td><td className="font-medium">{x.trainer_name}</td>
                         {[x.s_technical, x.s_clarity, x.s_practical, x.s_participation, x.s_time].map((v, i) => <td key={i} className="text-center"><Score v={v} /></td>)}
                         <td className="text-right">{x.section_a_total}</td><td className="text-right text-slate-500">{x.section_b_max ? `${x.section_b_total}/${x.section_b_max}` : "—"}</td><td className="text-right font-semibold">{x.score_pct}%</td><td><BandPill band={x.band} label={x.band_label} /></td>
                         <td className="whitespace-nowrap text-right">
                           {can("me_fac.manage") && <button className="mr-2 text-navy" title="Edit" onClick={(e) => { e.stopPropagation(); setEdit(x); }}><Pencil size={14} /></button>}
-                          {can("me_fac.manage") && <button className="text-red-700" title="Remove" onClick={(e) => { e.stopPropagation(); if (confirm(`Remove the rating of ${x.trainer_name} by ${x.monitor_name} on ${fmtDate(x.assessment_date)}?`)) remove.mutate(x); }}><Trash2 size={14} /></button>}
+                          {can("me_fac.manage") && <button className="text-red-700" title="Remove" onClick={(e) => { e.stopPropagation(); if (confirm(`Remove the rating of ${x.trainer_name} in ${x.hall} on ${fmtDate(x.assessment_date)}?`)) remove.mutate(x); }}><Trash2 size={14} /></button>}
                         </td>
                       </tr>
                       {open === x.id && (
-                        <tr key={`${x.id}-d`} className="bg-sky-50/60"><td colSpan={15} className="text-sm">
+                        <tr key={`${x.id}-d`} className="bg-sky-50/60"><td colSpan={14} className="text-sm">
                           <div className="grid gap-3 md:grid-cols-3">
                             <div><div className="text-xs font-bold uppercase text-slate-500">Section B · chapters</div>{x.sections.length === 0 ? <div className="text-slate-400">None listed</div> : <ul className="mt-1 space-y-0.5">{x.sections.map((s) => <li key={s.topic} className="flex items-center justify-between gap-2"><span>{s.topic}</span>{s.rating === null ? <span className="text-xs text-slate-400">not observed</span> : <Score v={s.rating} />}</li>)}</ul>}</div>
                             <div><div className="text-xs font-bold uppercase text-slate-500">Strengths</div><div className="whitespace-pre-wrap">{x.strengths ?? "—"}</div><div className="mt-2 text-xs font-bold uppercase text-slate-500">To improve</div><div className="whitespace-pre-wrap">{x.improvements ?? "—"}</div></div>
@@ -271,7 +269,7 @@ export default function MeFacResultsPage() {
                       )}
                     </>
                   ))}
-                  {(ratings.data ?? []).length === 0 && <tr><td colSpan={15}><Empty text="No rating for these filters." /></td></tr>}
+                  {(ratings.data ?? []).length === 0 && <tr><td colSpan={14}><Empty text="No rating for these filters." /></td></tr>}
                 </tbody>
               </table>
             </div>

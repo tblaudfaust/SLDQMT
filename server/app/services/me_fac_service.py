@@ -202,7 +202,7 @@ def _apply(x: A, body: AssessmentIn) -> None:
     x.training_day = body.training_day
     x.district = (body.district or "").strip() or None
     x.hall = " ".join(body.hall.split())
-    x.monitor_name = " ".join(body.monitor_name.split())
+    x.monitor_name = " ".join((body.monitor_name or "").split()) or None
     x.trainer_name = " ".join(body.trainer_name.split())
     x.s_technical, x.s_clarity, x.s_practical, x.s_participation, x.s_time = body.s_technical, body.s_clarity, body.s_practical, body.s_participation, body.s_time
     x.section_a_total = a_total
@@ -214,10 +214,10 @@ def _apply(x: A, body: AssessmentIn) -> None:
 
 
 def _duplicate(db: Session, r: MeFacRound, body: AssessmentIn, exclude_id: int | None) -> A | None:
-    """The same monitor rating the same trainer in the same hall on the same day: one rating, corrected if needed."""
+    """The same trainer rated in the same hall on the same day: one rating, corrected if needed."""
     rows = db.execute(_live(r.id).where(A.assessment_date == body.assessment_date)).scalars().all()
     for x in rows:
-        if x.id != exclude_id and _key(x.trainer_name) == _key(body.trainer_name) and _key(x.hall) == _key(body.hall) and _key(x.monitor_name) == _key(body.monitor_name) and _key(x.district) == _key(body.district):
+        if x.id != exclude_id and _key(x.trainer_name) == _key(body.trainer_name) and _key(x.hall) == _key(body.hall) and _key(x.district) == _key(body.district):
             return x
     return None
 
@@ -238,7 +238,7 @@ def public_submit(db: Session, r: MeFacRound, body: PublicSubmitIn) -> PublicSub
         x.edit_token_hash = _hash(token)
     dup = _duplicate(db, r, body, x.id)
     if dup:
-        raise HTTPException(409, f"{dup.trainer_name} was already rated by {dup.monitor_name} in {dup.hall} on {dup.assessment_date:%d %b}. Correct that rating from My sent ratings instead of sending a second one.")
+        raise HTTPException(409, f"{dup.trainer_name} was already rated in {dup.hall} on {dup.assessment_date:%d %b}. Correct that rating from My sent ratings instead of sending a second one.")
     _apply(x, body)
     db.add(x)
     db.flush()
@@ -255,7 +255,7 @@ def get_assessment(db: Session, round_id: int, assessment_id: int) -> A:
 def edit_assessment(db: Session, user: User, x: A, body: AssessmentIn) -> A:
     dup = _duplicate(db, x.round, body, x.id)
     if dup:
-        raise HTTPException(409, f"Another rating of {dup.trainer_name} by {dup.monitor_name} in {dup.hall} exists for that day")
+        raise HTTPException(409, f"Another rating of {dup.trainer_name} in {dup.hall} exists for that day")
     _apply(x, body)
     x.edited_by = user.id
     db.flush()
@@ -323,7 +323,7 @@ def _group(rows: list[A], key, label, extra=None) -> list[GroupRow]:
         worst = min((v, c) for c, v in crit.items() if v is not None)[1] if any(v is not None for v in crit.values()) else None
         pct = _mean([x.score_pct for x in xs], 1)
         g = GroupRow(key=k, label=labels[k], assessments=len(xs), trainers=len({_key(x.trainer_name) for x in xs}), halls=len({(_key(x.district), _key(x.hall)) for x in xs}),
-                     monitors=len({_key(x.monitor_name) for x in xs}), mean_a_total=_mean([x.section_a_total for x in xs], 1), mean_pct=pct, band=form.band_for_pct(pct),
+                     monitors=len({_key(x.monitor_name) for x in xs if x.monitor_name}), mean_a_total=_mean([x.section_a_total for x in xs], 1), mean_pct=pct, band=form.band_for_pct(pct),
                      band_label=form.BAND_LABEL.get(form.band_for_pct(pct) or "", None), criteria=crit, bands={b: sum(1 for x in xs if x.band == b) for b, *_ in form.BANDS},
                      lowest_criterion=CRIT_LABEL.get(worst or "", None), low_scores=sum(1 for x in xs if min(x.s_technical, x.s_clarity, x.s_practical, x.s_participation, x.s_time) <= 2))
         if extra:
@@ -350,7 +350,7 @@ def summary(db: Session, r: MeFacRound, **filters) -> Summary:
     by_hall = sorted(_group(rows, lambda x: f"{_key(x.district) or 'HQ'}|{_key(x.hall)}", lambda x: f"{district_of(x)} · {x.hall}", with_place), key=lambda g: g.label)
     by_day = sorted(_group(rows, lambda x: str(x.training_day), lambda x: f"Day {x.training_day}"), key=lambda g: int(g.key))
     by_trainer = sorted(_group(rows, lambda x: _key(x.trainer_name), lambda x: x.trainer_name, with_place), key=lambda g: (-(g.mean_pct or 0), g.label))
-    by_monitor = sorted(_group(rows, lambda x: _key(x.monitor_name), lambda x: x.monitor_name), key=lambda g: g.label)
+    by_monitor = sorted(_group([x for x in rows if x.monitor_name], lambda x: _key(x.monitor_name), lambda x: x.monitor_name or ""), key=lambda g: g.label)
     topic_vals: dict[tuple[int, str], list[int]] = defaultdict(list)
     for x in rows:
         for s in json.loads(x.sections):
@@ -361,7 +361,7 @@ def summary(db: Session, r: MeFacRound, **filters) -> Summary:
     ed = editors(db, rows[:30])
     return Summary(
         round=to_out(db, r), assessments=n, trainers=len({_key(x.trainer_name) for x in rows}), halls=len({(_key(x.district), _key(x.hall)) for x in rows}), districts=len({_key(x.district) for x in rows}),
-        monitors=len({_key(x.monitor_name) for x in rows}), days=len({x.training_day for x in rows}), mean_a_total=_mean([x.section_a_total for x in rows], 1), mean_pct=_mean([x.score_pct for x in rows], 1),
+        monitors=len({_key(x.monitor_name) for x in rows if x.monitor_name}), days=len({x.training_day for x in rows}), mean_a_total=_mean([x.section_a_total for x in rows], 1), mean_pct=_mean([x.score_pct for x in rows], 1),
         band_counts=band_counts, criteria=criteria, low_scores=sum(1 for x in rows if min(x.s_technical, x.s_clarity, x.s_practical, x.s_participation, x.s_time) <= 2),
         by_district=by_district, by_hall=by_hall, by_day=by_day, by_trainer=by_trainer, by_monitor=by_monitor, topics=topics, needs_attention=attention,
         latest=[to_assessment_out(x, ed) for x in rows[:30]],
@@ -379,7 +379,7 @@ def export(db: Session, r: MeFacRound, **filters) -> report_service.Report:
         return [[g.label, g.assessments, g.trainers, g.mean_a_total, g.mean_pct, g.band_label or "", *[g.criteria.get(c) for c in CRIT_ATTR], g.lowest_criterion or "", g.low_scores] for g in groups]
 
     g_headers = ["Group", "Ratings", "Trainers", "Mean section A (of 20)", "Mean score %", "Band", *crit_headers, "Lowest criterion", "Ratings with a 1 or 2"]
-    reg = [[x.assessment_date, x.training_day, x.district or "National / HQ", x.hall, x.trainer_name, x.monitor_name, x.s_technical, x.s_clarity, x.s_practical, x.s_participation, x.s_time, x.section_a_total,
+    reg = [[x.assessment_date, x.training_day, x.district or "National / HQ", x.hall, x.trainer_name, x.monitor_name or "", x.s_technical, x.s_clarity, x.s_practical, x.s_participation, x.s_time, x.section_a_total,
             form.BAND_LABEL[x.section_a_band], x.section_b_total, x.section_b_max, x.score_pct, x.band_label, "; ".join(f"{s.topic}: {s.rating}" for s in x.sections if s.rating is not None), x.strengths or "", x.improvements or "", x.comments or "", x.submitted_at] for x in outs]
     summary_rows = [["Training", r.title], ["Ratings", d.assessments], ["Trainers", d.trainers], ["Halls", d.halls], ["Districts", d.districts], ["Monitors", d.monitors], ["Training days", d.days],
                     ["Mean section A (of 20)", d.mean_a_total], ["Mean score %", d.mean_pct], ["Ratings with a 1 or 2", d.low_scores], *[[f"Band: {c.label}", c.count] for c in d.band_counts], *[[f"Criterion: {c.label}", c.mean] for c in d.criteria]]

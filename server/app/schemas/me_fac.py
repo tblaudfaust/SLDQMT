@@ -70,7 +70,7 @@ class AssessmentIn(BaseModel):
     training_day: int = Field(ge=1, le=60)
     district: str | None = Field(default=None, max_length=60)
     hall: str = Field(min_length=1, max_length=80)
-    monitor_name: str = Field(min_length=2, max_length=160)
+    monitor_name: str | None = Field(default=None, max_length=160)
     trainer_name: str = Field(min_length=2, max_length=160)
     s_technical: int = Field(ge=1, le=4)
     s_clarity: int = Field(ge=1, le=4)
@@ -105,7 +105,7 @@ class AssessmentOut(ORMModel):
     training_day: int
     district: str | None = None
     hall: str
-    monitor_name: str
+    monitor_name: str | None = None
     trainer_name: str
     s_technical: int
     s_clarity: int

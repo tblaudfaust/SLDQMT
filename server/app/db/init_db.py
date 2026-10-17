@@ -53,7 +53,7 @@ def add_missing_columns() -> None:
 
 
 # Columns that were NOT NULL when a database was created and are optional (or no longer used) now.
-RELAXED_COLUMNS = [("me_respondent", "full_name"), ("me_respondent", "phone"), ("me_respondent", "email")]
+RELAXED_COLUMNS = [("me_respondent", "full_name"), ("me_respondent", "phone"), ("me_respondent", "email"), ("me_fac_assessment", "monitor_name")]
 
 
 def relax_not_null() -> None:
