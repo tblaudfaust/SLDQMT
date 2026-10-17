@@ -2,7 +2,7 @@
  "key": "TRAINING_2026",
  "title": "2026 SLPHC Training agenda (10 days)",
  "phase": "MASTER",
- "source": "2026_SLPHC_TRAINING_AGENDA.xlsx (aligned with the manual)",
+ "source": "2026_SLPHC_TRAINING_AGENDA.xlsx (aligned with the manual; the DQM / Field Monitor track of days 6 to 10 is filed under those days)",
  "day_titles": {
   "1": "Day 1",
   "2": "Day 2",
@@ -505,7 +505,7 @@
    "responsible": "All Facilitators"
   },
   {
-   "day": 1,
+   "day": 6,
    "topic": "Section A: Data Quality Management and Field Monitoring",
    "planned_start": "08:30",
    "planned_end": "09:30",
@@ -513,7 +513,7 @@
    "responsible": "Presentation"
   },
   {
-   "day": 1,
+   "day": 6,
    "topic": "Section B: Listing and Enumeration (Using Field Monitoring)",
    "planned_start": "09:30",
    "planned_end": "10:30",
@@ -521,7 +521,7 @@
    "responsible": "Presentation"
   },
   {
-   "day": 1,
+   "day": 6,
    "topic": "Setting up the field monitoring tools",
    "planned_start": "10:30",
    "planned_end": "13:00",
@@ -529,7 +529,7 @@
    "responsible": "Live demonstration and hands-on"
   },
   {
-   "day": 1,
+   "day": 6,
    "topic": "Module 1: Data Transfer — fetch data from the Stats SL server.",
    "planned_start": "14:00",
    "planned_end": "16:00",
@@ -537,7 +537,7 @@
    "responsible": "Live demonstration and hands-on"
   },
   {
-   "day": 1,
+   "day": 6,
    "topic": "Module 2: Listing Reports – Reports related to population and household listing.",
    "planned_start": "16:00",
    "planned_end": "18:00",
@@ -545,7 +545,7 @@
    "responsible": "Live demonstration and hands-on session using the data sync from the class simulation exercise"
   },
   {
-   "day": 1,
+   "day": 6,
    "topic": "Daily briefing",
    "planned_start": "18:00",
    "planned_end": "19:00",
@@ -553,7 +553,7 @@
    "responsible": "All Facilitators"
   },
   {
-   "day": 1,
+   "day": 7,
    "topic": "Recap Day 1 & Quiz 1",
    "planned_start": "08:30",
    "planned_end": "09:30",
@@ -561,7 +561,7 @@
    "responsible": "All"
   },
   {
-   "day": 1,
+   "day": 7,
    "topic": "Module 3: Enumeration Reports — reports from the main census enumeration.",
    "planned_start": "09:30",
    "planned_end": "11:00",
@@ -569,7 +569,7 @@
    "responsible": "Live demonstration and hands-on session, and undertsanding & analysing the data from class simulation sync"
   },
   {
-   "day": 1,
+   "day": 7,
    "topic": "Module 4: Enumeration QC — quality-control checks for enumeration data.",
    "planned_start": "11:00",
    "planned_end": "13:00",
@@ -577,7 +577,7 @@
    "responsible": "Live demonstration, hands-on session and undertsanding & analysing the data from class simulation sync"
   },
   {
-   "day": 1,
+   "day": 7,
    "topic": "Module 5: Field Exit Reports, Sign out and Exit",
    "planned_start": "14:00",
    "planned_end": "18:00",
@@ -585,7 +585,7 @@
    "responsible": "Live demonstration, hands-on session and undertsanding & analysing the data from class simulation sync"
   },
   {
-   "day": 1,
+   "day": 7,
    "topic": "Daily briefing",
    "planned_start": "18:00",
    "planned_end": "19:00",
@@ -593,7 +593,7 @@
    "responsible": "All Facilitators"
   },
   {
-   "day": 1,
+   "day": 8,
    "topic": "Recap Day 2 & Quiz 2",
    "planned_start": "08:30",
    "planned_end": "09:30",
@@ -601,7 +601,7 @@
    "responsible": "All"
   },
   {
-   "day": 1,
+   "day": 8,
    "topic": "Module 6: Field Monitor User Manual: GETTING STARTED",
    "planned_start": "09:30",
    "planned_end": "11:00",
@@ -609,7 +609,7 @@
    "responsible": "Live demonstration, hands-on session and undertsanding & analysing the data from class simulation sync"
   },
   {
-   "day": 1,
+   "day": 8,
    "topic": "2. Listing mock-census dashboard",
    "planned_start": "11:00",
    "planned_end": "13:00",
@@ -617,7 +617,7 @@
    "responsible": null
   },
   {
-   "day": 1,
+   "day": 8,
    "topic": "Module 7: Field Monitor (Section and EA-level drill-down)",
    "planned_start": null,
    "planned_end": null,
@@ -625,7 +625,7 @@
    "responsible": "Live demonstration, hands-on session and undertsanding & analysing the data from class simulation sync"
   },
   {
-   "day": 1,
+   "day": 8,
    "topic": "Daily briefing",
    "planned_start": "18:00",
    "planned_end": "19:00",
@@ -633,7 +633,7 @@
    "responsible": "All Facilitators"
   },
   {
-   "day": 1,
+   "day": 9,
    "topic": "Recap Day 4 & Quiz 4",
    "planned_start": "08:30",
    "planned_end": "09:30",
@@ -641,7 +641,7 @@
    "responsible": "All"
   },
   {
-   "day": 1,
+   "day": 9,
    "topic": "Module 8: Field Monitor Error Follow – up Application",
    "planned_start": "09:30",
    "planned_end": "11:30",
@@ -649,7 +649,7 @@
    "responsible": "Live demonstration and hands-on"
   },
   {
-   "day": 1,
+   "day": 9,
    "topic": "Hands- on session",
    "planned_start": "11:30",
    "planned_end": "13:00",
@@ -657,7 +657,7 @@
    "responsible": null
   },
   {
-   "day": 1,
+   "day": 9,
    "topic": "Daily DQM reporting",
    "planned_start": "14:00",
    "planned_end": "16:00",
@@ -665,7 +665,7 @@
    "responsible": null
   },
   {
-   "day": 1,
+   "day": 9,
    "topic": "Field Exit Protocol",
    "planned_start": "16:00",
    "planned_end": "18:00",
@@ -673,7 +673,7 @@
    "responsible": null
   },
   {
-   "day": 1,
+   "day": 10,
    "topic": "Recap Day 5 & Quiz 5",
    "planned_start": "08:30",
    "planned_end": "09:30",
@@ -681,7 +681,7 @@
    "responsible": "All"
   },
   {
-   "day": 1,
+   "day": 10,
    "topic": "Live demonstration and hands-on session",
    "planned_start": "09:30",
    "planned_end": "13:00",
@@ -689,7 +689,7 @@
    "responsible": null
   },
   {
-   "day": 1,
+   "day": 10,
    "topic": "Communicating the flagged issues to the Field personnel (Supervisors & Enumerators) by the Field monitors",
    "planned_start": null,
    "planned_end": null,
@@ -697,11 +697,11 @@
    "responsible": null
   },
   {
-   "day": 1,
+   "day": 10,
    "topic": "Daily briefing",
    "planned_start": "18:00",
    "planned_end": "19:00",
-   "details": "Morning Session / Lunch / Afternoon Session / Daily Debriefing",
+   "details": null,
    "responsible": "All Facilitators"
   }
  ]

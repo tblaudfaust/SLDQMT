@@ -39,10 +39,10 @@ def test_rounds_agenda_ratings_summary_export_and_access(client, admin):
     token = rd["token"]
 
     # the chapters per day can be replaced
-    a = client.put(f"/api/v1/me/facilitators/rounds/{rd['id']}/agenda", json=[{"day": 2, "topic": "Chapter 6 – Preliminary Work in the Enumeration Area"}, {"day": 2, "topic": "Chapter 7 – Use of Maps, GIS and Enumeration Area Boundaries", "details": "7.1 to 7.5"}, {"day": 3, "topic": "Chapter 11 – Household questionnaire"}], headers=me)
-    assert a.status_code == 200 and [x["position"] for x in a.json()] == [1, 2, 1]
+    a = client.put(f"/api/v1/me/facilitators/rounds/{rd['id']}/agenda", json=[{"day": 2, "topic": "Chapter 6 – Preliminary Work in the Enumeration Area"}, {"day": 2, "topic": "Chapter 7 – Use of Maps, GIS and Enumeration Area Boundaries", "details": "7.1 to 7.5"}, {"day": 2, "topic": "Role Play", "rated": False}, {"day": 3, "topic": "Chapter 11 – Household questionnaire"}], headers=me)
+    assert a.status_code == 200 and [x["position"] for x in a.json()] == [1, 2, 3, 1] and [x["rated"] for x in a.json()] == [True, True, False, True]
     pub = client.get(f"/api/v1/public/assess/{token}")
-    assert pub.status_code == 200 and len(pub.json()["agenda"]) == 3 and len(pub.json()["form"]["criteria"]) == 5
+    assert pub.status_code == 200 and len(pub.json()["agenda"]) == 4 and sum(1 for x in pub.json()["agenda"] if x["rated"]) == 3 and len(pub.json()["form"]["criteria"]) == 5
     assert client.get("/api/v1/public/assess/not-a-token").status_code == 404
 
     # scoring: A = 16 (Good), B = 7 of 8 rated, overall = 23/28 = 82.1 % (Good)

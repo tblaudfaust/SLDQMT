@@ -161,24 +161,30 @@ export default function MeFacPage() {
   );
 }
 
-type Row = { day: string; topic: string; details: string };
+type Row = { day: string; topic: string; details: string; rated: boolean };
 
-/** The editor of the chapters per day: the rows of section B on the rating form. */
+/** The editor of the chapters per day: one day at a time; the ticked chapters are the rows of section B on the rating form. */
 function ChaptersDialog({ round, onClose }: { round: MeFacRound; onClose: () => void }) {
   const current = useQuery({ queryKey: ["me-fac", "agenda", round.id], queryFn: () => api.get<MeFacAgendaItem[]>(`/me/facilitators/rounds/${round.id}/agenda`) });
   const templates = useQuery({ queryKey: ["me-fac", "agenda-templates"], queryFn: () => api.get<MeDailyAgendaTemplate[]>("/me/facilitators/agenda-templates") });
   const [rows, setRows] = useState<Row[] | null>(null);
+  const [day, setDay] = useState<number | null>(null);
   const [paste, setPaste] = useState("");
   const [error, setError] = useState<unknown>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const toRows = (items: { day: number; topic: string; details?: string | null }[]): Row[] => items.map((a) => ({ day: String(a.day), topic: a.topic, details: a.details ?? "" }));
+  const toRows = (items: { day: number; topic: string; details?: string | null; rated?: boolean }[]): Row[] => items.map((a) => ({ day: String(a.day), topic: a.topic, details: a.details ?? "", rated: a.rated !== false }));
   const data: Row[] = rows ?? toRows(current.data ?? []);
+  const days = Array.from(new Set(data.map((r) => Number(r.day)).filter((d) => d >= 1))).sort((a, b) => a - b);
+  const selected = day ?? days[0] ?? 1;
+  const dayRows = data.map((r, i) => ({ r, i })).filter(({ r }) => Number(r.day) === selected);
   const replaceOrAppend = (items: { day: number; topic: string; details?: string | null }[], source: string) => {
     const incoming = toRows(items);
     if (data.length && !confirm(`Replace the ${data.length} current chapters with the ${incoming.length} from ${source}? Cancel to add them after the current ones instead.`)) setRows([...data, ...incoming]);
     else setRows(incoming);
-    setNotice(`${incoming.length} chapters over ${new Set(items.map((a) => a.day)).size} days loaded from ${source}. Save to keep them.`);
+    const loadedDays = new Set(items.map((a) => a.day)).size;
+    setNotice(`${incoming.length} chapters over ${loadedDays} days loaded from ${source}. Pick a day, untick the chapters that are not rated, then save.`);
+    setDay(Math.min(...items.map((a) => a.day)));
   };
   const upload = async (file: File) => {
     setError(null);
@@ -191,8 +197,9 @@ function ChaptersDialog({ round, onClose }: { round: MeFacRound; onClose: () => 
     } catch (err) { setError(err); }
   };
   const setRow = (i: number, patch: Partial<Row>) => setRows(data.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+  const setDayRated = (rated: boolean) => setRows(data.map((r) => (Number(r.day) === selected ? { ...r, rated } : r)));
   const save = useMutation({
-    mutationFn: () => api.put<MeFacAgendaItem[]>(`/me/facilitators/rounds/${round.id}/agenda`, data.filter((r) => r.topic.trim() && Number(r.day) >= 1).map((r) => ({ day: Number(r.day), topic: r.topic.trim(), details: r.details.trim() || null }))),
+    mutationFn: () => api.put<MeFacAgendaItem[]>(`/me/facilitators/rounds/${round.id}/agenda`, data.filter((r) => r.topic.trim() && Number(r.day) >= 1).map((r) => ({ day: Number(r.day), topic: r.topic.trim(), details: r.details.trim() || null, rated: r.rated }))),
     onSuccess: onClose,
     onError: setError,
   });
@@ -200,51 +207,72 @@ function ChaptersDialog({ round, onClose }: { round: MeFacRound; onClose: () => 
     const parsed: Row[] = [];
     for (const line of paste.split(/\r?\n/)) {
       const parts = line.split(/\t|;|\|/).map((x) => x.trim());
-      if (parts.length < 2) continue;
-      const [day, topic, details = ""] = parts;
-      if (!/^\d+$/.test(day) || !topic) continue;
-      parsed.push({ day, topic, details });
+      if (parts.length < 1 || !parts[0]) continue;
+      // "day<TAB>chapter<TAB>details", or just "chapter" for the selected day
+      const hasDay = parts.length >= 2 && /^\d+$/.test(parts[0]);
+      const d = hasDay ? parts[0] : String(selected);
+      const [topic, details = ""] = hasDay ? parts.slice(1) : parts;
+      if (!topic) continue;
+      parsed.push({ day: d, topic, details, rated: true });
     }
     if (parsed.length) { setRows([...data, ...parsed]); setPaste(""); }
   };
-  const days = Array.from(new Set(data.map((r) => Number(r.day)).filter((d) => d >= 1))).sort((a, b) => a - b);
+  const ratedCount = dayRows.filter(({ r }) => r.rated).length;
+  const totalRated = data.filter((r) => r.rated && r.topic.trim()).length;
   return (
     <div className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-black/40 p-4" onClick={onClose}>
       <div className="w-full max-w-4xl rounded-lg bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-1 flex items-center justify-between"><h2 className="text-lg font-semibold">Chapters per day · {round.title}</h2><button className="btn-outline" onClick={onClose}>Close</button></div>
-        <p className="mb-3 text-sm text-slate-500">One row per chapter or thematic section. On the form, the monitor picks the training day and the day's chapters appear in section B, each rated 1 to 4 or left as not observed. {days.length ? `${data.length} chapters over ${days.length} days.` : ""}</p>
+        <p className="mb-3 text-sm text-slate-500">Pick a training day and tick the chapters the monitors rate that day: they become the rows of section B when the monitor selects the day on the form. {days.length ? `${totalRated} chapters ticked over ${days.length} days.` : ""}</p>
         <ErrorBox error={error instanceof ApiError ? error.message : error} />
         <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm">
-          <span className="font-medium text-sky-900">Load:</span>
+          <span className="font-medium text-sky-900">Load all days:</span>
           {(templates.data ?? []).map((t) => <button key={t.key} className="btn-outline" onClick={() => replaceOrAppend(t.items, t.title)}><CalendarDays size={16} /> {t.title}</button>)}
           <button className="btn-outline" onClick={() => fileRef.current?.click()}><FileSpreadsheet size={16} /> Upload the agenda (Excel / CSV)</button>
           <input ref={fileRef} type="file" accept=".xlsx,.xlsm,.csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ""; }} />
         </div>
         {notice && <div className="mb-3 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-900">{notice}</div>}
+        <div className="mb-3 flex flex-wrap items-center gap-1 border-b border-slate-200 pb-2">
+          {days.map((d) => {
+            const n = data.filter((r) => Number(r.day) === d).length, k = data.filter((r) => Number(r.day) === d && r.rated).length;
+            return <button key={d} onClick={() => setDay(d)} className={clsx("rounded-md px-3 py-1.5 text-sm font-medium", d === selected ? "bg-navy text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200")}>Day {d} <span className={clsx("text-xs", d === selected ? "text-sky-100" : "text-slate-400")}>{k}/{n}</span></button>;
+          })}
+          <button className="rounded-md border border-dashed border-slate-300 px-3 py-1.5 text-sm text-slate-500 hover:bg-slate-50" onClick={() => { const d = (days[days.length - 1] ?? 0) + 1; setRows([...data, { day: String(d), topic: "", details: "", rated: true }]); setDay(d); }}><Plus size={14} className="mr-1 inline" />Add day</button>
+        </div>
         {current.isLoading ? <Spinner /> : (
-          <div className="max-h-[55vh] overflow-auto">
-            <table className="table">
-              <thead><tr><th className="w-16">Day</th><th>Chapter / thematic section</th><th>Details (sections covered)</th><th className="w-8" /></tr></thead>
-              <tbody>
-                {data.map((r, i) => (
-                  <tr key={i} className={i > 0 && data[i - 1].day !== r.day ? "border-t-4 border-slate-200" : ""}>
-                    <td><input className="input px-2" type="number" min={1} max={60} value={r.day} onChange={(e) => setRow(i, { day: e.target.value })} /></td>
-                    <td><input className="input" value={r.topic} onChange={(e) => setRow(i, { topic: e.target.value })} placeholder="e.g. Chapter 8: Building Numbering and Household Listing" /></td>
-                    <td><input className="input text-xs" value={r.details} onChange={(e) => setRow(i, { details: e.target.value })} placeholder="e.g. 8.1 Introduction; 8.2 …" title={r.details} /></td>
-                    <td><button className="text-red-700" title="Remove" onClick={() => setRows(data.filter((_, j) => j !== i))}><Trash2 size={14} /></button></td>
-                  </tr>
-                ))}
-                {data.length === 0 && <tr><td colSpan={4}><Empty text="No chapter yet. Load the 2026 training agenda, upload a file, paste rows, or add them one by one." /></td></tr>}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm">
+              <div className="font-semibold text-navy">Day {selected} · {ratedCount} of {dayRows.length} chapters rated</div>
+              <div className="flex gap-2">
+                <button className="text-navy underline" onClick={() => setDayRated(true)}>Select all</button>
+                <button className="text-slate-500 underline" onClick={() => setDayRated(false)}>Clear</button>
+              </div>
+            </div>
+            <div className="max-h-[50vh] overflow-auto">
+              <table className="table">
+                <thead><tr><th className="w-14">Rated</th><th>Chapter / thematic section</th><th>Details (sections covered)</th><th className="w-20">Day</th><th className="w-8" /></tr></thead>
+                <tbody>
+                  {dayRows.map(({ r, i }) => (
+                    <tr key={i} className={clsx(!r.rated && "bg-slate-50 text-slate-400")}>
+                      <td className="text-center"><input type="checkbox" className="h-4 w-4" checked={r.rated} onChange={(e) => setRow(i, { rated: e.target.checked })} title="Rated on the form" /></td>
+                      <td><input className={clsx("input", !r.rated && "text-slate-400")} value={r.topic} onChange={(e) => setRow(i, { topic: e.target.value })} placeholder="e.g. Chapter 8: Building Numbering and Household Listing" /></td>
+                      <td><input className="input text-xs" value={r.details} onChange={(e) => setRow(i, { details: e.target.value })} placeholder="e.g. 8.1 Introduction; 8.2 …" title={r.details} /></td>
+                      <td><input className="input px-2" type="number" min={1} max={60} value={r.day} onChange={(e) => { setRow(i, { day: e.target.value }); }} title="Move to another day" /></td>
+                      <td><button className="text-red-700" title="Remove" onClick={() => setRows(data.filter((_, j) => j !== i))}><Trash2 size={14} /></button></td>
+                    </tr>
+                  ))}
+                  {dayRows.length === 0 && <tr><td colSpan={5}><Empty text={days.length ? "No chapter on this day yet." : "No chapter yet. Load the 2026 training agenda, upload a file, paste rows, or add them one by one."} /></td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
         <div className="mt-2 flex flex-wrap gap-2">
-          <button className="btn-outline" onClick={() => setRows([...data, { day: String(days.length ? days[days.length - 1] : 1), topic: "", details: "" }])}><Plus size={16} /> Add chapter</button>
+          <button className="btn-outline" onClick={() => setRows([...data, { day: String(selected), topic: "", details: "", rated: true }])}><Plus size={16} /> Add a chapter to day {selected}</button>
         </div>
         <details className="mt-3 rounded-md border border-slate-200 p-3 text-sm">
-          <summary className="cursor-pointer font-medium text-slate-700">Paste from Excel or Word</summary>
-          <p className="mt-1 text-xs text-slate-500">One chapter per line: day, chapter, details (tab- or semicolon-separated). For example: <code>2 ⇥ Chapter 6: Preliminary Work in the Enumeration Area</code></p>
+          <summary className="cursor-pointer font-medium text-slate-700">Paste chapters for day {selected}</summary>
+          <p className="mt-1 text-xs text-slate-500">One chapter per line, e.g. <code>Chapter 6: Preliminary Work in the Enumeration Area</code>. Lines starting with a day number and a tab go to that day instead.</p>
           <textarea className="input mt-2 font-mono text-xs" rows={5} value={paste} onChange={(e) => setPaste(e.target.value)} />
           <button className="btn-outline mt-2" onClick={importPaste} disabled={!paste.trim()}>Add these rows</button>
         </details>

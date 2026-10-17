@@ -11,6 +11,7 @@ class AgendaItemIn(BaseModel):
     day: int = Field(ge=1, le=60)
     topic: str = Field(min_length=1, max_length=200)
     details: str | None = Field(default=None, max_length=4000)
+    rated: bool = True  # include this chapter in section B of the form
 
 
 class AgendaItemOut(AgendaItemIn):

@@ -16,6 +16,9 @@ from dataclasses import dataclass, field
 from openpyxl import load_workbook
 
 DAY_RE = re.compile(r"^\s*DAY\s*(\d+)\s*[-–—:]?\s*(.*)$", re.IGNORECASE)
+DAY_RANGE_RE = re.compile(r"^\s*DAY\s*\d+\s*[-–—]\s*DAY\s*\d+", re.IGNORECASE)  # "DAY 1 - DAY 5": the title of a block, not a day
+NTH_DAY_RE = re.compile(r"\((\d+)\s*(?:st|nd|rd|th)\s+day\)", re.IGNORECASE)  # "DAY 1 (6th Day)": a parallel track numbered from 1, 6th day overall
+END_RE = re.compile(r"^\s*SUMMARY OF WORK HOURS", re.IGNORECASE)
 TIME_RE = re.compile(r"^\s*(\d{1,2})[:.](\d{2})\s*[-–—]+\s*(\d{1,2})[:.](\d{2})\s*$")
 SKIP_RE = re.compile(r"^(registration|attendance|lunch|breakfast|tea break|coffee break|break)\b", re.IGNORECASE)
 BULLET_RE = re.compile(r"^[\s·•\-–*]+")
@@ -70,15 +73,22 @@ def parse_rows(rows: list[list], skip_breaks: bool = True) -> ParsedAgenda:
         cells = list(cells) + [None] * 6
         first = _clean(cells[0])
         activity_cell = _clean(cells[3])
-        # a day heading can sit in column A or D
+        if END_RE.match(first):
+            break
+        # a day heading can sit in column A or D; "DAY 1 - DAY 5" titles a block and is skipped;
+        # "DAY 1 (6th Day)" numbers a parallel track from 1 and is filed under its overall day (6)
         for candidate in (first, activity_cell):
+            if DAY_RANGE_RE.match(candidate):
+                break
             m = DAY_RE.match(candidate)
             if m and not TIME_RE.match(first):
-                n = int(m.group(1))
-                if n not in titles or first:
-                    if first:  # the heading row (not the table of contents at the top)
-                        day = n
-                        current = None
+                nth = NTH_DAY_RE.search(candidate)
+                n = int(nth.group(1)) if nth else int(m.group(1))
+                if first or day > 0:  # a heading row in the body (not the table of contents at the top)
+                    day = n
+                    current = None
+                    titles.setdefault(n, _clean(NTH_DAY_RE.sub("", m.group(2))) or f"Day {n}")
+                else:
                     titles.setdefault(n, _clean(m.group(2)) or f"Day {n}")
                 break
         else:

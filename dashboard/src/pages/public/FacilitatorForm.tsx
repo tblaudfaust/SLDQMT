@@ -20,7 +20,7 @@ export function emptyFacValues(): FacValues {
 
 /** The chapters of a training day, as unrated section B rows. */
 export function sectionsForDay(agenda: MeFacAgendaItem[], day: number) {
-  return agenda.filter((a) => a.day === day).map((a) => ({ topic: a.topic, rating: "" }));
+  return agenda.filter((a) => a.day === day && a.rated !== false).map((a) => ({ topic: a.topic, rating: "" }));
 }
 
 export const BAND_CLS: Record<string, string> = { EXCELLENT: "bg-emerald-100 text-emerald-800", GOOD: "bg-lime-100 text-lime-800", FAIR: "bg-amber-100 text-amber-800", NEEDS_IMPROVEMENT: "bg-red-100 text-red-800" };
@@ -96,7 +96,7 @@ export function FacilitatorForm({ spec, agenda, values, onChange, onSubmit, busy
   const set = <K extends keyof FacValues>(k: K, val: FacValues[K]) => onChange({ ...v, [k]: val });
   const input = compact ? "input" : "pub-input";
   const label = compact ? "mb-1 block text-xs font-medium text-slate-600" : "mb-1 block text-sm font-medium text-slate-700";
-  const days = Array.from(new Set(agenda.map((a) => a.day))).sort((a, b) => a - b);
+  const days = Array.from(new Set(agenda.filter((a) => a.rated !== false).map((a) => a.day))).sort((a, b) => a - b);
   const sc = facScore(v, spec);
   const chooseDay = (d: string) => {
     const n = Number(d);

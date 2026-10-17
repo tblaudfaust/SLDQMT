@@ -731,7 +731,7 @@ export interface MeResults {
 }
 
 // ---- Facilitator assessment (daily trainer rating by M&E monitors) ----
-export interface MeFacAgendaItem { id?: number; day: number; position?: number; topic: string; details?: string | null }
+export interface MeFacAgendaItem { id?: number; day: number; position?: number; topic: string; details?: string | null; rated?: boolean }
 export interface MeFacRound {
   id: number; title: string; phase: "MASTER" | "TOT" | "FIELD"; period_start: string | null; period_end: string | null; description: string | null; token: string; status: "OPEN" | "CLOSED"; created_at: string;
   share_url: string | null; agenda_days: number; agenda_items: number; assessments: number; trainers: number; halls: number; districts: number; days: number; last_date: string | null; mean_pct: number | null; needs_improvement: number;

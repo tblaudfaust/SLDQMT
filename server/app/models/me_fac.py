@@ -40,6 +40,7 @@ class MeFacAgendaItem(Base):
     position: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     topic: Mapped[str] = mapped_column(String(200), nullable=False)
     details: Mapped[str | None] = mapped_column(Text)
+    rated: Mapped[bool | None] = mapped_column(Boolean)  # False = listed for the day but not a row of section B; NULL = rated
 
     round: Mapped[MeFacRound] = relationship(back_populates="agenda")
 

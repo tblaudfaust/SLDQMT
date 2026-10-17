@@ -65,7 +65,7 @@ def _key(s: str | None) -> str:
 
 
 def agenda_out(r: MeFacRound) -> list[AgendaItemOut]:
-    return [AgendaItemOut(id=a.id, day=a.day, position=a.position, topic=a.topic, details=a.details) for a in r.agenda]
+    return [AgendaItemOut(id=a.id, day=a.day, position=a.position, topic=a.topic, details=a.details, rated=a.rated is not False) for a in r.agenda]
 
 
 def agenda_templates() -> list[AgendaTemplate]:
@@ -172,7 +172,7 @@ def set_agenda(db: Session, r: MeFacRound, items: list[AgendaItemIn]) -> MeFacRo
     positions: dict[int, int] = defaultdict(int)
     for a in items:
         positions[a.day] += 1
-        db.add(MeFacAgendaItem(round_id=r.id, day=a.day, position=positions[a.day], topic=a.topic.strip(), details=(a.details or "").strip() or None))
+        db.add(MeFacAgendaItem(round_id=r.id, day=a.day, position=positions[a.day], topic=a.topic.strip(), details=(a.details or "").strip() or None, rated=None if a.rated else False))
     db.flush()
     db.refresh(r)
     return r

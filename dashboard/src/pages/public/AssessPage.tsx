@@ -108,7 +108,7 @@ export default function AssessPage() {
                   {[
                     { icon: <Users size={18} />, title: "Who rates", text: "The M&E monitor in the hall, each trainer once a day." },
                     { icon: <Star size={18} />, title: "Scale 1 to 4", text: "1 Poor · 2 Fair · 3 Good · 4 Excellent. Section A out of 20; section B on the chapters observed." },
-                    { icon: <ClipboardCheck size={18} />, title: "Chapters loaded", text: round.agenda.length ? `${round.agenda.length} chapters over ${new Set(round.agenda.map((a) => a.day)).size} days are listed by training day.` : "Add the sections you observed." },
+                    { icon: <ClipboardCheck size={18} />, title: "Chapters loaded", text: round.agenda.length ? `${round.agenda.filter((a) => a.rated !== false).length} chapters over ${new Set(round.agenda.map((a) => a.day)).size} days are listed by training day.` : "Add the sections you observed." },
                   ].map((b) => (
                     <div key={b.title} className="rounded-xl bg-white/10 p-3 backdrop-blur-sm">
                       <div className="flex items-center gap-2 text-sm font-semibold">{b.icon} {b.title}</div>
