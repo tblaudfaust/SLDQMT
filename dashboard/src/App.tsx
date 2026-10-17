@@ -31,6 +31,9 @@ import MeResultsPage from "./pages/me/MeResultsPage";
 import MeDailyPage from "./pages/me/MeDailyPage";
 import MeDailyResultsPage from "./pages/me/MeDailyResultsPage";
 import DailyPage from "./pages/public/DailyPage";
+import MeFacPage from "./pages/me/MeFacPage";
+import MeFacResultsPage from "./pages/me/MeFacResultsPage";
+import AssessPage from "./pages/public/AssessPage";
 import IncidentsDashboardPage from "./pages/incidents/IncidentsDashboardPage";
 import IncidentsRegisterPage from "./pages/incidents/IncidentsRegisterPage";
 import IncidentSaCodesPage from "./pages/incidents/IncidentSaCodesPage";
@@ -53,6 +56,7 @@ function Home() {
   if (can("dashboard.view")) return <DashboardPage />;
   if (can("me.view")) return <Navigate to="/me/evaluations" replace />;
   if (can("me_daily.view")) return <Navigate to="/me/daily" replace />;
+  if (can("me_fac.view")) return <Navigate to="/me/facilitators" replace />;
   if (can("incidents.view")) return <Navigate to="/incidents" replace />;
   if (can("mefm.view")) return <Navigate to="/mefm" replace />;
   if (can("daily_reports.view")) return <Navigate to="/dqm/reports" replace />;
@@ -84,6 +88,7 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/evaluate/:token" element={<EvaluatePage />} />
             <Route path="/daily/:token" element={<DailyPage />} />
+            <Route path="/assess/:token" element={<AssessPage />} />
             <Route path="/report-incident" element={<ReportIncidentPage />} />
             <Route element={<RequireAuth />}>
               <Route element={<Layout />}>
@@ -116,6 +121,10 @@ export default function App() {
                 <Route element={<RequirePerm code="me_daily.view" />}>
                   <Route path="me/daily" element={<MeDailyPage />} />
                   <Route path="me/daily/:id" element={<MeDailyResultsPage />} />
+                </Route>
+                <Route element={<RequirePerm code="me_fac.view" />}>
+                  <Route path="me/facilitators" element={<MeFacPage />} />
+                  <Route path="me/facilitators/:id" element={<MeFacResultsPage />} />
                 </Route>
                 <Route element={<RequirePerm code="users.manage" />}><Route path="admin/users" element={<UsersPage />} /></Route>
                 <Route element={<RequirePerm code="roles.manage" />}><Route path="admin/roles" element={<RolesPage />} /></Route>

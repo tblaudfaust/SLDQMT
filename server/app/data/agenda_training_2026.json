@@ -1,0 +1,708 @@
+{
+ "key": "TRAINING_2026",
+ "title": "2026 SLPHC Training agenda (10 days)",
+ "phase": "MASTER",
+ "source": "2026_SLPHC_TRAINING_AGENDA.xlsx (aligned with the manual)",
+ "day_titles": {
+  "1": "Day 1",
+  "2": "Day 2",
+  "3": "Day 3",
+  "4": "Day 4",
+  "5": "Day 5",
+  "6": "Day 6",
+  "7": "Day 7",
+  "8": "Day 8",
+  "9": "Day 9",
+  "10": "Day 10"
+ },
+ "items": [
+  {
+   "day": 1,
+   "topic": "Official Opening",
+   "planned_start": "08:30",
+   "planned_end": "09:00",
+   "details": null,
+   "responsible": "All"
+  },
+  {
+   "day": 1,
+   "topic": "Administrative Announcement",
+   "planned_start": "09:00",
+   "planned_end": "09:05",
+   "details": null,
+   "responsible": null
+  },
+  {
+   "day": 1,
+   "topic": "Oath of Secrecy",
+   "planned_start": "09:05",
+   "planned_end": "09:20",
+   "details": null,
+   "responsible": null
+  },
+  {
+   "day": 1,
+   "topic": "Trainees proceed to training halls",
+   "planned_start": "09:20",
+   "planned_end": "09:50",
+   "details": null,
+   "responsible": "All"
+  },
+  {
+   "day": 1,
+   "topic": "Introduction of participants - creation & confirmation of gmail account",
+   "planned_start": "09:50",
+   "planned_end": "10:20",
+   "details": null,
+   "responsible": "All"
+  },
+  {
+   "day": 1,
+   "topic": "General Knowledge Quiz 1 - Personal Phones",
+   "planned_start": "10:20",
+   "planned_end": "10:50",
+   "details": null,
+   "responsible": "All"
+  },
+  {
+   "day": 1,
+   "topic": "PREVENTION OF SEXUAL EXPLOITATION, ABUSE AND HARASSMENT (PSEAH)",
+   "planned_start": "10:50",
+   "planned_end": "11:20",
+   "details": null,
+   "responsible": "HQ Stats SL District Coordinator"
+  },
+  {
+   "day": 1,
+   "topic": "Tablet Distribution and Use",
+   "planned_start": "11:20",
+   "planned_end": "13:00",
+   "details": null,
+   "responsible": "National"
+  },
+  {
+   "day": 1,
+   "topic": "Chapter 1 – General Information about the Census",
+   "planned_start": "14:00",
+   "planned_end": "14:30",
+   "details": "1.8 Confidentiality of Information; 1.9 Oath of Secrecy; 1.10 Rights and Responsibilities of Respondents / Chapter 1 – General Information about the Census: / 1.1 Introduction; 1.2 Population Census versus Housing Census; 1.3 History of Census Taking in Sierra Leone; 1.4 Essential Features of a Census; 1.5 Objectives of the 2026 Population and Housing Census; 1.6 Uses of Census Data-Why are we conducting the 2026 Census? 1.7 Legal Framework; 1.11 Summary",
+   "responsible": null
+  },
+  {
+   "day": 1,
+   "topic": "Chapter 2 – Census Organization and Operational Structure",
+   "planned_start": "14:30",
+   "planned_end": "15:30",
+   "details": "2.1 Introduction; 2.2 Objectives of the Census Organization; 2.3 National Census Governance Structure; 2.4 National Census Steering Committee; 2.5 Census Advisory Committee (CAC); 2.6 Census Technical Committee (CTC); 2.7 Census Secretariat; 2.8 National Census Technical Support Team; 2.9 Regional Census Coordination; 2.10 District Census Office; 2.15 Supervisory Area Level; 2.18 Communication and Reporting Channels / Chapter 2 – Census Organization and Operational Structure: / 2.11 District Census Officer (Administration); 2.12 District Census Coordinator (Technical); 2.13 District Technical Support Teams; 2.14 District Field Monitors; 2.15 Supervisory Area Level; 2.16 Field Supervisor; 2.17 Enumerators; 2.19 Accountability Framework",
+   "responsible": "Trainers"
+  },
+  {
+   "day": 1,
+   "topic": "Chapter 4 – General Instructions for Enumerators",
+   "planned_start": "15:30",
+   "planned_end": "16:30",
+   "details": "4.1 Introduction 4.2 Role of the Enumerator / 4.3 Code of Conduct; 4.4 Confidentiality of Information; 4.5 Identification and Introduction; 4.6 Handling Refusals; 4.7 Handling Difficult Situations; 4.8 Daily Work Planning; 4.9 Use and Care of Census Equipment; 4.10 Data Synchronization Procedures; 4.11 Health and Safety",
+   "responsible": null
+  },
+  {
+   "day": 1,
+   "topic": "Chapter 13 – Leadership and Duties of the Field Supervisor",
+   "planned_start": "16:30",
+   "planned_end": "18:00",
+   "details": "13.2 Role and Main Responsibilities of the Field Supervisor",
+   "responsible": null
+  },
+  {
+   "day": 1,
+   "topic": "Daily Debriefing",
+   "planned_start": "18:00",
+   "planned_end": "19:00",
+   "details": null,
+   "responsible": "Facilitators"
+  },
+  {
+   "day": 2,
+   "topic": "Recap Day 1 & Quiz 2",
+   "planned_start": "08:30",
+   "planned_end": "09:30",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 2,
+   "topic": "Key concepts and definitions",
+   "planned_start": "09:30",
+   "planned_end": "11:00",
+   "details": "Chapter 3 – Key Census Concepts and Definitions: / 3.1 Introduction; 3.2 Population Census; 3.3 Housing Census; 3.4 Essential Features of the Census; 3.5 Census Night; 3.6 Census Reference Period; 3.7 De Facto Enumeration; 3.8 Census Administrative Boundaries; 3.9 Types of Localities; 3.10 Census Locality Classes - (Rural/Urban); 3.11 Supervisory Area (SA); 3.12 Enumeration Area (EA); 3.13 Building; 3.14 Building Use; 3.16 Head of Household; 3.17 Place of Usual Residence; 3.18 Building Numbering and Household Listing",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 2,
+   "topic": "Chapter 7 – Use of Maps, GIS and Enumeration Area Boundaries in the Census",
+   "planned_start": "11:00",
+   "planned_end": "11:30",
+   "details": "7.1 Objectives of Census Mapping; 7.2 Geographic Information System (GIS) & Census Cartography; 7.3 Definition of Mapping Concepts; 7.4 Elements of Census Maps and Symbolization;",
+   "responsible": null
+  },
+  {
+   "day": 2,
+   "topic": "Chapter 6 – Preliminary Work in the Enumeration Area: Supervisor and Enumerators Pre-Field Activities",
+   "planned_start": "11:30",
+   "planned_end": "12:15",
+   "details": "6.1 Introduction; 6.2 Objectives of Preliminary Work; 6.3 Community Entry Procedures; 6.4 Meeting Community Leaders; 6.5 Reconnaissance of the Enumeration Area (EA); 6.6 Identifying Settlements within the EA; 6.7 Identification of Special Population Groups; 6.8 Route Planning",
+   "responsible": null
+  },
+  {
+   "day": 2,
+   "topic": "Chapter 7 – Use of Maps, GIS and Enumeration Area Boundaries in the Census",
+   "planned_start": "12:15",
+   "planned_end": "13:00",
+   "details": "7.5 EA Map Interpretation and Navigation; 7.5.1 Map Deployment and EA Codes; 7.5.5 Building Numbering (Chalking);7.5.6.1 EA Assignment and Information Review; 7.6 Enumerator Must / Must Not Rules; 7.7 Mapping and Navigating Special Areas; 7.8 MAP Navigation in CAPI; 7.9 Conclusion",
+   "responsible": null
+  },
+  {
+   "day": 2,
+   "topic": "Chapter 10 – Enumeration of Institutional and Special Population Groups on Census Night",
+   "planned_start": "14:00",
+   "planned_end": "15:00",
+   "details": "10.1 Introduction; 10.2 Enumeration of population in conventional households (Main Questionnaire); 10.3 Enumeration of homeless households; 10.4 Enumeration of institutional (Group Quarter) population; 10.5 Enumerating floating population; 10.6 Objectives of Special Population Enumeration; 10.7 General Principles for Enumerating Special Population Groups; 10.8 Summary",
+   "responsible": null
+  },
+  {
+   "day": 2,
+   "topic": "Chapter 9 – Achieving Complete Coverage",
+   "planned_start": "15:00",
+   "planned_end": "16:00",
+   "details": "9.1 Introduction; 9.2 What complete coverage implies; 9.3 Importance of Complete Coverage; 9.4 How to ensure Complete Coverage; 9.5 Other Key Activities to Ensure Complete Coverage; 9.6 Coverage of Hard-to-Reach and Hard-to-Count Areas and Populations; 9.7 Monitoring of completion rate; 9.8 Types of Coverage Errors; 9.9 Principles for Achieving Complete Coverage; 9.10 Coverage Verification by Enumerators and Supervisors; 9.11 Preventing Duplication Across EAs; 9.12 Quality Assurance Measures; 9.13 Common Coverage Problems; 9.14 Coverage Checklist for Enumerators; 9.15 Consequences of Poor Coverage; 9.16 Summary",
+   "responsible": null
+  },
+  {
+   "day": 2,
+   "topic": "Chapter 8 – Building Numbering and Household Listing",
+   "planned_start": "16:00",
+   "planned_end": "17:00",
+   "details": "8.1 Introduction; 8.2 Pre-Enumeration Building Numbering and Household Listing; 8.3 The Listing Form; 8.4 Listing Procedure; 8.5 Completing the Household Listing Questionnaire",
+   "responsible": null
+  },
+  {
+   "day": 2,
+   "topic": "Role Play",
+   "planned_start": "17:00",
+   "planned_end": "18:00",
+   "details": null,
+   "responsible": null
+  },
+  {
+   "day": 2,
+   "topic": "Daily briefing",
+   "planned_start": "18:00",
+   "planned_end": "19:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 3,
+   "topic": "Recap Day 2 & Quiz 3",
+   "planned_start": "08:30",
+   "planned_end": "09:30",
+   "details": null,
+   "responsible": "All"
+  },
+  {
+   "day": 3,
+   "topic": "Chapter 11 – How to Complete the Census Questionnaires",
+   "planned_start": "09:30",
+   "planned_end": "13:00",
+   "details": "11.1 Introduction / 11.2 Objectives of the Census Questionaire / HOUSEHOLD QUESTIONNAIRE / 11.3 Geographic Identification / 11.4 Population Characteristics; / 11.5 Economic Activities / 11.6 Mortality",
+   "responsible": null
+  },
+  {
+   "day": 3,
+   "topic": "HOUSEHOLD QUESTIONNAIRE",
+   "planned_start": "14:00",
+   "planned_end": "15:00",
+   "details": "11.7 Housing Characteristics and Amenities; / 11.8 Household Main Source of Information / 11.9 Ownership of Household Durables; / 11.10 Emigrations from the Household over The Last 5 Years; / 11.11 Agriculture at Household Levels",
+   "responsible": null
+  },
+  {
+   "day": 3,
+   "topic": "Chapter 11 – How to Complete the Census Questionnaires",
+   "planned_start": "15:00",
+   "planned_end": "17:00",
+   "details": "Part B. Floating Questionnaire; Part C. Institutional Questionnaire; Part D. Diplomatic Questionnaire",
+   "responsible": null
+  },
+  {
+   "day": 3,
+   "topic": "Role Play",
+   "planned_start": "17:00",
+   "planned_end": "18:00",
+   "details": null,
+   "responsible": null
+  },
+  {
+   "day": 3,
+   "topic": "Daily briefing",
+   "planned_start": "18:00",
+   "planned_end": "19:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 4,
+   "topic": "Recap Day 3 & Quiz 4",
+   "planned_start": "08:30",
+   "planned_end": "09:30",
+   "details": null,
+   "responsible": "All"
+  },
+  {
+   "day": 4,
+   "topic": "CAPI",
+   "planned_start": "09:30",
+   "planned_end": "10:00",
+   "details": "Chapter 5 – Tablet and CAPI Application Use: / 5.9 Introduction to the CAPI Application; 5.10 Why use CAPI in 2026 SLPHC Data Collection; 5.11 Benefits of CAPI Over Paper Questionnaire; 5.12 Data Flow in 2026 PHC CAPI Application Operations; 5.22 Supervisor’s Menu — GIS Resource; 5.28 Enumerator Menu — GIS Resource; 5.32 Syncing and Application Modes; 5.34 Supervisor Menu - Switching From Training Mode To Census Mode;",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 4,
+   "topic": "Team Formation and Assignment Creation",
+   "planned_start": "10:00",
+   "planned_end": "12:30",
+   "details": "Chapter 7 – Use of Maps, GIS and Enumeration Area Boundaries in the Census: / 7.8 MAP Navigation in CAPI",
+   "responsible": null
+  },
+  {
+   "day": 4,
+   "topic": "Chapter 4 – General Instructions for Enumerators",
+   "planned_start": "12:30",
+   "planned_end": "13:00",
+   "details": "4.5 Identification and Introduction; 4.6 Handling Refusals; 4.7 Handling Difficult Situations; 4.9 Use and Care of Census Equipment",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 4,
+   "topic": "Chapter 5 – Tablet and CAPI Application Use",
+   "planned_start": "14:00",
+   "planned_end": "18:00",
+   "details": "5.35 Listing Application / Practical Session / Mock Interview Scenario 1 / Scenario",
+   "responsible": null
+  },
+  {
+   "day": 4,
+   "topic": "Daily briefing",
+   "planned_start": "18:00",
+   "planned_end": "19:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 5,
+   "topic": "Recap Day 4 & Quiz 5",
+   "planned_start": "08:30",
+   "planned_end": "09:30",
+   "details": null,
+   "responsible": "All"
+  },
+  {
+   "day": 5,
+   "topic": "Chapter 5 – Tablet and CAPI Application Use",
+   "planned_start": "09:30",
+   "planned_end": "10:00",
+   "details": "5.36 Completing The Household Questionnaire using CAPI; / 5.37 Review Using The Overview Pane",
+   "responsible": null
+  },
+  {
+   "day": 5,
+   "topic": "Completing SLPHC2026 Household Questionnaire – Section B (Population Characteristics - CAPI Practical)",
+   "planned_start": "10:00",
+   "planned_end": "13:00",
+   "details": "Chapter 11 – How to Complete the Census Questionnaires: / 11.3 Geographic Identification; 11.4.1 Relationship to Head; 11.4.2 Sex; 11.4.3 Age; 11.4.4 Religion; 11.4.5 Marital Status; 11.4.6 Ethnicity/Nationality; 11.4.7 Maternal and Paternal Orphan hood (B12-B15); 11.4.8 Languages spoken: B16 and B17; 11.4.9 Disability; 11.4.10 Migration",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 5,
+   "topic": "Completing SLPHC2026 Household Questionnaire – Section B (Population Characteristics cont’d: National Documents, Education and Economic Activity - CAPI Practical)",
+   "planned_start": "14:00",
+   "planned_end": "18:00",
+   "details": "Chapter 11 – How to Complete the Census Questionnaires: / 11.4.11 Possession of National Documents; 11.4.12 Education and Literacy; 11.4.13 ICT Use; 11.5 Economic Activities; 11.5.1 How to Identify the Occupation of Respondents; 11.5.2 Summary of the ISIC codes / Completing SLPHC2026 Household Questionnaire – Section B (Population Characteristics cont’d: – Fertility - (CAPI Practical) / Chapter 11 – How to Complete the Census Questionnaires: / 11.5.3 Fertility and Child Mortality: (Aged 10 Years and Above); 11.5.4 Surviving children / Scenario cont'd",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 5,
+   "topic": "Daily briefing",
+   "planned_start": "18:00",
+   "planned_end": "19:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 6,
+   "topic": "Recap Day 5 & Quiz 6",
+   "planned_start": "09:00",
+   "planned_end": "09:30",
+   "details": null,
+   "responsible": "All"
+  },
+  {
+   "day": 6,
+   "topic": "SECTION C: MORTALITY (CAPI Practical)",
+   "planned_start": "09:30",
+   "planned_end": "13:00",
+   "details": "Chapter 11 – How to Complete the Census Questionnaires: / 11.6 Mortality / SECTION D: HOUSING CHARACTERISTICS, AMENITIES AND FACILITIES (CAPI Practical) / Chapter 11 – How to Complete the Census Questionnaires: / 11.7 Housing Characteristics and Amenities; 11.8 Household Main Source of Information",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 6,
+   "topic": "Section E: Ownership of Household Durables - (CAPI Practical)",
+   "planned_start": "14:00",
+   "planned_end": "18:00",
+   "details": "Chapter 11 – How to Complete the Census Questionnaires: / 11.9 Ownership of Household Durables / Section F: Emigrations from the Household over the Last 5 Years - (CAPI Practical) / Chapter 11 – How to Complete the Census Questionnaires: / 11.10 Emigrations from the Household over The Last 5 Years / Section G: Agriculture - (CAPI Practical) / Chapter 11 – How to Complete the Census Questionnaires: / 11.11 Agriculture at Household Levels / Scenario cont'd",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 6,
+   "topic": "Daily briefing",
+   "planned_start": "18:00",
+   "planned_end": "19:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 7,
+   "topic": "Recap Day 6 & Quiz 7",
+   "planned_start": "08:30",
+   "planned_end": "09:30",
+   "details": null,
+   "responsible": "All"
+  },
+  {
+   "day": 7,
+   "topic": "Completing SLPHC2026 Institutional Questionnaire (CAPI Practical)",
+   "planned_start": "09:30",
+   "planned_end": "13:00",
+   "details": "Chapter 10 – Enumeration of Institutional and Special Population Groups on Census Night: / 10.4 Enumeration of institutional (Group Quarter) population / Chapter 11 – How to Complete the Census Questionnaires: / Part C. Institutional Questionnaire / Completing SLPHC2026 Floating Population Questionnaire (CAPI Practical) / Chapter 10 – Enumeration of Institutional and Special Population Groups on Census Night: / 10.5 Enumerating floating population / Chapter 11 – How to Complete the Census Questionnaires: / Part B. Floating Questionnaire / Class Simulation / Listing Questionnaire / Household Questionnaire / Institutional and Special Population / Floating Population",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 7,
+   "topic": "CAPI Synchronization",
+   "planned_start": "14:00",
+   "planned_end": "18:00",
+   "details": "Chapter 5 – Tablet and CAPI Application Use: / 5.3 CAPI Data Flow; 5.4 Data Synchronizations; 5.5 Overview; 5.6 Backup Procedures – Field ICT Data Transfer and Tablet Backup Protocol; 5.20 Supervisor’s Menu — Data Transmission; 5.21 Supervisor’s Menu — Syncing with HQ; 5.30 Enumerator’s Menu — Data Transmission; 5.32 Syncing and Application Modes; 5.33 Sync EA Assignment to Enumerator / Chapter 4 – General Instructions for Enumerators: / 4.10 Data Synchronization Procedures / Chapter 13 – Leadership and Duties of the Field Supervisor: / 13.8.3 Synchronizing Data with Enumerators; 13.8.4 Synchronizing Data to Headquarters; 13.8.5 Receiving and Sending Updates / Scenario cont'd",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 7,
+   "topic": "Daily briefing",
+   "planned_start": "18:00",
+   "planned_end": "19:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 8,
+   "topic": "Recap Day 7 & Quiz 8",
+   "planned_start": "08:30",
+   "planned_end": "09:30",
+   "details": null,
+   "responsible": "All"
+  },
+  {
+   "day": 8,
+   "topic": "CAPI Re-interview (Supervisor)",
+   "planned_start": "09:30",
+   "planned_end": "11:30",
+   "details": "Chapter 14 – Re-Interview Processes and Procedures: / 14.1 Selection of Households for Re-Interview; 14.2 Conducting Re-Interviews in a Supervisor Area (SA); 14.3 Re-interview questionnaire; 14.4 What to Do After a Re-Interview; 14.5 How Re-Interview Result Should Be Used / Chapter 5 – Tablet and CAPI Application Use: / 5.23 Supervisor’s Menu – Data Collection Household Reinterview / Chapter 13 – Leadership and Duties of the Field Supervisor: / 13.7 Supervisor’s Data Quality Responsibilities",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 8,
+   "topic": "Generating CAPI Report",
+   "planned_start": "11:30",
+   "planned_end": "13:00",
+   "details": "Chapter 12 – Field Data Quality Management: / 12.1 Introduction; 12.2 Concepts and Definitions; 12.3 The importance of Data Quality Monitoring and Clearance; 12.4 Scope of Data Quality Monitoring and Clearance; 12.5 Data Quality Management at the District Level; 12.6 Important Issues to Consider; 12.7 Duty of Enumerators and Supervisors in Data Quality Management; 12.8 Clearance of Enumerators; 12.9 Criteria for clearance at the HQ; 12.10 Criteria for clearance at the District level; 12.11 Completeness of Coverage and Content; 12.12 Retrieval of returnable materials/items / Chapter 5 – Tablet and CAPI Application Use: / 5.29 Enumerator Menu — My Work – View Report / Chapter 13 – Leadership and Duties of the Field Supervisor: / 13.8.6 Running Reports on Completed EAs",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 8,
+   "topic": "Troubleshooting CAPI Field Issues",
+   "planned_start": "14:00",
+   "planned_end": "16:00",
+   "details": "Chapter 5 – Tablet and CAPI Application Use: / 5.8.17 Lost, Stolen, or Damaged Devices; 5.8.18 Daily Security Checklist; 5.8.19 Supervisor Responsibilities; 5.8.20 District IT Officer Responsibilities; 5.8.21 ICT and MDM Support Team Responsibilities; 5.8.22 Field Closure and Device Return; 5.8.23 Key Risks to Avoid / Chapter 13 – Leadership and Duties of the Field Supervisor: / 13.8.7 Resolving ICT and CAPI Challenges",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 8,
+   "topic": "Daily briefing",
+   "planned_start": "18:00",
+   "planned_end": "19:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 9,
+   "topic": "Recap Day 8 & Quiz 9",
+   "planned_start": "08:30",
+   "planned_end": "09:30",
+   "details": null,
+   "responsible": "All"
+  },
+  {
+   "day": 9,
+   "topic": "Role Play",
+   "planned_start": "09:30",
+   "planned_end": "13:00",
+   "details": "Chapter 6 – Preliminary Work in the Enumeration Area: Supervisor and Enumerators Pre-Field Activities: / 6.3 Community Entry Procedures; 6.4 Meeting Community Leaders; 6.5 Reconnaissance of the Enumeration Area (EA); 6.8 Route Planning / Chapter 9 – Achieving Complete Coverage: / 9.14 Coverage Checklist for Enumerators / Chapter 15 - Field closure and mop up procedure / 15.1 Data Completeness and Server Sync Audit, 15.2 Mop-Up Plan, / 15.3 Stages to Follow in Closing Field Work, 15.4 Standard Operational Procedure to Follow, 15.4.1 Data Synchronization and Coverage Verification, 15.4.2 Specialized Callback and Debriefing Operations, 15.4.3, Digital Asset Recovery and Technical Audits, 15.4.4, Administrative and Financial Closeout.",
+   "responsible": "All"
+  },
+  {
+   "day": 9,
+   "topic": "Feedback from Role Play",
+   "planned_start": "14:00",
+   "planned_end": "18:00",
+   "details": null,
+   "responsible": "All"
+  },
+  {
+   "day": 9,
+   "topic": "Daily briefing",
+   "planned_start": "18:00",
+   "planned_end": "19:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 10,
+   "topic": "Recap Day 9 & Quiz 10",
+   "planned_start": "08:30",
+   "planned_end": "09:30",
+   "details": null,
+   "responsible": "All"
+  },
+  {
+   "day": 10,
+   "topic": "Specialized Training for Supervisors",
+   "planned_start": "09:30",
+   "planned_end": "13:00",
+   "details": "Stress Test",
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 10,
+   "topic": "Class Simulation on Use of Maps, GIS and Enumeration Area Boundaries in the Census",
+   "planned_start": "14:00",
+   "planned_end": "18:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 10,
+   "topic": "Daily briefing",
+   "planned_start": "18:00",
+   "planned_end": "19:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 1,
+   "topic": "Section A: Data Quality Management and Field Monitoring",
+   "planned_start": "08:30",
+   "planned_end": "09:30",
+   "details": null,
+   "responsible": "Presentation"
+  },
+  {
+   "day": 1,
+   "topic": "Section B: Listing and Enumeration (Using Field Monitoring)",
+   "planned_start": "09:30",
+   "planned_end": "10:30",
+   "details": null,
+   "responsible": "Presentation"
+  },
+  {
+   "day": 1,
+   "topic": "Setting up the field monitoring tools",
+   "planned_start": "10:30",
+   "planned_end": "13:00",
+   "details": "Installing The Data Manager Desk Application / 1. Installing the CSpro / Step 1: copy and paste this link on your browser https://www.csprousers.org/downloads/ / Step 2: Download and install CSPro v8.1.0 on your laptop / 2. Installing The Data Manager Desk Application / Step 1: Save the DQM APP folder in your \"Drive C\" / Step 2: unzip the folder / Step 3: Create the shortcut of the traffic light to your desktop / Step 4: Delete items in Data Folder / Step 5: Enter Login + Pin (which will be created specifically for you) / Step 6: Download data from the Stats SL Server / Do Not share your Login with anyone",
+   "responsible": "Live demonstration and hands-on"
+  },
+  {
+   "day": 1,
+   "topic": "Module 1: Data Transfer — fetch data from the Stats SL server.",
+   "planned_start": "14:00",
+   "planned_end": "16:00",
+   "details": "Downloading and installing the CSpro v8.1 / Installing The Data Manager Desk Application / Log in using the assigned credential / Sync from QH / App & Ref Update / User Management / Tablet Upload Compliance",
+   "responsible": "Live demonstration and hands-on"
+  },
+  {
+   "day": 1,
+   "topic": "Module 2: Listing Reports – Reports related to population and household listing.",
+   "planned_start": "16:00",
+   "planned_end": "18:00",
+   "details": "Daily Listing Report / Detailed Completion (SA by EA) / Type -3 Locality Completion / Building GPS Coverage / Duplicate Listings / Listing vs Re-Interview / QC Correction Tracker (Listing)",
+   "responsible": "Live demonstration and hands-on session using the data sync from the class simulation exercise"
+  },
+  {
+   "day": 1,
+   "topic": "Daily briefing",
+   "planned_start": "18:00",
+   "planned_end": "19:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 1,
+   "topic": "Recap Day 1 & Quiz 1",
+   "planned_start": "08:30",
+   "planned_end": "09:30",
+   "details": null,
+   "responsible": "All"
+  },
+  {
+   "day": 1,
+   "topic": "Module 3: Enumeration Reports — reports from the main census enumeration.",
+   "planned_start": "09:30",
+   "planned_end": "11:00",
+   "details": "National Overview / Completion Dashboard / Enumerator Performance",
+   "responsible": "Live demonstration and hands-on session, and undertsanding & analysing the data from class simulation sync"
+  },
+  {
+   "day": 1,
+   "topic": "Module 4: Enumeration QC — quality-control checks for enumeration data.",
+   "planned_start": "11:00",
+   "planned_end": "13:00",
+   "details": "Pre Census Night Tracker / Quality Checks / Pre-EA QC Reports / Fertility Checks / HH Interview vs Re – Interview / Re-Interview Indicators (PES-style) / Occupation / Industry Coding QC / Interviewer Integrity (Quick) / Geofence Unlock Codes / Geofence QC",
+   "responsible": "Live demonstration, hands-on session and undertsanding & analysing the data from class simulation sync"
+  },
+  {
+   "day": 1,
+   "topic": "Module 5: Field Exit Reports, Sign out and Exit",
+   "planned_start": "14:00",
+   "planned_end": "18:00",
+   "details": "Field Exit Reports — reports used when closing or clearing field teams. / Sign out – clears the saved sign-in on this computer / Exit options – close the Data Manager Desk",
+   "responsible": "Live demonstration, hands-on session and undertsanding & analysing the data from class simulation sync"
+  },
+  {
+   "day": 1,
+   "topic": "Daily briefing",
+   "planned_start": "18:00",
+   "planned_end": "19:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 1,
+   "topic": "Recap Day 2 & Quiz 2",
+   "planned_start": "08:30",
+   "planned_end": "09:30",
+   "details": null,
+   "responsible": "All"
+  },
+  {
+   "day": 1,
+   "topic": "Module 6: Field Monitor User Manual: GETTING STARTED",
+   "planned_start": "09:30",
+   "planned_end": "11:00",
+   "details": "Quick start: A practical route from sign-in to operational action. / Field Monitor (System overview and navigation) / 1. Sign-in and project selection / Open the management portal and sign in - / Portal address: https://field-monitor.statistics.sl/projects",
+   "responsible": "Live demonstration, hands-on session and undertsanding & analysing the data from class simulation sync"
+  },
+  {
+   "day": 1,
+   "topic": "2. Listing mock-census dashboard",
+   "planned_start": "11:00",
+   "planned_end": "13:00",
+   "details": "Select the correct Listing or Enumeration project. / Enumeration mock-census dashboard / Confirm the project, day, and geographic scope. / Review the overall health score and overview KPIs.",
+   "responsible": null
+  },
+  {
+   "day": 1,
+   "topic": "Module 7: Field Monitor (Section and EA-level drill-down)",
+   "planned_start": null,
+   "planned_end": null,
+   "details": "Routine monitoring and alert handling / Inspect the priority queue before opening map details. / Use Trend to check pace and backlog; use Ranking to locate exceptions. / Open a selected EA and review Summary, Quality, household locations, or daily activity when deeper investigation is required. / Record or export findings, then follow up through supervisors and alerts. / Troubleshooting and security",
+   "responsible": "Live demonstration, hands-on session and undertsanding & analysing the data from class simulation sync"
+  },
+  {
+   "day": 1,
+   "topic": "Daily briefing",
+   "planned_start": "18:00",
+   "planned_end": "19:00",
+   "details": null,
+   "responsible": "All Facilitators"
+  },
+  {
+   "day": 1,
+   "topic": "Recap Day 4 & Quiz 4",
+   "planned_start": "08:30",
+   "planned_end": "09:30",
+   "details": null,
+   "responsible": "All"
+  },
+  {
+   "day": 1,
+   "topic": "Module 8: Field Monitor Error Follow – up Application",
+   "planned_start": "09:30",
+   "planned_end": "11:30",
+   "details": "Field Monitor Errors / Field Monitor Mobile App / Field Monitor Dashboard",
+   "responsible": "Live demonstration and hands-on"
+  },
+  {
+   "day": 1,
+   "topic": "Hands- on session",
+   "planned_start": "11:30",
+   "planned_end": "13:00",
+   "details": null,
+   "responsible": null
+  },
+  {
+   "day": 1,
+   "topic": "Daily DQM reporting",
+   "planned_start": "14:00",
+   "planned_end": "16:00",
+   "details": null,
+   "responsible": null
+  },
+  {
+   "day": 1,
+   "topic": "Field Exit Protocol",
+   "planned_start": "16:00",
+   "planned_end": "18:00",
+   "details": "Hands- on session",
+   "responsible": null
+  },
+  {
+   "day": 1,
+   "topic": "Recap Day 5 & Quiz 5",
+   "planned_start": "08:30",
+   "planned_end": "09:30",
+   "details": null,
+   "responsible": "All"
+  },
+  {
+   "day": 1,
+   "topic": "Live demonstration and hands-on session",
+   "planned_start": "09:30",
+   "planned_end": "13:00",
+   "details": "Undertsanding & analysing the data from class simulation sync",
+   "responsible": null
+  },
+  {
+   "day": 1,
+   "topic": "Communicating the flagged issues to the Field personnel (Supervisors & Enumerators) by the Field monitors",
+   "planned_start": null,
+   "planned_end": null,
+   "details": null,
+   "responsible": null
+  },
+  {
+   "day": 1,
+   "topic": "Daily briefing",
+   "planned_start": "18:00",
+   "planned_end": "19:00",
+   "details": "Morning Session / Lunch / Afternoon Session / Daily Debriefing",
+   "responsible": "All Facilitators"
+  }
+ ]
+}

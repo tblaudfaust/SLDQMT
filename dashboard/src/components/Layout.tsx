@@ -77,11 +77,12 @@ export default function Layout() {
               {can("incidents.settings") && <NavLink to="/incidents/sa-codes" className={link}><Database size={16} /> SA codes</NavLink>}
             </>
           )}
-          {(can("me.view") || can("me_daily.view") || can("mefm.view")) && (
+          {(can("me.view") || can("me_daily.view") || can("me_fac.view") || can("mefm.view")) && (
             <>
               <div className="px-3 pt-5 pb-1 text-base font-bold text-white">Monitoring &amp; Evaluation</div>
               {can("me.view") && <NavLink to="/me/evaluations" className={link}><GraduationCap size={16} /> Training evaluations</NavLink>}
               {can("me_daily.view") && <NavLink to="/me/daily" className={link}><CalendarCheck size={16} /> Daily Evaluation</NavLink>}
+              {can("me_fac.view") && <NavLink to="/me/facilitators" className={link}><ClipboardCheck size={16} /> Facilitator assessment</NavLink>}
               {can("mefm.view") && <NavLink to="/mefm" className={link}><Map size={16} /> Field monitoring</NavLink>}
             </>
           )}

@@ -729,3 +729,33 @@ export interface MeResults {
   weaknesses: MeItem[];
   open_feedback: MeOpenAnswer[];
 }
+
+// ---- Facilitator assessment (daily trainer rating by M&E monitors) ----
+export interface MeFacAgendaItem { id?: number; day: number; position?: number; topic: string; details?: string | null }
+export interface MeFacRound {
+  id: number; title: string; phase: "MASTER" | "TOT" | "FIELD"; period_start: string | null; period_end: string | null; description: string | null; token: string; status: "OPEN" | "CLOSED"; created_at: string;
+  share_url: string | null; agenda_days: number; agenda_items: number; assessments: number; trainers: number; halls: number; districts: number; days: number; last_date: string | null; mean_pct: number | null; needs_improvement: number;
+}
+export interface MeFacSectionRating { topic: string; rating: number | null }
+export interface MeFacAssessment {
+  id: number; round_id: number; assessment_date: string; training_day: number; district: string | null; hall: string; monitor_name: string; trainer_name: string;
+  s_technical: number; s_clarity: number; s_practical: number; s_participation: number; s_time: number; section_a_total: number; section_a_band: string;
+  sections: MeFacSectionRating[]; section_b_total: number; section_b_max: number; score_pct: number; band: string; band_label: string;
+  strengths: string | null; improvements: string | null; comments: string | null; submitted_at: string; edited_by_name: string | null; lowest: number;
+}
+export interface MeFacCount { code: string; label: string; count: number; pct: number | null }
+export interface MeFacCriterion { key: string; label: string; mean: number | null; distribution: MeFacCount[] }
+export interface MeFacGroup {
+  key: string; label: string; district: string | null; hall: string | null; assessments: number; trainers: number; halls: number; monitors: number; mean_a_total: number | null; mean_pct: number | null;
+  band: string | null; band_label: string | null; criteria: Record<string, number | null>; bands: Record<string, number>; lowest_criterion: string | null; low_scores: number;
+}
+export interface MeFacTopic { day: number; topic: string; ratings: number; mean: number | null }
+export interface MeFacSummary {
+  round: MeFacRound; assessments: number; trainers: number; halls: number; districts: number; monitors: number; days: number; mean_a_total: number | null; mean_pct: number | null;
+  band_counts: MeFacCount[]; criteria: MeFacCriterion[]; low_scores: number; by_district: MeFacGroup[]; by_hall: MeFacGroup[]; by_day: MeFacGroup[]; by_trainer: MeFacGroup[]; by_monitor: MeFacGroup[];
+  topics: MeFacTopic[]; needs_attention: MeFacGroup[]; latest: MeFacAssessment[];
+}
+export interface MeFacSpec {
+  title: string; subtitle: string; intro: string; phases: { value: string; label: string }[]; scale: { value: number; label: string }[]; criteria: { key: string; label: string; help: string }[];
+  section_a_max: number; bands: { key: string; label: string; min_total: number; min_pct: number }[]; districts: string[];
+}

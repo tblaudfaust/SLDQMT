@@ -144,7 +144,8 @@ def test_agenda_template_and_upload(client, admin):
 
     me = me_user(client, admin)
     t = client.get("/api/v1/me/daily/agenda-templates", headers=me).json()
-    assert [x["key"] for x in t] == ["MASTER_10_DAYS"] and t[0]["days"] == 10 and len(t[0]["items"]) == 71 and t[0]["day_titles"]["3"].startswith("CAPI PRACTICE 1")
+    t0 = next(x for x in t if x["key"] == "MASTER_10_DAYS")
+    assert {x["key"] for x in t} == {"MASTER_10_DAYS", "TRAINING_2026"} and t0["days"] == 10 and len(t0["items"]) == 71 and t0["day_titles"]["3"].startswith("CAPI PRACTICE 1")
     r = client.post("/api/v1/me/daily/rounds", json={"title": "Master training, Freetown, cohort 1", "phase": "MASTER", "agenda_template": "MASTER_10_DAYS"}, headers=me)
     assert r.status_code == 201 and r.json()["agenda_items"] == 71 and r.json()["agenda_days"] == 10, r.text
     agenda = client.get(f"/api/v1/me/daily/rounds/{r.json()['id']}/agenda", headers=me).json()
