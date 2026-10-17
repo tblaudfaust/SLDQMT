@@ -45,8 +45,8 @@ export default function ReportIncidentPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saCode]);
 
-  const fields = spec?.role_fields[reporter.role] ?? ["code", "sa"];
-  const required = spec?.role_required[reporter.role] ?? ["code", "sa"];
+  const fields = spec?.role_fields?.[reporter.role] ?? ["code", "sa"];
+  const required = spec?.role_required?.[reporter.role] ?? ["code", "sa"];
   const errors = [
     ...(required.includes("code") && !reporter.code.trim() ? ["Enter your application code"] : []),
     ...(required.includes("sa") && saCode.length !== 12 ? ["Enter your 12-digit SA code"] : []),
