@@ -1,4 +1,4 @@
-export type Role = "FIELD_MONITOR" | "DISTRICT_DQM" | "REGIONAL" | "NATIONAL_DQM" | "ADMIN" | "ME" | "ME_DISTRICT" | "ME_REGIONAL" | "ME_DAILY";
+export type Role = "FIELD_MONITOR" | "DISTRICT_DQM" | "REGIONAL" | "NATIONAL_DQM" | "ADMIN" | "ME" | "ME_DISTRICT" | "ME_REGIONAL" | "ME_DAILY" | "DISTRICT_STATISTICIAN" | "INCIDENT_VIEWER";
 export type Status = "UNRESOLVED" | "RESOLVED";
 
 export interface User {
@@ -661,6 +661,38 @@ export interface MeDailySummary {
   issues_log: MeDailyLog[]; escalations_log: MeDailyLog[]; evidence_log: MeDailyLog[]; carried_over_log: MeDailyLog[];
   latest: MeDailyReport[];
 }
+export interface IncidentUpdate { id: number; at: string; author: string | null; type: string; type_label: string; text: string | null; old_value: string | null; new_value: string | null }
+export interface Incident {
+  id: number; number: string; status: string; status_label: string; severity: "CRITICAL" | "MAJOR" | "MINOR"; severity_label: string;
+  category: string; category_label: string; subcategory: string | null; subcategory_label: string | null; phase: string; phase_label: string;
+  title: string; description: string; action_taken: string | null; help_needed: string | null;
+  district_id: number | null; district: string | null; region: string | null; team_id: number | null; team_code: string | null; sa_code: string | null; sa_recognised: boolean;
+  ea_code: string | null; locality: string | null; lat: number | null; lng: number | null;
+  occurred_at: string; reported_at: string; reported_by_name: string | null; reporter_name: string | null; reporter_role: string | null; reporter_role_label: string | null; reporter_phone: string | null;
+  teams_affected: number | null; staff_affected: number | null; households_affected: number | null; days_lost: number | null; asset_tags: string | null; reference: string | null;
+  level: "DISTRICT" | "REGION" | "NATIONAL"; owner_id: number | null; owner_name: string | null; due_at: string | null; overdue: boolean; unacknowledged_hours: number | null;
+  acknowledged_at: string | null; resolved_at: string | null; closed_at: string | null; resolution: string | null; root_cause_fixed: boolean | null; lessons: string | null; reject_reason: string | null;
+  hours_to_acknowledge: number | null; hours_to_resolve: number | null; updates: IncidentUpdate[];
+}
+export interface IncidentSpec {
+  severities: { value: string; label: string; help: string }[]; statuses: { value: string; label: string }[]; phases: { value: string; label: string }[]; levels: { value: string; label: string }[];
+  reporter_roles: { value: string; label: string }[]; categories: { value: string; label: string; default_severity: string; subcategories: { value: string; label: string }[] }[]; sa_code_format: string;
+}
+export interface IncidentCount { code: string; label: string; count: number; pct: number }
+export interface IncidentDistrictRow { district_id: number; district: string; region: string; open: number; new: number; critical_open: number; overdue: number; resolved: number; total: number; per_100_eas: number | null; median_hours_to_resolve: number | null }
+export interface IncidentCategoryRow { category: string; label: string; total: number; open: number; critical: number; major: number; minor: number; last_7_days: number; previous_7_days: number }
+export interface IncidentDashboard {
+  scope: string; filters: Record<string, string | null>;
+  total: number; open: number; new_unacknowledged: number; critical_open: number; overdue: number; due_today: number; reported_today: number; reported_7_days: number; resolved_7_days: number; closed: number; rejected: number; unrecognised_sa: number;
+  hours_to_acknowledge_median: number | null; hours_to_resolve_median: number | null;
+  by_status: IncidentCount[]; by_severity: IncidentCount[]; by_phase: IncidentCount[]; by_level: IncidentCount[]; by_reporter_role: IncidentCount[]; by_category: IncidentCategoryRow[]; by_subcategory: IncidentCount[];
+  by_district: IncidentDistrictRow[]; by_owner: { owner_id: number | null; owner: string; open: number; overdue: number; resolved: number }[];
+  top_sas: { sa_code: string | null; team_code: string | null; district: string | null; incidents: number; open: number; critical: number }[];
+  trend: { day: string; reported: number; resolved: number; open_end_of_day: number }[];
+  needs_action: Incident[]; recent: Incident[]; points: { lat: number; lng: number; severity: string; number: string; status: string; title: string }[];
+}
+export interface IncidentPerson { id: number; full_name: string; role: string; district_ids: number[] }
+export interface IncidentSaCode { id: number; sa_code: string; district_id: number | null; district: string | null; team_id: number | null; team_code: string | null; sa_name: string | null; supervisor_name: string | null; supervisor_phone: string | null; active: boolean }
 export interface MeRespondent {
   id: number;
   email: string | null; // anonymous when null

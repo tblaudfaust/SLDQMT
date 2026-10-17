@@ -117,6 +117,7 @@ export default function ExitCheckoutFormPage() {
               {teams.data?.map((t) => <option key={t.id} value={t.id}>{t.code} {t.name}</option>)}
             </select>
           </Field>
+          {form.team_id && <OpenIncidentsWarning teamId={form.team_id} />}
           <div className="md:col-span-3"><Field label="SA / EA code(s)"><input className="input" disabled={ro} value={form.sa_ea_codes ?? ""} onChange={(e) => upd({ sa_ea_codes: e.target.value })} /></Field></div>
         </div>
       </Card>
@@ -221,6 +222,18 @@ export default function ExitCheckoutFormPage() {
           </div>
         </Card>
       )}
+    </div>
+  );
+}
+
+/** Open incidents of the team: shown as a warning on the checkout, never a block (the user's decision). */
+function OpenIncidentsWarning({ teamId }: { teamId: number }) {
+  const { can } = useAuth();
+  const q = useQuery({ queryKey: ["incidents", "open-for-team", teamId], queryFn: () => api.get<{ number: string; severity_label: string; title: string; status_label: string }[]>(`/incidents/open-for-team/${teamId}`), enabled: can("incidents.view") });
+  if (!q.data?.length) return null;
+  return (
+    <div className="md:col-span-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+      <b>Warning:</b> this team has {q.data.length} open incident(s) in the Census Incident Log: {q.data.map((x) => `${x.number} (${x.severity_label}, ${x.status_label}) ${x.title}`).join("; ")}. Clearance is not blocked.
     </div>
   );
 }

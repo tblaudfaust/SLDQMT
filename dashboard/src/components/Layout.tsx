@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { BarChart3, CalendarCheck, ClipboardCheck, ClipboardList, FileText, FolderDown, KeyRound, Lock, LogOut, Settings, Smartphone, Tablet, Users, UsersRound, ScrollText, Database, Map, GraduationCap } from "lucide-react";
+import { AlertTriangle, BarChart3, CalendarCheck, ClipboardCheck, ListChecks, ClipboardList, FileText, FolderDown, KeyRound, Lock, LogOut, Settings, Smartphone, Tablet, Users, UsersRound, ScrollText, Database, Map, GraduationCap } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "../auth/AuthContext";
 import { isMeSite } from "../brand";
@@ -17,6 +17,8 @@ const roleLabel: Record<string, string> = {
   ME_REGIONAL: "Regional M&E Officer",
   ME_DISTRICT: "District M&E Officer",
   ME_DAILY: "Daily Evaluation Admin",
+  DISTRICT_STATISTICIAN: "District Statistician",
+  INCIDENT_VIEWER: "Incident Viewer",
 };
 
 export default function Layout() {
@@ -25,7 +27,7 @@ export default function Layout() {
   const isNational = user?.role === "NATIONAL_DQM" || user?.role === "ADMIN";
   const isRegionalUp = isNational || user?.role === "REGIONAL";
   // M&E staff work only with training evaluations: the field-monitoring manuals and the tablet app are not for them
-  const showManuals = user?.role !== "ME" && user?.role !== "ME_DAILY";
+  const showManuals = user?.role !== "ME" && user?.role !== "ME_DAILY" && user?.role !== "DISTRICT_STATISTICIAN" && user?.role !== "INCIDENT_VIEWER";
   const showAdmin = can("users.manage") || can("roles.manage") || can("devices.manage") || can("reference.manage") || can("settings.manage") || can("audit.view");
   const link = ({ isActive }: { isActive: boolean }) =>
     clsx("flex items-center gap-2 rounded-md px-3 py-2 text-sm", isActive ? "bg-white/15 text-white" : "text-slate-200 hover:bg-white/10");
@@ -38,7 +40,7 @@ export default function Layout() {
             <div className="text-sm font-semibold leading-tight">Statistics Sierra Leone</div>
           </div>
           <div className="mt-3 text-xs uppercase tracking-wider text-slate-300">SLPHC 2026</div>
-          <div className="text-xl font-bold leading-tight">{isMeSite || user?.role === "ME" || user?.role === "ME_DISTRICT" || user?.role === "ME_REGIONAL" || user?.role === "ME_DAILY" ? "Monitoring & Evaluation" : "Field Monitor Errors"}</div>
+          <div className="text-xl font-bold leading-tight">{isMeSite || user?.role === "ME" || user?.role === "ME_DISTRICT" || user?.role === "ME_REGIONAL" || user?.role === "ME_DAILY" || user?.role === "DISTRICT_STATISTICIAN" || user?.role === "INCIDENT_VIEWER" ? "Monitoring & Evaluation" : "Field Monitor Errors"}</div>
         </div>
         <nav className="flex-1 space-y-1 px-2">
           {can("dashboard.view") && (
@@ -63,6 +65,14 @@ export default function Layout() {
               <div className="px-3 pt-5 pb-1 text-base font-bold text-white">Field exit protocol</div>
               <NavLink to="/dqm/exit" end className={link}><ClipboardCheck size={16} /> Check-outs</NavLink>
               <NavLink to={isNational ? "/dqm/exit/summary/national" : isRegionalUp ? "/dqm/exit/summary/region" : "/dqm/exit/summary/district"} className={link}><BarChart3 size={16} /> Exit summary</NavLink>
+            </>
+          )}
+          {can("incidents.view") && (
+            <>
+              <div className="px-3 pt-5 pb-1 text-base font-bold text-white">Census Incident Log</div>
+              <NavLink to="/incidents" end className={link}><AlertTriangle size={16} /> Incident dashboard</NavLink>
+              <NavLink to="/incidents/register" className={link}><ListChecks size={16} /> Incident register</NavLink>
+              {can("incidents.settings") && <NavLink to="/incidents/sa-codes" className={link}><Database size={16} /> SA codes</NavLink>}
             </>
           )}
           {(can("me.view") || can("me_daily.view") || can("mefm.view")) && (

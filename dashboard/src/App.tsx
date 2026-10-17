@@ -31,6 +31,10 @@ import MeResultsPage from "./pages/me/MeResultsPage";
 import MeDailyPage from "./pages/me/MeDailyPage";
 import MeDailyResultsPage from "./pages/me/MeDailyResultsPage";
 import DailyPage from "./pages/public/DailyPage";
+import IncidentsDashboardPage from "./pages/incidents/IncidentsDashboardPage";
+import IncidentsRegisterPage from "./pages/incidents/IncidentsRegisterPage";
+import IncidentSaCodesPage from "./pages/incidents/IncidentSaCodesPage";
+import ReportIncidentPage from "./pages/public/ReportIncidentPage";
 import EvaluatePage from "./pages/public/EvaluatePage";
 import MefmHomePage from "./pages/mefm/MefmHomePage";
 
@@ -49,6 +53,7 @@ function Home() {
   if (can("dashboard.view")) return <DashboardPage />;
   if (can("me.view")) return <Navigate to="/me/evaluations" replace />;
   if (can("me_daily.view")) return <Navigate to="/me/daily" replace />;
+  if (can("incidents.view")) return <Navigate to="/incidents" replace />;
   if (can("mefm.view")) return <Navigate to="/mefm" replace />;
   if (can("daily_reports.view")) return <Navigate to="/dqm/reports" replace />;
   return <Navigate to="/resources" replace />;
@@ -59,6 +64,7 @@ function NotForMe() {
   const { user } = useAuth();
   if (user?.role === "ME") return <Navigate to="/me/evaluations" replace />;
   if (user?.role === "ME_DAILY") return <Navigate to="/me/daily" replace />;
+  if (user?.role === "DISTRICT_STATISTICIAN" || user?.role === "INCIDENT_VIEWER") return <Navigate to="/incidents" replace />;
   if (user?.role === "ME_DISTRICT" || user?.role === "ME_REGIONAL") return <Navigate to="/mefm" replace />;
   return <Outlet />;
 }
@@ -78,6 +84,7 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/evaluate/:token" element={<EvaluatePage />} />
             <Route path="/daily/:token" element={<DailyPage />} />
+            <Route path="/report-incident" element={<ReportIncidentPage />} />
             <Route element={<RequireAuth />}>
               <Route element={<Layout />}>
                 <Route index element={<Home />} />
@@ -101,6 +108,11 @@ export default function App() {
                   <Route path="me/evaluations" element={<MeEvaluationsPage />} />
                   <Route path="me/evaluations/:id" element={<MeResultsPage />} />
                 </Route>
+                <Route element={<RequirePerm code="incidents.view" />}>
+                  <Route path="incidents" element={<IncidentsDashboardPage />} />
+                  <Route path="incidents/register" element={<IncidentsRegisterPage />} />
+                </Route>
+                <Route element={<RequirePerm code="incidents.settings" />}><Route path="incidents/sa-codes" element={<IncidentSaCodesPage />} /></Route>
                 <Route element={<RequirePerm code="me_daily.view" />}>
                   <Route path="me/daily" element={<MeDailyPage />} />
                   <Route path="me/daily/:id" element={<MeDailyResultsPage />} />

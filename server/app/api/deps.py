@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.core.security import decode_token
 from app.db.session import get_db
 from app.models import AuditLog, User
-from app.models.user import Role
+from app.models.user import WEB_ROLES, Role
 from app.services.permission_service import effective_permissions
 
 bearer = HTTPBearer(auto_error=False)
@@ -58,7 +58,7 @@ def require_roles(*roles: Role) -> Callable[..., User]:
 
 
 require_admin = require_perm("users.manage")
-require_web = require_roles(Role.DISTRICT_DQM, Role.REGIONAL, Role.NATIONAL_DQM, Role.ADMIN)
+require_web = require_roles(*WEB_ROLES)  # every role that signs in on the web may read the reference lists
 require_tablet = require_perm("sync.use")
 
 

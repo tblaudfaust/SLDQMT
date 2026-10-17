@@ -1,6 +1,8 @@
 # 2026 SLPHC Census Incident Log — design proposal
 
-Stage 0 deliverable, 16 October 2026, revised 17 October 2026 with tablet distribution and custody. For confirmation before building; nothing is built yet.
+Stage 0 deliverable, 16 October 2026, revised 17 October 2026 with tablet distribution and custody.
+
+**Built on 17 October 2026 (web):** the register, handling actions with the dated log, district scoping, the District Statistician and Incident Viewer roles, the public reporting page by SA code (censusme.statistics.sl/report-incident) with tracking by number, SA code upload, the dashboard, Excel and PDF exports, and the warning on exit checkouts. Decisions taken: no automatic escalation (the dashboard lists what needs action), default owner is the District Statistician, exit clearance only warns, nothing is hidden by category. **Not yet built:** reporting from the Android app with photos and GPS (stage 2), attachments, one-click "raise as incident" from the other modules, tablet distribution and custody (section 8).
 
 ## 1. Purpose
 

@@ -18,11 +18,13 @@ class Role(str, enum.Enum):
     ME_DISTRICT = "ME_DISTRICT"  # District M&E Officer: fills field monitoring forms for one district
     ME_REGIONAL = "ME_REGIONAL"  # Regional M&E Officer: reviews the districts of one region
     ME_DAILY = "ME_DAILY"  # Daily Evaluation Admin: runs the daily trainer class evaluations (national)
+    DISTRICT_STATISTICIAN = "DISTRICT_STATISTICIAN"  # DS: owns the incidents of one district
+    INCIDENT_VIEWER = "INCIDENT_VIEWER"  # reads the incident log nationally, changes nothing
 
 
 # Roles that see every district; a scope row never narrows them.
-UNSCOPED_ROLES = {Role.NATIONAL_DQM, Role.ADMIN, Role.ME, Role.ME_DAILY}
-WEB_ROLES = {Role.DISTRICT_DQM, Role.REGIONAL, Role.NATIONAL_DQM, Role.ADMIN, Role.ME, Role.ME_DISTRICT, Role.ME_REGIONAL, Role.ME_DAILY}
+UNSCOPED_ROLES = {Role.NATIONAL_DQM, Role.ADMIN, Role.ME, Role.ME_DAILY, Role.INCIDENT_VIEWER}
+WEB_ROLES = {Role.DISTRICT_DQM, Role.REGIONAL, Role.NATIONAL_DQM, Role.ADMIN, Role.ME, Role.ME_DISTRICT, Role.ME_REGIONAL, Role.ME_DAILY, Role.DISTRICT_STATISTICIAN, Role.INCIDENT_VIEWER}
 
 
 class User(TimestampMixin, Base):

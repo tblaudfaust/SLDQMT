@@ -20,6 +20,8 @@ export const ROLES: { value: Role; label: string; scope: "district" | "region" |
   { value: "ME_REGIONAL", label: "Regional M&E Officer", scope: "region", level: "Region" },
   { value: "ME_DISTRICT", label: "District M&E Officer", scope: "district", level: "District" },
   { value: "ME_DAILY", label: "Daily Evaluation Admin", scope: "none", level: "National" },
+  { value: "DISTRICT_STATISTICIAN", label: "District Statistician (incidents)", scope: "district", level: "District" },
+  { value: "INCIDENT_VIEWER", label: "Incident Viewer (read only)", scope: "none", level: "National" },
 ];
 const roleLabel = (r: Role) => ROLES.find((x) => x.value === r)?.label ?? r;
 

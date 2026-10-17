@@ -27,4 +27,8 @@ DEFAULT_SETTINGS = {
     "mefm_phase_enumeration_start": "",
     "mefm_phase_mopup_start": "",
     "mefm_phase_end": "",
+    # Census incident log: default time to resolve by severity (hours); overdue is shown on the dashboard, never escalated automatically
+    "incident_due_hours_critical": "24",
+    "incident_due_hours_major": "72",
+    "incident_due_hours_minor": "168",
 }

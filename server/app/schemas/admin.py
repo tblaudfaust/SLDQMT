@@ -143,6 +143,9 @@ class SettingsUpdate(BaseModel):
     mefm_phase_enumeration_start: str | None = Field(default=None, pattern=r"^(\d{4}-\d{2}-\d{2})?$")
     mefm_phase_mopup_start: str | None = Field(default=None, pattern=r"^(\d{4}-\d{2}-\d{2})?$")
     mefm_phase_end: str | None = Field(default=None, pattern=r"^(\d{4}-\d{2}-\d{2})?$")
+    incident_due_hours_critical: int | None = Field(default=None, ge=1, le=720)
+    incident_due_hours_major: int | None = Field(default=None, ge=1, le=720)
+    incident_due_hours_minor: int | None = Field(default=None, ge=1, le=2000)
 
 
 class ImportResult(BaseModel):
