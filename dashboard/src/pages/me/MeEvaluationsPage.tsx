@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import clsx from "clsx";
-import { BarChart3, Copy, ExternalLink, Link2, Lock, Plus, Trash2, Unlock } from "lucide-react";
+import { BarChart3, ClipboardList, Copy, ExternalLink, Link2, Lock, Plus, Trash2, Unlock } from "lucide-react";
 import { ApiError, api, fmtDate } from "../../api/client";
 import type { MeEvaluation } from "../../api/types";
 import { useAuth } from "../../auth/AuthContext";
@@ -57,6 +57,12 @@ export default function MeEvaluationsPage() {
         {can("me.manage") && <button className="btn-primary" onClick={() => { setForm(empty); setError(null); }}><Plus size={16} /> New evaluation</button>}
       </div>
       <ErrorBox error={error instanceof ApiError ? error.message : error} />
+      {can("me_kpi.view") && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-navy to-[#1b7f6b] px-5 py-4 text-white shadow">
+          <div className="flex items-center gap-3"><ClipboardList size={28} /><div><div className="text-base font-bold">M&amp;E Field Tool · KPIs for Monitoring and Evaluation</div><div className="text-xs text-sky-100/90">Collect the 11 KPIs in the field, online or offline, for field practice, listing and enumeration. GIS data preloaded for your districts.</div></div></div>
+          <div className="flex gap-2"><Link to="/me/kpi" className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-navy hover:bg-sky-50">Open the tool</Link><Link to="/me/kpi/dashboard" className="rounded-xl bg-white/15 px-4 py-2 text-sm font-semibold hover:bg-white/25">KPI dashboard</Link></div>
+        </div>
+      )}
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
         <KpiTile label="Evaluations" value={data.length} sub={`${data.filter((e) => e.status === "OPEN").length} open`} />
         <KpiTile label="Responses" value={totals.submitted} tone="green" sub={`of ${totals.registered} registered`} />

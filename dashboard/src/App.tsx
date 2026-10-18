@@ -34,6 +34,10 @@ import DailyPage from "./pages/public/DailyPage";
 import MeFacPage from "./pages/me/MeFacPage";
 import MeFacResultsPage from "./pages/me/MeFacResultsPage";
 import AssessPage from "./pages/public/AssessPage";
+import KpiHomePage from "./pages/me/kpi/KpiHomePage";
+import KpiFormPage from "./pages/me/kpi/KpiFormPage";
+import KpiDashboardPage from "./pages/me/kpi/KpiDashboardPage";
+import KpiReportsPage from "./pages/me/kpi/KpiReportsPage";
 import IncidentsDashboardPage from "./pages/incidents/IncidentsDashboardPage";
 import IncidentsRegisterPage from "./pages/incidents/IncidentsRegisterPage";
 import IncidentSaCodesPage from "./pages/incidents/IncidentSaCodesPage";
@@ -57,6 +61,7 @@ function Home() {
   if (can("me.view")) return <Navigate to="/me/evaluations" replace />;
   if (can("me_daily.view")) return <Navigate to="/me/daily" replace />;
   if (can("me_fac.view")) return <Navigate to="/me/facilitators" replace />;
+  if (can("me_kpi.view")) return <Navigate to="/me/kpi" replace />;
   if (can("incidents.view")) return <Navigate to="/incidents" replace />;
   if (can("mefm.view")) return <Navigate to="/mefm" replace />;
   if (can("daily_reports.view")) return <Navigate to="/dqm/reports" replace />;
@@ -69,7 +74,7 @@ function NotForMe() {
   if (user?.role === "ME") return <Navigate to="/me/evaluations" replace />;
   if (user?.role === "ME_DAILY") return <Navigate to="/me/daily" replace />;
   if (user?.role === "DISTRICT_STATISTICIAN" || user?.role === "INCIDENT_VIEWER" || user?.role === "INCIDENT_ADMIN") return <Navigate to="/incidents" replace />;
-  if (user?.role === "ME_DISTRICT" || user?.role === "ME_REGIONAL") return <Navigate to="/mefm" replace />;
+  if (user?.role === "ME_DISTRICT" || user?.role === "ME_REGIONAL") return <Navigate to="/me/kpi" replace />;
   return <Outlet />;
 }
 
@@ -125,6 +130,13 @@ export default function App() {
                 <Route element={<RequirePerm code="me_fac.view" />}>
                   <Route path="me/facilitators" element={<MeFacPage />} />
                   <Route path="me/facilitators/:id" element={<MeFacResultsPage />} />
+                </Route>
+                <Route element={<RequirePerm code="me_kpi.view" />}>
+                  <Route path="me/kpi" element={<KpiHomePage />} />
+                  <Route path="me/kpi/new" element={<KpiFormPage />} />
+                  <Route path="me/kpi/report/:clientId" element={<KpiFormPage />} />
+                  <Route path="me/kpi/dashboard" element={<KpiDashboardPage />} />
+                  <Route path="me/kpi/reports" element={<KpiReportsPage />} />
                 </Route>
                 <Route element={<RequirePerm code="users.manage" />}><Route path="admin/users" element={<UsersPage />} /></Route>
                 <Route element={<RequirePerm code="roles.manage" />}><Route path="admin/roles" element={<RolesPage />} /></Route>

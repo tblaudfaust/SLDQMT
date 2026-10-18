@@ -759,3 +759,40 @@ export interface MeFacSpec {
   title: string; subtitle: string; intro: string; phases: { value: string; label: string }[]; scale: { value: number; label: string }[]; criteria: { key: string; label: string; help: string }[];
   section_a_max: number; bands: { key: string; label: string; min_total: number; min_pct: number }[]; districts: string[];
 }
+
+// ---- M&E Field Tool (KPIs), online and offline ----
+export type MeKpiOpt = { value: string; label: string };
+export interface MeKpiItem { code: string; text: string; type: "yesno" | "yesno_na" | "choice" | "multi" | "number" | "numbers" | "text"; required: boolean; options?: MeKpiOpt[]; fields?: { key: string; label: string }[]; phases?: string[]; detail?: string; detail_when?: string; help?: string }
+export interface MeKpiSection { code: string; title: string; subtitle?: string; phases?: string[]; items: MeKpiItem[] }
+export interface MeKpiSpec { title: string; version: number; intro: string; phases: MeKpiOpt[]; roles: MeKpiOpt[]; rating: MeKpiOpt[]; sections: MeKpiSection[] }
+export interface MeKpiGeo {
+  version: string; generated_at: string;
+  districts: { id: number; code: string; name: string; region: string }[];
+  chiefdoms: { id: number; district_id: number; code: string; name: string }[];
+  sections: { id: number; district_id: number; chiefdom_id: number; code: string; name: string }[];
+  teams: { id: number; district_id: number; code: string; name: string; chiefdom: string | null; supervisor: string | null; enumerators: number; eas: number; eas_urban: number; eas_rural: number; expected_households: number | null }[];
+}
+export type MeKpiAnswers = Record<string, string | number | string[] | Record<string, number> | undefined>;
+export interface MeKpiReportIn {
+  client_id: string; phase: "MT" | "TOT" | "L" | "E"; report_date: string; week: number | null; district_id: number | null; chiefdom: string | null; section: string | null; team_id: number | null; sa_code: string | null;
+  practice_team: string | null; respondent_name: string | null; respondent_role: string | null; eas_urban: number | null; eas_rural: number | null; enumerators: number | null; capi_version: string | null;
+  lat: number | null; lng: number | null; answers: MeKpiAnswers; submitted_at?: string | null; device?: string | null;
+}
+export interface MeKpiSyncOut { results: { client_id: string; id: number | null; status: "created" | "updated" | "error"; message: string | null }[]; created: number; updated: number; errors: number }
+export interface MeKpiMetrics { coverage_pct: number | null; ea_pct: number | null; tablets_pct: number | null; synced_pct: number | null; error_pct: number | null; reinterview_pct: number | null; hh_expected: number | null; hh_done: number | null; hh_today: number | null; on_schedule: boolean | null; safety_concern: boolean; escalation: boolean; follow_up: boolean; overall: number | null }
+export interface MeKpiReport {
+  id: number; client_id: string; phase: string; phase_label: string; report_date: string; week: number | null; district_id: number | null; district: string | null; region: string | null; chiefdom: string | null; section: string | null;
+  team_id: number | null; sa_code: string | null; sa_name: string | null; practice_team: string | null; respondent_name: string | null; respondent_role: string | null; respondent_role_label: string | null;
+  eas_urban: number | null; eas_rural: number | null; enumerators: number | null; capi_version: string | null; lat: number | null; lng: number | null; answers: MeKpiAnswers; metrics: MeKpiMetrics;
+  officer: string | null; user_id: number; submitted_at: string; updated_at: string | null; edited_by_name: string | null;
+}
+export interface MeKpiCount { code: string; label: string; count: number; pct: number | null }
+export interface MeKpiGroup { key: string; label: string; reports: number; sas: number; officers: number; coverage_pct: number | null; synced_pct: number | null; error_pct: number | null; tablets_pct: number | null; informed_pct: number | null; support_pct: number | null; on_schedule_pct: number | null; overall: number | null; safety_concerns: number; escalations: number }
+export interface MeKpiAttention { report_id: number; report_date: string; phase: string; district: string | null; sa: string | null; officer: string | null; reasons: string[] }
+export interface MeKpiSummary {
+  scope: string; reports: number; sas: number; districts: number; officers: number; last_date: string | null;
+  coverage_pct: number | null; synced_pct: number | null; error_pct: number | null; tablets_pct: number | null; reinterview_pct: number | null; informed_pct: number | null; aware_pct: number | null; trust_pct: number | null; support_pct: number | null; channel_pct: number | null; on_schedule_pct: number | null;
+  overall: number | null; safety_concerns: number; escalations: number; follow_ups: number;
+  by_phase: MeKpiGroup[]; by_district: MeKpiGroup[]; by_week: MeKpiGroup[]; by_officer: MeKpiGroup[]; channels: MeKpiCount[]; blockers: MeKpiCount[]; error_types: MeKpiCount[]; risks: MeKpiCount[]; overall_counts: MeKpiCount[];
+  attention: MeKpiAttention[]; latest: MeKpiReport[];
+}
