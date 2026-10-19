@@ -25,6 +25,7 @@ function validate(d: MeKpiReportIn, spec: MeKpiSpec): string[] {
   if (!d.report_date) e.push("Enter the date");
   else if (d.report_date > today()) e.push("The date cannot be in the future");
   if (!d.district_id) e.push("Choose the district");
+  if (d.lat === null || d.lng === null) e.push("Capture the GPS position (section A)");
   if ((d.phase === "L" || d.phase === "E") && !d.team_id && !d.sa_code) e.push("Choose the SA");
   if ((d.phase === "MT" || d.phase === "TOT") && !d.practice_team && !d.team_id) e.push("Enter the practice team or hall");
   for (const s of spec.sections) {
@@ -142,6 +143,8 @@ function L({ label, children, hint }: { label: string; children: React.ReactNode
 
 function SectionA({ d, set, spec, geo, gpsNote, setGpsNote }: { d: MeKpiReportIn; set: (p: Partial<MeKpiReportIn>) => void; spec: MeKpiSpec; geo: MeKpiGeo | null; gpsNote: string | null; setGpsNote: (s: string | null) => void }) {
   const field = d.phase === "L" || d.phase === "E";
+  const autoGps = useRef(false);
+  useEffect(() => { if (!autoGps.current && d.lat === null) { autoGps.current = true; gps(); } }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const districts = geo?.districts ?? [];
   const chiefdoms = (geo?.chiefdoms ?? []).filter((c) => c.district_id === d.district_id);
   const chiefdomId = chiefdoms.find((c) => c.name === d.chiefdom)?.id;
@@ -155,7 +158,7 @@ function SectionA({ d, set, spec, geo, gpsNote, setGpsNote }: { d: MeKpiReportIn
     set({ team_id: t?.id ?? null, sa_code: t?.code ?? null, chiefdom: t?.chiefdom ?? d.chiefdom, eas_urban: t ? t.eas_urban : d.eas_urban, eas_rural: t ? t.eas_rural : d.eas_rural, enumerators: t ? t.enumerators || d.enumerators : d.enumerators, respondent_name: t?.supervisor && !d.respondent_name ? t.supervisor : d.respondent_name });
   };
   const gps = () => {
-    if (!navigator.geolocation) { setGpsNote("No GPS on this device"); return; }
+    if (!navigator.geolocation) { setGpsNote("No GPS on this device: GPS is required, use a phone with location services"); return; }
     setGpsNote("Getting position…");
     navigator.geolocation.getCurrentPosition((p) => { set({ lat: Math.round(p.coords.latitude * 1e5) / 1e5, lng: Math.round(p.coords.longitude * 1e5) / 1e5 }); setGpsNote(`Position captured (±${Math.round(p.coords.accuracy)} m)`); }, () => setGpsNote("Position not available; you can continue without it"), { enableHighAccuracy: true, timeout: 15000 });
   };
@@ -215,8 +218,8 @@ function SectionA({ d, set, spec, geo, gpsNote, setGpsNote }: { d: MeKpiReportIn
       <div className="grid gap-3 sm:grid-cols-2">
         <L label="CAPI version used" hint="As shown on the tablet"><input className="input py-3 text-base" value={d.capi_version ?? ""} onChange={(e) => set({ capi_version: e.target.value || null })} placeholder="e.g. 2.3.1" maxLength={40} /></L>
         <div>
-          <span className="mb-1 block text-sm font-medium text-slate-700">Position (optional)</span>
-          <button type="button" className="btn-outline w-full py-3" onClick={gps}><Crosshair size={16} /> {d.lat ? `${d.lat}, ${d.lng}` : "Capture GPS"}</button>
+          <span className="mb-1 block text-sm font-medium text-slate-700">GPS position *</span>
+          <button type="button" className={clsx("w-full py-3", d.lat ? "btn-outline" : "btn-primary")} onClick={gps}><Crosshair size={16} /> {d.lat ? `${d.lat}, ${d.lng}` : "Capture GPS"}</button>
           {gpsNote && <span className="mt-1 block text-xs text-slate-400">{gpsNote}</span>}
         </div>
       </div>

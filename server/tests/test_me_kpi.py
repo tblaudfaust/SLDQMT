@@ -17,7 +17,7 @@ def user(client, admin, username, role, district_ids=None):
 def report(district_id, team_id=None, **over):
     body = {
         "client_id": str(uuid.uuid4()), "phase": "E", "report_date": date.today().isoformat(), "week": 2, "district_id": district_id, "chiefdom": "Central", "section": "Tower Hill", "team_id": team_id,
-        "respondent_name": "Mohamed Kamara", "respondent_role": "SUPERVISOR", "eas_urban": 8, "eas_rural": 2, "enumerators": 10, "capi_version": "2.3.1",
+        "respondent_name": "Mohamed Kamara", "respondent_role": "SUPERVISOR", "eas_urban": 8, "eas_rural": 2, "enumerators": 10, "capi_version": "2.3.1", "lat": 7.9644, "lng": -11.7383,
         "answers": {
             "k1_1": "1", "k1_2": ["radio", "leaders"], "k1_3": "2", "k1_3_detail": "Nomadic groups", "k1_4": "Tax rumour", "k1_5": "1", "k1_5_detail": "Chief",
             "k2_1": "2", "k2_2": "1", "k2_3": "1", "k2_4": "2", "k2_5": "1",
@@ -64,6 +64,7 @@ def test_form_geo_sync_scoping_summary_export_and_rights(client, admin, geo):
     assert client.post("/api/v1/me/kpi/sync", json={"reports": [corrected]}, headers=dist).json()["updated"] == 1
     out = client.post("/api/v1/me/kpi/sync", json={"reports": [report(war), report(wau, team, answers={"k3_1": {"expected": 10, "done": 5}, "b1": "9"}), report(wau, team, report_date=(date.today() + timedelta(days=1)).isoformat())]}, headers=dist).json()
     assert out["errors"] == 3 and "outside your area" in out["results"][0]["message"] and "not one of the options" in out["results"][1]["message"] and "future" in out["results"][2]["message"]
+    assert "GPS position is required" in client.post("/api/v1/me/kpi/sync", json={"reports": [report(wau, team, lat=None, lng=None)]}, headers=dist).json()["results"][0]["message"]
     # a listing / enumeration report needs an SA; field practice does not
     assert client.post("/api/v1/me/kpi/sync", json={"reports": [report(wau, None)]}, headers=dist).json()["results"][0]["status"] == "error"
     mt = report(wau, None, phase="MT", practice_team="Hall 2 team A", week=None, answers={"k1_1": "1", "k2_1": "1", "k4_1": {"working": 5, "issued": 5}, "b1": "4"})

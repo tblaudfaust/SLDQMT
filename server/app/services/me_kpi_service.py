@@ -107,6 +107,8 @@ def _apply(x: R, body: ReportIn, user: User) -> list[str]:
     clean, errors = form.validate(body.phase, body.answers)
     if body.phase in ("L", "E") and not body.team_id and not body.sa_code:
         errors.append("Choose the SA")
+    if body.lat is None or body.lng is None:
+        errors.append("GPS position is required")
     if errors:
         return errors
     m = form.metrics(clean)

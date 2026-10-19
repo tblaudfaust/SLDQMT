@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import clsx from "clsx";
-import { AlertCircle, BarChart3, CheckCircle2, ClipboardList, CloudOff, CloudUpload, Database, FilePlus2, ListChecks, Pencil, RefreshCw, Trash2, Wifi, WifiOff } from "lucide-react";
+import { AlertCircle, BarChart3, CheckCircle2, ClipboardList, CloudOff, CloudUpload, FilePlus2, ListChecks, Pencil, Trash2, Wifi, WifiOff } from "lucide-react";
 import { useAuth } from "../../../auth/AuthContext";
 import { isAppMode } from "../../../brand";
 import { Card, ErrorBox } from "../../../components/ui";
@@ -26,12 +26,11 @@ export default function KpiHomePage() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>((loc.state as { notice?: string } | null)?.notice ?? null);
   const [error, setError] = useState<unknown>(null);
-  const [fromCache, setFromCache] = useState(false);
   const pending = pendingCount();
 
   useEffect(() => {
     if (!user) return;
-    refreshReference(user.id).then((r) => setFromCache(r.fromCache)).catch(setError);
+    refreshReference(user.id).catch(setError);
     void syncNow().catch(setError);
     return installAutoSync();
   }, [user]);
@@ -42,11 +41,6 @@ export default function KpiHomePage() {
       const out = await syncNow();
       setNotice(out ? `${out.created + out.updated} report${out.created + out.updated === 1 ? "" : "s"} sent${out.errors ? `, ${out.errors} rejected (see below)` : ""}.` : online ? "Nothing waiting to be sent." : "No network: the reports stay on this device and go when you are back online.");
     } catch (e) { setError(e); } finally { setBusy(false); }
-  };
-  const refresh = async () => {
-    if (!user) return;
-    setBusy(true); setError(null);
-    try { const r = await refreshReference(user.id, true); setFromCache(r.fromCache); setNotice(r.fromCache ? "No network: the saved GIS data stays in use." : `GIS data refreshed: ${r.geo?.districts.length ?? 0} district(s), ${r.geo?.teams.length ?? 0} SAs.`); } catch (e) { setError(e); } finally { setBusy(false); }
   };
   const reports = store.reports;
   const sentToday = reports.filter((r) => r.status === "sent" && r.sent_at && r.sent_at.slice(0, 10) === new Date().toISOString().slice(0, 10)).length;
@@ -98,21 +92,6 @@ export default function KpiHomePage() {
           )}
         </Card>
         <div className="space-y-4">
-          <Card title="GIS data on this device">
-            <div className="flex items-start gap-3 text-sm">
-              <Database size={22} className="shrink-0 text-navy" />
-              <div>
-                {store.geo ? (
-                  <>
-                    <div><b>{store.geo.districts.length}</b> district{store.geo.districts.length === 1 ? "" : "s"} · <b>{store.geo.chiefdoms.length}</b> chiefdoms · <b>{store.geo.teams.length}</b> SAs</div>
-                    <div className="text-xs text-slate-500">{store.geo.districts.map((d) => d.name).slice(0, 6).join(", ")}{store.geo.districts.length > 6 ? "…" : ""}</div>
-                    <div className="mt-1 text-xs text-slate-500">Updated {store.geo_at ? fmt(store.geo_at) : "—"}{fromCache ? " (saved copy)" : ""}</div>
-                  </>
-                ) : <div className="text-slate-500">Not loaded yet. Connect once so the districts, chiefdoms, sections and SAs are saved on this device.</div>}
-                <button className="btn-outline mt-2 py-1 text-xs" onClick={refresh} disabled={busy || !online}><RefreshCw size={14} /> Refresh</button>
-              </div>
-            </div>
-          </Card>
           <Card title="How it works">
             <ul className="space-y-2 text-sm text-slate-600">
               <li className="flex gap-2"><ClipboardList size={16} className="mt-0.5 shrink-0 text-navy" /> One report per SA (or practice team): each practice day, weekly in listing and enumeration.</li>
