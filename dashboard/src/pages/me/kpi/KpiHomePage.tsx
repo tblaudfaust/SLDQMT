@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import { AlertCircle, BarChart3, CheckCircle2, ClipboardList, CloudOff, CloudUpload, Database, FilePlus2, ListChecks, Pencil, RefreshCw, Trash2, Wifi, WifiOff } from "lucide-react";
 import { useAuth } from "../../../auth/AuthContext";
+import { isAppMode } from "../../../brand";
 import { Card, ErrorBox } from "../../../components/ui";
 import { installAutoSync, pendingCount, refreshReference, removeLocal, syncNow, useKpiStore, useOnline, type LocalReport } from "./kpiStore";
 
@@ -68,14 +69,14 @@ export default function KpiHomePage() {
           <button onClick={send} disabled={busy} className={clsx("flex items-center gap-3 rounded-xl px-4 py-4 text-left shadow", pending ? "bg-amber-400 text-amber-950 hover:bg-amber-300" : "bg-white/15 text-white hover:bg-white/25")}>
             {pending ? <CloudUpload size={26} /> : <CheckCircle2 size={26} />}<div><div className="text-base font-bold">{pending ? `Send ${pending} waiting` : "All reports sent"}</div><div className="text-xs opacity-80">{pending ? (online ? "tap to send now" : "sends when back online") : `${sentToday} sent today from this device`}</div></div>
           </button>
-          {can("me_kpi.view") && <Link to="/me/kpi/dashboard" className="flex items-center gap-3 rounded-xl bg-white/15 px-4 py-4 text-white shadow hover:bg-white/25"><BarChart3 size={26} /><div><div className="text-base font-bold">Dashboard</div><div className="text-xs opacity-80">KPIs by district and week</div></div></Link>}
+          {can("me_kpi.view") && !isAppMode && <Link to="/me/kpi/dashboard" className="flex items-center gap-3 rounded-xl bg-white/15 px-4 py-4 text-white shadow hover:bg-white/25"><BarChart3 size={26} /><div><div className="text-base font-bold">Dashboard</div><div className="text-xs opacity-80">KPIs by district and week</div></div></Link>}
         </div>
       </div>
       {notice && <div className="mb-3 flex items-center justify-between rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-900"><span>{notice}</span><button className="text-xs underline" onClick={() => setNotice(null)}>Close</button></div>}
       <ErrorBox error={error} />
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2" title="Reports on this device" action={<Link to="/me/kpi/reports" className="text-sm text-navy underline"><ListChecks size={14} className="mr-1 inline" />All reports</Link>}>
+        <Card className="lg:col-span-2" title="Reports on this device" action={isAppMode ? undefined : <Link to="/me/kpi/reports" className="text-sm text-navy underline"><ListChecks size={14} className="mr-1 inline" />All reports</Link>}>
           {reports.length === 0 ? (
             <div className="py-8 text-center text-sm text-slate-400">No report yet on this device. Tap <b>Start a new report</b>.</div>
           ) : (

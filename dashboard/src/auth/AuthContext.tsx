@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import { api, tokens } from "../api/client";
+import { ApiError, api, tokens } from "../api/client";
 import type { TokenPair, User } from "../api/types";
 
 interface AuthState {
@@ -12,6 +12,11 @@ interface AuthState {
   /** True when the signed-in user holds every listed permission. */
   can: (...codes: string[]) => boolean;
 }
+
+const USER_KEY = "fm_user";
+/** The signed-in profile, kept on the device so the field tool can open without network. */
+function cacheUser(u: User | null) { try { if (u) localStorage.setItem(USER_KEY, JSON.stringify(u)); else localStorage.removeItem(USER_KEY); } catch { /* private mode */ } }
+function readCachedUser(): User | null { try { const s = localStorage.getItem(USER_KEY); return s ? (JSON.parse(s) as User) : null; } catch { return null; } }
 
 const Ctx = createContext<AuthState>({ user: null, loading: true, login: async () => {}, logout: () => {}, refreshUser: async () => {}, can: () => false });
 
@@ -26,8 +31,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     api
       .get<User>("/auth/me")
-      .then(setUser)
-      .catch(() => tokens.clear())
+      .then((u) => { setUser(u); cacheUser(u); })
+      .catch((e) => {
+        // a rejected token signs the user out; no network (the field tool offline) keeps the last known profile
+        if (e instanceof ApiError && (e.status === 401 || e.status === 403)) { tokens.clear(); cacheUser(null); return; }
+        const cached = readCachedUser();
+        if (cached) setUser(cached); else tokens.clear();
+      })
       .finally(() => setLoading(false));
     const onLogout = () => setUser(null);
     window.addEventListener("fm:logout", onLogout);
@@ -39,16 +49,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (pair.user.role === "FIELD_MONITOR") throw new Error("Field Monitor accounts use the tablet app, not the dashboard");
     tokens.set(pair);
     setUser(pair.user);
+    cacheUser(pair.user);
   }, []);
 
   const logout = useCallback(() => {
     const r = tokens.refresh;
     if (r) api.post("/auth/logout", { refresh_token: r }).catch(() => {});
     tokens.clear();
+    cacheUser(null);
     setUser(null);
   }, []);
 
-  const refreshUser = useCallback(async () => { setUser(await api.get<User>("/auth/me")); }, []);
+  const refreshUser = useCallback(async () => { const u = await api.get<User>("/auth/me"); setUser(u); cacheUser(u); }, []);
 
   const can = useCallback((...codes: string[]) => !!user && codes.every((c) => user.permissions?.includes(c)), [user]);
 

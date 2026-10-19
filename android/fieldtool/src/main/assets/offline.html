@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SLPHC M&amp;E Field Tool</title>
+<style>
+  html, body { margin: 0; height: 100%; font-family: Roboto, "Segoe UI", sans-serif; }
+  body { background: linear-gradient(160deg, #1F4E79 0%, #245a8c 55%, #1b7f6b 100%); color: #fff; display: flex; align-items: center; justify-content: center; text-align: center; }
+  .card { max-width: 420px; padding: 32px 24px; }
+  h1 { font-size: 22px; margin: 0 0 8px; }
+  p { color: #dbe7f5; font-size: 15px; line-height: 1.5; margin: 0 0 20px; }
+  button { background: #fff; color: #1F4E79; border: 0; border-radius: 14px; padding: 14px 24px; font-size: 16px; font-weight: 700; }
+  .small { font-size: 12px; color: #b9cde6; margin-top: 24px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>No connection yet</h1>
+  <p>The M&amp;E Field Tool needs the network the first time it opens, so it can save the form and your district's GIS data on this phone. After that it works without network.</p>
+  <button onclick="(window.SLPHCApp && SLPHCApp.reload()) || location.reload()">Try again</button>
+  <div class="small">Statistics Sierra Leone · 2026 Population and Housing Census</div>
+</div>
+</body>
+</html>

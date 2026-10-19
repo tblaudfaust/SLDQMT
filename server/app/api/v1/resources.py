@@ -39,6 +39,13 @@ RESOURCES: dict[str, tuple[str, str, str, str, str]] = {
         "User Operational Manual (Word)",
         "The same manual as an editable Word document.",
     ),
+    "fieldtool-apk": (
+        "SLPHC-ME-FieldTool.apk",
+        "application/vnd.android.package-archive",
+        "attachment",
+        "M&E Field Tool app (APK)",
+        "For the M&E team: sign in once online and the KPI form works in the field with or without network; GIS data is preloaded for your districts. Android 8.0 or newer.",
+    ),
     "app-apk": (
         "SLPHC-FieldMonitor.apk",
         "application/vnd.android.package-archive",

@@ -2,6 +2,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import Layout from "./components/Layout";
+import FieldLayout from "./components/FieldLayout";
+import { isAppMode } from "./brand";
 import { Spinner } from "./components/ui";
 import DashboardPage from "./pages/DashboardPage";
 import ErrorDetailPage from "./pages/ErrorDetailPage";
@@ -84,11 +86,43 @@ function RequirePerm({ code }: { code: string }) {
   return <Outlet />;
 }
 
+/** The Android field app: sign in, then only the KPI form and the reports on the device. */
+function FieldApp() {
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route element={<RequireAuth />}>
+        <Route element={<FieldLayout />}>
+          <Route element={<RequireFieldAccess />}>
+            <Route path="/me/kpi" element={<KpiHomePage />} />
+            <Route path="/me/kpi/new" element={<KpiFormPage />} />
+            <Route path="/me/kpi/report/:clientId" element={<KpiFormPage />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/me/kpi" replace />} />
+        </Route>
+      </Route>
+    </Routes>
+  );
+}
+
+function RequireFieldAccess() {
+  const { user, can, logout } = useAuth();
+  if (can("me_kpi.collect")) return <Outlet />;
+  return (
+    <div className="mx-auto max-w-md rounded-2xl bg-white p-6 text-center shadow">
+      <h1 className="text-lg font-bold text-navy">No field tool access</h1>
+      <p className="mt-2 text-sm text-slate-600">The account <b>{user?.username}</b> ({user?.role}) is not allowed to collect KPI reports. Ask the M&amp;E lead to give it the District, Regional or national M&amp;E role.</p>
+      <button className="btn-primary mt-4" onClick={logout}>Sign in with another account</button>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={client}>
       <AuthProvider>
         <BrowserRouter>
+          {isAppMode ? <FieldApp /> : (
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/evaluate/:token" element={<EvaluatePage />} />
@@ -148,6 +182,7 @@ export default function App() {
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          )}
         </BrowserRouter>
       </AuthProvider>
     </QueryClientProvider>

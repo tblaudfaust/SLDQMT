@@ -41,8 +41,14 @@ export default defineConfig({
       },
     }),
   ],
+  preview: {
+    port: 4173,
+    host: true,
+    proxy: { "/api": { target: process.env.VITE_API_PROXY || "http://localhost:8000", changeOrigin: true } },
+  },
   server: {
     port: 5173,
+    host: true, // IPv4 and IPv6: the Android emulator reaches the dev server through adb reverse (127.0.0.1)
     proxy: {
       "/api": { target: process.env.VITE_API_PROXY || "http://localhost:8000", changeOrigin: true },
     },

@@ -15,3 +15,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "FieldMonitor"
 include(":app")
+include(":fieldtool")

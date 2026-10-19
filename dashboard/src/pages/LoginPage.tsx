@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { isMeSite, siteSubtitle, siteTitle } from "../brand";
+import { isAppMode, isMeSite, siteSubtitle, siteTitle } from "../brand";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { ErrorBox } from "../components/ui";
@@ -42,7 +42,7 @@ export default function LoginPage() {
         <input className="input" type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
         <ErrorBox error={error} />
         <button className="btn-primary w-full justify-center" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
-        {!isMeSite && <p className="pt-2 text-center text-xs text-slate-500">The user manual and the tablet app are available after signing in.</p>}
+        {!isMeSite && !isAppMode && <p className="pt-2 text-center text-xs text-slate-500">The user manual and the tablet app are available after signing in.</p>}
       </form>
       </div>
       <SiteFooter tone="dark" className="relative" />
