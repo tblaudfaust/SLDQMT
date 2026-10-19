@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 from app.core import me_kpi_form as form
 from app.models import District, Enumerator, EnumerationArea, MeKpiReport, Region, Supervisor, Team, User
 from app.models.mefm import MefmChiefdom, MefmSection
-from app.schemas.me_kpi import Attention, CountRow, GeoBundle, GeoChiefdom, GeoDistrict, GeoSection, GeoTeam, GroupRow, ReportIn, ReportOut, Summary, SyncIn, SyncOut, SyncResult
+from app.schemas.me_kpi import Attention, CountRow, GeoBundle, GeoChiefdom, GeoDistrict, GeoEa, GeoSection, GeoTeam, GroupRow, ReportIn, ReportOut, Summary, SyncIn, SyncOut, SyncResult
 from app.services import report_service
 from app.services.scope import district_ids_for
 
@@ -83,13 +83,32 @@ def geo(db: Session, user: User) -> GeoBundle:
             if hh is not None:
                 d["hh"] += hh
                 d["hh_known"] = True
+    # the EA list travels with the bundle for a district or a region (a few thousand rows); nationally it is fetched per SA
+    on_demand = len(teams) > EAS_INLINE_MAX_TEAMS
+    ea_rows = [] if on_demand or not team_ids else [_geo_ea(e) for e in db.execute(select(EnumerationArea).where(EnumerationArea.team_id.in_(team_ids), EnumerationArea.active.is_(True)).order_by(EnumerationArea.code)).scalars()]
     return GeoBundle(
-        version=geo_version(db, scope), generated_at=_now(),
+        version=geo_version(db, scope), generated_at=_now(), eas=ea_rows, eas_on_demand=on_demand,
         districts=[GeoDistrict(id=d.id, code=d.code, name=d.name, region=regions.get(d.region_id, "")) for d in districts],
         chiefdoms=[GeoChiefdom(id=c.id, district_id=c.district_id, code=c.code, name=c.name) for c in chiefdoms],
         sections=[GeoSection(id=s.id, district_id=s.district_id, chiefdom_id=s.chiefdom_id, code=s.code, name=s.name) for s in sections],
         teams=[GeoTeam(id=t.id, district_id=t.district_id, code=t.code, name=t.name, chiefdom=t.chiefdom, supervisor=sup.get(t.id), enumerators=enums.get(t.id, 0), eas=eas[t.id]["eas"], eas_urban=eas[t.id]["urban"], eas_rural=eas[t.id]["rural"], expected_households=eas[t.id]["hh"] if eas[t.id]["hh_known"] else None) for t in teams],
     )
+
+
+EAS_INLINE_MAX_TEAMS = 1500
+
+
+def _geo_ea(e: EnumerationArea) -> GeoEa:
+    hh = e.expected_households if e.expected_households is not None else e.households
+    return GeoEa(team_id=e.team_id, code=e.code, name=e.name, locality=e.locality, urban=None if e.loc_status not in ("1", "2") else e.loc_status == "2", households=hh)
+
+
+def eas_for_team(db: Session, user: User, team_id: int) -> list[GeoEa]:
+    team = db.get(Team, team_id)
+    if team is None:
+        raise HTTPException(404, "SA not found")
+    _scope_check(db, user, team.district_id)
+    return [_geo_ea(e) for e in db.execute(select(EnumerationArea).where(EnumerationArea.team_id == team_id, EnumerationArea.active.is_(True)).order_by(EnumerationArea.code)).scalars()]
 
 
 # ---- reports -----------------------------------------------------------------------------------------
@@ -115,6 +134,7 @@ def _apply(x: R, body: ReportIn, user: User) -> list[str]:
     x.phase, x.report_date, x.week = body.phase, body.report_date, body.week
     x.district_id, x.chiefdom, x.section, x.team_id = body.district_id, (body.chiefdom or "").strip() or None, (body.section or "").strip() or None, body.team_id
     x.sa_code, x.practice_team = (body.sa_code or "").strip() or None, (body.practice_team or "").strip() or None
+    x.ea_codes = json.dumps(sorted({c.strip() for c in body.ea_codes if c and c.strip()})[:60]) if body.ea_codes else None
     x.respondent_name, x.respondent_role = (body.respondent_name or "").strip() or None, body.respondent_role or None
     x.eas_urban, x.eas_rural, x.enumerators, x.capi_version = body.eas_urban, body.eas_rural, body.enumerators, (body.capi_version or "").strip() or None
     x.lat, x.lng, x.device = body.lat, body.lng, (body.device or "").strip() or None
@@ -204,7 +224,7 @@ def to_out(x: R, n: Names) -> ReportOut:
     t = n.teams.get(x.team_id or 0)
     return ReportOut(
         id=x.id, client_id=x.client_id, phase=x.phase, phase_label=form.PHASE_LABEL.get(x.phase, x.phase), report_date=x.report_date, week=x.week, district_id=x.district_id,
-        district=d[0] if d else None, region=d[1] if d else None, chiefdom=x.chiefdom, section=x.section, team_id=x.team_id, sa_code=x.sa_code or (t[0] if t else None), sa_name=t[1] if t else None,
+        district=d[0] if d else None, region=d[1] if d else None, chiefdom=x.chiefdom, section=x.section, team_id=x.team_id, sa_code=x.sa_code or (t[0] if t else None), sa_name=t[1] if t else None, ea_codes=json.loads(x.ea_codes) if x.ea_codes else [],
         practice_team=x.practice_team, respondent_name=x.respondent_name, respondent_role=x.respondent_role, respondent_role_label=form.ROLE_LABEL.get(x.respondent_role or "", x.respondent_role),
         eas_urban=x.eas_urban, eas_rural=x.eas_rural, enumerators=x.enumerators, capi_version=x.capi_version, lat=x.lat, lng=x.lng, answers=answers, metrics=form.metrics(answers),
         officer=n.users.get(x.user_id), user_id=x.user_id, submitted_at=x.submitted_at, updated_at=x.updated_at, edited_by_name=n.users.get(x.edited_by or 0),
@@ -327,11 +347,11 @@ def export(db: Session, user: User, **filters) -> report_service.Report:
     g_headers = ["Group", "Reports", "SAs", "Officers", "Coverage %", "Synced %", "Error rate %", "Tablets working %", "Community informed %", "Leaders support %", "On schedule %", "Overall (1-4)", "Safety concerns", "Escalations"]
     g_rows = lambda gs: [[g.label, g.reports, g.sas, g.officers, g.coverage_pct, g.synced_pct, g.error_pct, g.tablets_pct, g.informed_pct, g.support_pct, g.on_schedule_pct, g.overall, g.safety_concerns, g.escalations] for g in gs]  # noqa: E731
     item_cols = [(code, it["text"]) for s in form.SECTIONS for it in s["items"] for code in [it["code"]]]
-    headers = ["Date", "Phase", "Week", "Region", "District", "Chiefdom", "Section", "SA code", "SA name", "Practice team", "Respondent", "Role", "EAs urban", "EAs rural", "Enumerators", "CAPI version", "Officer", "Coverage %", "Synced %", "Error rate %", "Tablets %", "Overall", *[t for _, t in item_cols], *[f"{t} · detail" for c, t in item_cols if form.ITEMS[c].get("detail")], "Sent"]
+    headers = ["Date", "Phase", "Week", "Region", "District", "Chiefdom", "Section", "SA code", "SA name", "EAs visited", "Practice team", "Respondent", "Role", "EAs urban", "EAs rural", "Enumerators", "CAPI version", "Officer", "Coverage %", "Synced %", "Error rate %", "Tablets %", "Overall", *[t for _, t in item_cols], *[f"{t} · detail" for c, t in item_cols if form.ITEMS[c].get("detail")], "Sent"]
     reg = []
     for x in outs:
         a = x.answers
-        reg.append([x.report_date, x.phase_label, x.week, x.region, x.district, x.chiefdom, x.section, x.sa_code, x.sa_name, x.practice_team, x.respondent_name, x.respondent_role_label, x.eas_urban, x.eas_rural, x.enumerators, x.capi_version, x.officer,
+        reg.append([x.report_date, x.phase_label, x.week, x.region, x.district, x.chiefdom, x.section, x.sa_code, x.sa_name, ", ".join(x.ea_codes), x.practice_team, x.respondent_name, x.respondent_role_label, x.eas_urban, x.eas_rural, x.enumerators, x.capi_version, x.officer,
                     x.metrics.get("coverage_pct"), x.metrics.get("synced_pct"), x.metrics.get("error_pct"), x.metrics.get("tablets_pct"), x.metrics.get("overall"),
                     *[form.label(c, a.get(c)) for c, _ in item_cols], *[a.get(c + "_detail", "") for c, _ in item_cols if form.ITEMS[c].get("detail")], x.submitted_at])
     summary_rows = [["Scope", d.scope], ["Reports", d.reports], ["SAs / teams", d.sas], ["Districts", d.districts], ["Officers", d.officers], ["Coverage %", d.coverage_pct], ["Synced %", d.synced_pct], ["Error rate %", d.error_pct],

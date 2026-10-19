@@ -27,6 +27,7 @@ class MeKpiReport(TimestampMixin, Base):
     section: Mapped[str | None] = mapped_column(String(160))
     team_id: Mapped[int | None] = mapped_column(ForeignKey("team.id"), index=True)
     sa_code: Mapped[str | None] = mapped_column(String(32))
+    ea_codes: Mapped[str | None] = mapped_column(Text)  # JSON list: the EAs of the SA the visit covered
     practice_team: Mapped[str | None] = mapped_column(String(120))  # field practice: team / hall name
     respondent_name: Mapped[str | None] = mapped_column(String(160))
     respondent_role: Mapped[str | None] = mapped_column(String(24))

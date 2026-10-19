@@ -112,6 +112,10 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        web.setDownloadListener { url, _, _, _, _ ->
+            runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+        }
+
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (web.canGoBack()) web.goBack() else finish()
@@ -138,10 +142,19 @@ class MainActivity : ComponentActivity() {
         super.onPause()
     }
 
-    /** The page calls SLPHCApp.version() and SLPHCApp.reload() (offline page). */
+    /** The page calls SLPHCApp.version(), versionCode(), openExternal(url) and reload() (offline page). */
     inner class AppBridge {
         @JavascriptInterface
         fun version(): String = BuildConfig.VERSION_NAME
+
+        @JavascriptInterface
+        fun versionCode(): Int = BuildConfig.VERSION_CODE
+
+        /** Opens a link in the phone's browser: used for the APK update, which the browser downloads and installs. */
+        @JavascriptInterface
+        fun openExternal(url: String) {
+            web.post { runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }
+        }
 
         @JavascriptInterface
         fun reload() {

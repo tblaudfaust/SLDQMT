@@ -17,7 +17,7 @@ def user(client, admin, username, role, district_ids=None):
 def report(district_id, team_id=None, **over):
     body = {
         "client_id": str(uuid.uuid4()), "phase": "E", "report_date": date.today().isoformat(), "week": 2, "district_id": district_id, "chiefdom": "Central", "section": "Tower Hill", "team_id": team_id,
-        "respondent_name": "Mohamed Kamara", "respondent_role": "SUPERVISOR", "eas_urban": 8, "eas_rural": 2, "enumerators": 10, "capi_version": "2.3.1", "lat": 7.9644, "lng": -11.7383,
+        "respondent_name": "Mohamed Kamara", "respondent_role": "SUPERVISOR", "eas_urban": 8, "eas_rural": 2, "enumerators": 10, "capi_version": "2.3.1", "lat": 7.9644, "lng": -11.7383, "ea_codes": ["WAU-SA01-EA01"],
         "answers": {
             "k1_1": "1", "k1_2": ["radio", "leaders"], "k1_3": "2", "k1_3_detail": "Nomadic groups", "k1_4": "Tax rumour", "k1_5": "1", "k1_5_detail": "Chief",
             "k2_1": "2", "k2_2": "1", "k2_3": "1", "k2_4": "2", "k2_5": "1",
@@ -50,7 +50,13 @@ def test_form_geo_sync_scoping_summary_export_and_rights(client, admin, geo):
     # the geography bundle follows the officer's scope
     g = client.get("/api/v1/me/kpi/geo", headers=dist).json()
     assert [d["code"] for d in g["districts"]] == ["WAU"] and [t["code"] for t in g["teams"]] == ["WAU-SA01"] and g["teams"][0]["eas"] == 2 and g["teams"][0]["enumerators"] == 2 and g["teams"][0]["supervisor"] == "Mohamed Kamara"
+    assert [e["code"] for e in g["eas"]] == ["WAU-SA01-EA01", "WAU-SA01-EA02"] and g["eas"][0]["team_id"] == team and g["eas_on_demand"] is False
+    assert [e["code"] for e in client.get(f"/api/v1/me/kpi/eas?team_id={team}", headers=dist).json()] == ["WAU-SA01-EA01", "WAU-SA01-EA02"]
+    assert client.get(f"/api/v1/me/kpi/eas?team_id={geo['teams']['WAR-SA01']['id']}", headers=dist).status_code == 403
     assert len(client.get("/api/v1/me/kpi/geo", headers=me).json()["districts"]) == 2
+    v = client.get("/api/v1/public/app-version").json()
+    assert v["fieldtool"]["version_code"] >= 2 and v["fieldtool"]["download_url"].endswith("/public/app/fieldtool.apk")
+    assert client.get("/api/v1/public/app/nothing.apk").status_code == 404
 
     # sync: create, re-send (idempotent), correct; outside the district refused; validation
     first = report(wau, team)
@@ -76,6 +82,7 @@ def test_form_geo_sync_scoping_summary_export_and_rights(client, admin, geo):
     assert len(client.get("/api/v1/me/kpi/reports", headers=dist).json()) == 2
     assert len(client.get("/api/v1/me/kpi/reports", headers=me).json()) == 3
     x = client.get(f"/api/v1/me/kpi/reports/{rid}", headers=dist).json()
+    assert x["ea_codes"] == ["WAU-SA01-EA01"]
     assert x["metrics"]["coverage_pct"] == 40.0 and x["metrics"]["synced_pct"] == 100.0 and x["metrics"]["error_pct"] == 3.0 and x["metrics"]["tablets_pct"] == 90.0 and x["sa_code"] == "WAU-SA01" and x["district"] == "Western Area Urban" and x["officer"] == "me.wau"
 
     # summary: national sees all three, with the attention list; the district officer sees Western Area Urban only

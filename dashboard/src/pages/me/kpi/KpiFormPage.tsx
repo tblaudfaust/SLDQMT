@@ -3,7 +3,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import clsx from "clsx";
 import { ArrowLeft, ArrowRight, Check, Crosshair, Save, Send, WifiOff } from "lucide-react";
 import { useAuth } from "../../../auth/AuthContext";
-import type { MeKpiAnswers, MeKpiGeo, MeKpiItem, MeKpiReportIn, MeKpiSection, MeKpiSpec } from "../../../api/types";
+import { api } from "../../../api/client";
+import type { MeKpiAnswers, MeKpiGeo, MeKpiGeoEa, MeKpiItem, MeKpiReportIn, MeKpiSection, MeKpiSpec } from "../../../api/types";
 import { ErrorBox, Spinner } from "../../../components/ui";
 import { getLocal, queueReport, refreshReference, saveDraft, syncNow, useOnline, uuid } from "./kpiStore";
 
@@ -16,8 +17,12 @@ import { getLocal, queueReport, refreshReference, saveDraft, syncNow, useOnline,
 const today = () => new Date().toISOString().slice(0, 10);
 const applies = (x: { phases?: string[] }, phase: string) => !x.phases || x.phases.includes(phase);
 
+// EAs per SA, from the bundle or fetched once per SA (national scope); shared by the validation and the form
+const eaCache = new Map<number, MeKpiGeoEa[]>();
+const knownEas = (teamId: number) => eaCache.get(teamId)?.length ?? 0;
+
 export function emptyReport(): MeKpiReportIn {
-  return { client_id: uuid(), phase: "E", report_date: today(), week: null, district_id: null, chiefdom: null, section: null, team_id: null, sa_code: null, practice_team: null, respondent_name: null, respondent_role: "SUPERVISOR", eas_urban: null, eas_rural: null, enumerators: null, capi_version: null, lat: null, lng: null, answers: {} };
+  return { client_id: uuid(), phase: "E", report_date: today(), week: null, district_id: null, chiefdom: null, section: null, team_id: null, sa_code: null, ea_codes: [], practice_team: null, respondent_name: null, respondent_role: "SUPERVISOR", eas_urban: null, eas_rural: null, enumerators: null, capi_version: null, lat: null, lng: null, answers: {} };
 }
 
 function validate(d: MeKpiReportIn, spec: MeKpiSpec): string[] {
@@ -27,6 +32,7 @@ function validate(d: MeKpiReportIn, spec: MeKpiSpec): string[] {
   if (!d.district_id) e.push("Choose the district");
   if (d.lat === null || d.lng === null) e.push("Capture the GPS position (section A)");
   if ((d.phase === "L" || d.phase === "E") && !d.team_id && !d.sa_code) e.push("Choose the SA");
+  if ((d.phase === "L" || d.phase === "E") && d.team_id && (d.ea_codes ?? []).length === 0 && knownEas(d.team_id) > 0) e.push("Tick the EA(s) the visit covered");
   if ((d.phase === "MT" || d.phase === "TOT") && !d.practice_team && !d.team_id) e.push("Enter the practice team or hall");
   for (const s of spec.sections) {
     if (!applies(s, d.phase)) continue;
@@ -153,10 +159,22 @@ function SectionA({ d, set, spec, geo, gpsNote, setGpsNote }: { d: MeKpiReportIn
   const [teamQuery, setTeamQuery] = useState("");
   const shown = teamQuery ? teams.filter((t) => `${t.code} ${t.name} ${t.supervisor ?? ""} ${t.chiefdom ?? ""}`.toLowerCase().includes(teamQuery.toLowerCase())).slice(0, 30) : teams.slice(0, 30);
   const team = teams.find((t) => t.id === d.team_id) ?? null;
+  const [eas, setEas] = useState<MeKpiGeoEa[]>(() => (d.team_id ? eaCache.get(d.team_id) ?? (geo?.eas ?? []).filter((e) => e.team_id === d.team_id) : []));
+  const [eaNote, setEaNote] = useState<string | null>(null);
+  useEffect(() => {
+    if (!d.team_id) { setEas([]); return; }
+    const cached = eaCache.get(d.team_id);
+    if (cached) { setEas(cached); return; }
+    const local = (geo?.eas ?? []).filter((e) => e.team_id === d.team_id);
+    if (local.length || !geo?.eas_on_demand) { eaCache.set(d.team_id, local); setEas(local); return; }
+    setEaNote("Loading the EAs of this SA…");
+    api.get<MeKpiGeoEa[]>(`/me/kpi/eas?team_id=${d.team_id}`).then((rows) => { eaCache.set(d.team_id!, rows); setEas(rows); setEaNote(null); }).catch(() => setEaNote("No network: the EA list of this SA is not on the device yet. Connect once, or type the EA codes in the comments."));
+  }, [d.team_id, geo]);
   const pickTeam = (id: number | null) => {
     const t = teams.find((x) => x.id === id) ?? null;
-    set({ team_id: t?.id ?? null, sa_code: t?.code ?? null, chiefdom: t?.chiefdom ?? d.chiefdom, eas_urban: t ? t.eas_urban : d.eas_urban, eas_rural: t ? t.eas_rural : d.eas_rural, enumerators: t ? t.enumerators || d.enumerators : d.enumerators, respondent_name: t?.supervisor && !d.respondent_name ? t.supervisor : d.respondent_name });
+    set({ team_id: t?.id ?? null, sa_code: t?.code ?? null, ea_codes: [], chiefdom: t?.chiefdom ?? d.chiefdom, eas_urban: t ? t.eas_urban : d.eas_urban, eas_rural: t ? t.eas_rural : d.eas_rural, enumerators: t ? t.enumerators || d.enumerators : d.enumerators, respondent_name: t?.supervisor && !d.respondent_name ? t.supervisor : d.respondent_name });
   };
+  const toggleEa = (code: string) => { const cur = d.ea_codes ?? []; set({ ea_codes: cur.includes(code) ? cur.filter((c) => c !== code) : [...cur, code] }); };
   const gps = () => {
     if (!navigator.geolocation) { setGpsNote("No GPS on this device: GPS is required, use a phone with location services"); return; }
     setGpsNote("Getting position…");
@@ -185,6 +203,16 @@ function SectionA({ d, set, spec, geo, gpsNote, setGpsNote }: { d: MeKpiReportIn
           <span className="mb-1 block text-sm font-medium text-slate-700">Supervisory area (SA){field ? " *" : ""}</span>
           <input className="input py-3 text-base" placeholder={`Search ${teams.length} SAs by code, name, supervisor or chiefdom…`} value={teamQuery} onChange={(e) => setTeamQuery(e.target.value)} />
           {team && <div className="mt-2 flex items-center justify-between rounded-xl border-2 border-navy bg-sky-50 px-3 py-2 text-sm"><div><b>{team.code}</b> · {team.name}{team.supervisor ? ` · supervisor ${team.supervisor}` : ""}<div className="text-xs text-slate-500">{team.chiefdom ?? ""} · {team.eas} EAs ({team.eas_urban} urban, {team.eas_rural} rural) · {team.enumerators} enumerators{team.expected_households ? ` · ${team.expected_households} households expected` : ""}</div></div><button type="button" className="text-xs text-red-700 underline" onClick={() => pickTeam(null)}>Change</button></div>}
+          {team && (
+            <div className="mt-2">
+              <div className="mb-1 flex items-center justify-between"><span className="text-sm font-medium text-slate-700">EAs of this SA{field ? " · tick the EA(s) visited *" : " · tick the EA(s) visited"}</span>{eas.length > 1 && <button type="button" className="text-xs text-navy underline" onClick={() => set({ ea_codes: (d.ea_codes ?? []).length === eas.length ? [] : eas.map((e) => e.code) })}>{(d.ea_codes ?? []).length === eas.length ? "Clear" : "Select all"}</button>}</div>
+              {eaNote && <div className="text-xs text-slate-500">{eaNote}</div>}
+              <div className="flex flex-wrap gap-2">
+                {eas.map((e) => { const on = (d.ea_codes ?? []).includes(e.code); return <button type="button" key={e.code} onClick={() => toggleEa(e.code)} className={clsx("rounded-xl border-2 px-3 py-2 text-left text-sm", on ? "border-navy bg-navy text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50")}><span className="font-semibold">{e.code}</span>{e.name || e.locality ? <span className={clsx("block text-xs", on ? "text-sky-100" : "text-slate-500")}>{e.name ?? e.locality}{e.urban === null ? "" : e.urban ? " · urban" : " · rural"}{e.households ? ` · ${e.households} hh` : ""}</span> : null}</button>; })}
+                {eas.length === 0 && !eaNote && <span className="text-xs text-slate-400">No EA listed for this SA in the frame.</span>}
+              </div>
+            </div>
+          )}
           {!team && (
             <ul className="mt-2 max-h-56 divide-y divide-slate-100 overflow-auto rounded-xl border border-slate-200">
               {shown.map((t) => <li key={t.id}><button type="button" className="w-full px-3 py-2 text-left text-sm hover:bg-sky-50" onClick={() => pickTeam(t.id)}><b>{t.code}</b> · {t.name}<span className="block text-xs text-slate-500">{t.chiefdom ?? ""}{t.supervisor ? ` · ${t.supervisor}` : ""} · {t.eas} EAs</span></button></li>)}

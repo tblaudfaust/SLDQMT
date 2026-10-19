@@ -16,6 +16,7 @@ class ReportIn(BaseModel):
     section: str | None = Field(default=None, max_length=160)
     team_id: int | None = None
     sa_code: str | None = Field(default=None, max_length=32)
+    ea_codes: list[str] = Field(default_factory=list, max_length=60)
     practice_team: str | None = Field(default=None, max_length=120)
     respondent_name: str | None = Field(default=None, max_length=160)
     respondent_role: str | None = Field(default=None, max_length=24)
@@ -63,6 +64,7 @@ class ReportOut(BaseModel):
     team_id: int | None = None
     sa_code: str | None = None
     sa_name: str | None = None
+    ea_codes: list[str] = []
     practice_team: str | None = None
     respondent_name: str | None = None
     respondent_role: str | None = None
@@ -118,6 +120,15 @@ class GeoTeam(BaseModel):
     expected_households: int | None = None
 
 
+class GeoEa(BaseModel):
+    team_id: int
+    code: str
+    name: str | None = None
+    locality: str | None = None
+    urban: bool | None = None
+    households: int | None = None
+
+
 class GeoBundle(BaseModel):
     version: str
     generated_at: datetime
@@ -125,6 +136,8 @@ class GeoBundle(BaseModel):
     chiefdoms: list[GeoChiefdom]
     sections: list[GeoSection]
     teams: list[GeoTeam]
+    eas: list[GeoEa] = []  # the EAs of every SA when the scope is a district or a region; otherwise fetched per SA
+    eas_on_demand: bool = False
 
 
 class CountRow(BaseModel):

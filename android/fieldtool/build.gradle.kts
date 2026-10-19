@@ -16,8 +16,8 @@ android {
         applicationId = "sl.gov.statistics.mefieldtool"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
         // The site the app opens: -PfieldToolUrl=... or the FIELD_TOOL_URL environment variable.
         val url = (project.findProperty("fieldToolUrl") as String?) ?: System.getenv("FIELD_TOOL_URL") ?: "https://censusme.statistics.sl"
         buildConfigField("String", "APP_URL", "\"$url\"")

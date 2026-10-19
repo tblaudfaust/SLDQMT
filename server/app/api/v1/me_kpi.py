@@ -10,7 +10,7 @@ from app.api.deps import audit, require_perm
 from app.core import me_kpi_form
 from app.db.session import get_db
 from app.models import User
-from app.schemas.me_kpi import GeoBundle, ReportIn, ReportOut, Summary, SyncIn, SyncOut
+from app.schemas.me_kpi import GeoBundle, GeoEa, ReportIn, ReportOut, Summary, SyncIn, SyncOut
 from app.services import me_kpi_service as svc
 from app.services import report_service
 
@@ -35,6 +35,12 @@ def form_spec(_: User = Depends(view)):
 def geo(db: Session = Depends(get_db), user: User = Depends(view)):
     """The officer's districts with their chiefdoms, sections and SAs: cached on the device for offline use."""
     return svc.geo(db, user)
+
+
+@router.get("/me/kpi/eas", response_model=list[GeoEa])
+def eas(team_id: int, db: Session = Depends(get_db), user: User = Depends(view)):
+    """The EAs of one SA (for the national scope, whose bundle does not carry the EA list)."""
+    return svc.eas_for_team(db, user, team_id)
 
 
 @router.post("/me/kpi/sync", response_model=SyncOut)
