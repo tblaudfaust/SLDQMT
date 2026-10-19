@@ -31,6 +31,7 @@ class MeKpiReport(TimestampMixin, Base):
     practice_team: Mapped[str | None] = mapped_column(String(120))  # field practice: team / hall name
     respondent_name: Mapped[str | None] = mapped_column(String(160))
     respondent_role: Mapped[str | None] = mapped_column(String(24))
+    collection_mode: Mapped[str | None] = mapped_column(String(12))  # IN_PERSON | REMOTE: how the respondent was interviewed
     eas_urban: Mapped[int | None] = mapped_column(Integer)
     eas_rural: Mapped[int | None] = mapped_column(Integer)
     enumerators: Mapped[int | None] = mapped_column(Integer)

@@ -18,6 +18,8 @@ PHASES = [("MT", "Master trainers' field practice"), ("TOT", "ToT field practice
 PHASE_LABEL = dict(PHASES)
 ROLES = [("SUPERVISOR", "Field Supervisor"), ("ENUMERATOR", "Enumerator"), ("FM", "Field Monitor"), ("DQM", "DQM (Data Quality Monitor)"), ("FC", "Field Coordinator"), ("DCO", "District Census Officer"), ("TRAINER", "Trainer"), ("TRAINEE", "Trainee"), ("OTHER", "Other")]
 ROLE_LABEL = dict(ROLES)
+COLLECTION_MODES = [("IN_PERSON", "In-person"), ("REMOTE", "Remotely")]
+COLLECTION_MODE_LABEL = dict(COLLECTION_MODES)
 YES_NO = [("1", "Yes"), ("2", "No")]
 YES_NO_NA = [("1", "Yes"), ("2", "No"), ("8", "N/A")]
 RATING = [("4", "Very good"), ("3", "Good"), ("2", "Weak"), ("1", "Poor")]
@@ -65,8 +67,7 @@ SECTIONS: list[dict[str, Any]] = [
         item("k2_5", "Are community leaders supporting household participation and access for enumerators?", "yesno"),
     ]},
     {"code": "K3", "title": "KPI 3 · EA coverage", "subtitle": "From the tablet or supervisor application · in field practice, the practice assignment", "items": [
-        item("k3_1", "Households expected and completed in the SA / practice assignment", "numbers", fields=[("expected", "Households to be enumerated"), ("done", "Listed / enumerated so far")], required=LE),
-        item("k3_3", "EAs completed and assigned", "numbers", fields=[("done", "EAs completed"), ("assigned", "EAs assigned")]),
+        item("k3_1", "Households expected and completed in the EA / practice assignment", "numbers", fields=[("expected", "Households to be enumerated"), ("done", "Listed / enumerated so far")], required=LE),
         item("k3_7", "Are the enumerators working within the EA boundary on the map (nothing enumerated outside the EA)?", "yesno", detail="EA(s) and what was outside", detail_when="2"),
         item("k3_8", "Have all parts of the EA been reached (every locality, street or compound; no part left out)?", "yesno", detail="Parts not yet covered and why", detail_when="2"),
         item("k3_9", "Structures or households found that are missing from the listing or the EA map?", "yesno", detail="Number and action taken", detail_when="1"),
@@ -145,7 +146,7 @@ def public_spec() -> dict:
     return {
         "title": "M&E Field Tool · KPIs for Monitoring and Evaluation", "version": 3,
         "intro": "Completed by the M&E team member in the field with the Field Supervisor, or the trainer during field practice. One form per SA or practice team: each practice day, and weekly during listing and enumeration. Numbers come from the tablet or the supervisor application.",
-        "phases": opts(PHASES), "roles": opts(ROLES), "rating": opts(RATING), "sections": SECTIONS,
+        "phases": opts(PHASES), "roles": opts(ROLES), "collection_modes": opts(COLLECTION_MODES), "rating": opts(RATING), "sections": SECTIONS,
     }
 
 
@@ -230,7 +231,6 @@ def metrics(answers: dict) -> dict:
     g = lambda code, key: (answers.get(code) or {}).get(key)  # noqa: E731
     return {
         "coverage_pct": _pct(g("k3_1", "done"), g("k3_1", "expected")),
-        "ea_pct": _pct(g("k3_3", "done"), g("k3_3", "assigned")),
         "tablets_pct": _pct(g("k4_1", "working"), g("k4_1", "issued")),
         "synced_pct": _pct(g("k6_1", "synced"), g("k6_1", "completed")),
         "error_pct": _pct(g("k7_1", "errors"), g("k7_1", "reviewed")),

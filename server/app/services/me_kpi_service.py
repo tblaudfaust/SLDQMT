@@ -140,6 +140,7 @@ def _apply(x: R, body: ReportIn, user: User) -> list[str]:
     x.sa_code, x.practice_team = (body.sa_code or "").strip() or None, (body.practice_team or "").strip() or None
     x.ea_codes = json.dumps(sorted({c.strip() for c in body.ea_codes if c and c.strip()})[:60]) if body.ea_codes else None
     x.respondent_name, x.respondent_role = (body.respondent_name or "").strip() or None, body.respondent_role or None
+    x.collection_mode = body.collection_mode or None
     x.eas_urban, x.eas_rural, x.enumerators, x.capi_version = body.eas_urban, body.eas_rural, body.enumerators, (body.capi_version or "").strip() or None
     x.lat, x.lng, x.device = body.lat, body.lng, (body.device or "").strip() or None
     x.answers = json.dumps(clean)
@@ -230,6 +231,7 @@ def to_out(x: R, n: Names) -> ReportOut:
         id=x.id, client_id=x.client_id, phase=x.phase, phase_label=form.PHASE_LABEL.get(x.phase, x.phase), report_date=x.report_date, week=x.week, district_id=x.district_id,
         district=d[0] if d else None, region=d[1] if d else None, chiefdom=x.chiefdom, section=x.section, team_id=x.team_id, sa_code=x.sa_code or (t[0] if t else None), sa_name=t[1] if t else None, ea_codes=json.loads(x.ea_codes) if x.ea_codes else [],
         practice_team=x.practice_team, respondent_name=x.respondent_name, respondent_role=x.respondent_role, respondent_role_label=form.ROLE_LABEL.get(x.respondent_role or "", x.respondent_role),
+        collection_mode=x.collection_mode, collection_mode_label=form.COLLECTION_MODE_LABEL.get(x.collection_mode or "", x.collection_mode),
         eas_urban=x.eas_urban, eas_rural=x.eas_rural, enumerators=x.enumerators, capi_version=x.capi_version, lat=x.lat, lng=x.lng, answers=answers, metrics=form.metrics(answers),
         officer=n.users.get(x.user_id), user_id=x.user_id, submitted_at=x.submitted_at, updated_at=x.updated_at, edited_by_name=n.users.get(x.edited_by or 0),
     )
@@ -450,11 +452,11 @@ def export(db: Session, user: User, **filters) -> report_service.Report:
     g_headers = ["Group", "Reports", "SAs", "Officers", "Coverage %", "Synced %", "Error rate %", "Tablets working %", "Community informed %", "Leaders support %", "On schedule %", "Overall (1-4)", "Safety concerns", "Escalations"]
     g_rows = lambda gs: [[g.label, g.reports, g.sas, g.officers, g.coverage_pct, g.synced_pct, g.error_pct, g.tablets_pct, g.informed_pct, g.support_pct, g.on_schedule_pct, g.overall, g.safety_concerns, g.escalations] for g in gs]  # noqa: E731
     item_cols = [(code, it["text"]) for s in form.SECTIONS for it in s["items"] for code in [it["code"]]]
-    headers = ["Date", "Phase", "Week", "Region", "District", "Chiefdom", "Section", "SA code", "SA name", "EAs visited", "Practice team", "Respondent", "Role", "EAs urban", "EAs rural", "Enumerators", "CAPI version", "Officer", "Coverage %", "Synced %", "Error rate %", "Tablets %", "Overall", *[t for _, t in item_cols], *[f"{t} · detail" for c, t in item_cols if form.ITEMS[c].get("detail")], "Sent"]
+    headers = ["Date", "Phase", "Week", "Region", "District", "Chiefdom", "Section", "SA code", "SA name", "EAs visited", "Practice team", "Respondent", "Role", "Means of collection", "EAs urban", "EAs rural", "Enumerators", "CAPI version", "Officer", "Coverage %", "Synced %", "Error rate %", "Tablets %", "Overall", *[t for _, t in item_cols], *[f"{t} · detail" for c, t in item_cols if form.ITEMS[c].get("detail")], "Sent"]
     reg = []
     for x in outs:
         a = x.answers
-        reg.append([x.report_date, x.phase_label, x.week, x.region, x.district, x.chiefdom, x.section, x.sa_code, x.sa_name, ", ".join(x.ea_codes), x.practice_team, x.respondent_name, x.respondent_role_label, x.eas_urban, x.eas_rural, x.enumerators, x.capi_version, x.officer,
+        reg.append([x.report_date, x.phase_label, x.week, x.region, x.district, x.chiefdom, x.section, x.sa_code, x.sa_name, ", ".join(x.ea_codes), x.practice_team, x.respondent_name, x.respondent_role_label, x.collection_mode_label, x.eas_urban, x.eas_rural, x.enumerators, x.capi_version, x.officer,
                     x.metrics.get("coverage_pct"), x.metrics.get("synced_pct"), x.metrics.get("error_pct"), x.metrics.get("tablets_pct"), x.metrics.get("overall"),
                     *[form.label(c, a.get(c)) for c, _ in item_cols], *[a.get(c + "_detail", "") for c, _ in item_cols if form.ITEMS[c].get("detail")], x.submitted_at])
     summary_rows = [["Scope", d.scope], ["Reports", d.reports], ["SAs / teams", d.sas], ["Districts", d.districts], ["Officers", d.officers], ["Coverage %", d.coverage_pct], ["Synced %", d.synced_pct], ["Error rate %", d.error_pct],

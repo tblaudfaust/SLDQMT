@@ -20,6 +20,7 @@ class ReportIn(BaseModel):
     practice_team: str | None = Field(default=None, max_length=120)
     respondent_name: str | None = Field(default=None, max_length=160)
     respondent_role: str | None = Field(default=None, max_length=24)
+    collection_mode: str | None = Field(default=None, pattern="^(IN_PERSON|REMOTE)$")
     eas_urban: int | None = Field(default=None, ge=0, le=1000)
     eas_rural: int | None = Field(default=None, ge=0, le=1000)
     enumerators: int | None = Field(default=None, ge=0, le=1000)
@@ -69,6 +70,8 @@ class ReportOut(BaseModel):
     respondent_name: str | None = None
     respondent_role: str | None = None
     respondent_role_label: str | None = None
+    collection_mode: str | None = None
+    collection_mode_label: str | None = None
     eas_urban: int | None = None
     eas_rural: int | None = None
     enumerators: int | None = None

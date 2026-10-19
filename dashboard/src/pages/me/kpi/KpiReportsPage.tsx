@@ -40,7 +40,7 @@ export default function KpiReportsPage() {
   const current = data.find((x) => x.id === open) ?? null;
   const edit = (x: MeKpiReport) => {
     // bring the server copy onto this device as a draft with the same client_id, so sending it updates the report
-    saveDraft({ client_id: x.client_id, phase: x.phase as MeKpiReportIn["phase"], report_date: x.report_date, week: x.week, district_id: x.district_id, chiefdom: x.chiefdom, section: x.section, team_id: x.team_id, sa_code: x.sa_code, ea_codes: x.ea_codes ?? [], practice_team: x.practice_team, respondent_name: x.respondent_name, respondent_role: x.respondent_role, eas_urban: x.eas_urban, eas_rural: x.eas_rural, enumerators: x.enumerators, capi_version: x.capi_version, lat: x.lat, lng: x.lng, answers: x.answers }, store.geo);
+    saveDraft({ client_id: x.client_id, phase: x.phase as MeKpiReportIn["phase"], report_date: x.report_date, week: x.week, district_id: x.district_id, chiefdom: x.chiefdom, section: x.section, team_id: x.team_id, sa_code: x.sa_code, ea_codes: x.ea_codes ?? [], practice_team: x.practice_team, respondent_name: x.respondent_name, respondent_role: x.respondent_role, collection_mode: x.collection_mode as MeKpiReportIn["collection_mode"], eas_urban: x.eas_urban, eas_rural: x.eas_rural, enumerators: x.enumerators, capi_version: x.capi_version, lat: x.lat, lng: x.lng, answers: x.answers }, store.geo);
     nav(`/me/kpi/report/${x.client_id}`);
   };
 
@@ -91,7 +91,7 @@ export default function KpiReportsPage() {
             <div className="sticky top-0 z-10 border-b border-slate-200 bg-white px-5 py-3">
               <div className="flex items-start justify-between gap-3">
                 <div><div className="text-xs uppercase tracking-wide text-slate-400">{current.phase_label}{current.week ? ` · week ${current.week}` : ""}</div><h2 className="text-lg font-semibold">{current.district ?? "No district"}{current.sa_code ? ` · ${current.sa_code}` : current.practice_team ? ` · ${current.practice_team}` : ""} · {fmtDate(current.report_date)}</h2>
-                  <div className="text-xs text-slate-500">{current.ea_codes.length ? `EAs ${current.ea_codes.join(", ")} · ` : ""}{current.chiefdom ? `${current.chiefdom} · ` : ""}{current.section ? `${current.section} · ` : ""}{current.respondent_name ?? ""}{current.respondent_role_label ? ` (${current.respondent_role_label})` : ""} · officer {current.officer ?? "—"} · sent {new Date(current.submitted_at).toLocaleString("en-GB")}{current.edited_by_name ? ` · edited by ${current.edited_by_name}` : ""}</div></div>
+                  <div className="text-xs text-slate-500">{current.ea_codes.length ? `EAs ${current.ea_codes.join(", ")} · ` : ""}{current.chiefdom ? `${current.chiefdom} · ` : ""}{current.section ? `${current.section} · ` : ""}{current.respondent_name ?? ""}{current.respondent_role_label ? ` (${current.respondent_role_label})` : ""}{current.collection_mode_label ? ` · ${current.collection_mode_label.toLowerCase()}` : ""} · officer {current.officer ?? "—"} · sent {new Date(current.submitted_at).toLocaleString("en-GB")}{current.edited_by_name ? ` · edited by ${current.edited_by_name}` : ""}</div></div>
                 <button className="text-slate-500 hover:text-slate-800" onClick={() => setOpen(null)}><X size={20} /></button>
               </div>
               {(can("me_kpi.manage") || current.user_id === user?.id) && (

@@ -17,11 +17,11 @@ def user(client, admin, username, role, district_ids=None):
 def report(district_id, team_id=None, **over):
     body = {
         "client_id": str(uuid.uuid4()), "phase": "E", "report_date": date.today().isoformat(), "week": 2, "district_id": district_id, "chiefdom": "Central", "section": "Tower Hill", "team_id": team_id,
-        "respondent_name": "Mohamed Kamara", "respondent_role": "SUPERVISOR", "eas_urban": 8, "eas_rural": 2, "enumerators": 10, "capi_version": "2.3.1", "lat": 7.9644, "lng": -11.7383, "ea_codes": ["WAU-SA01-EA01"],
+        "respondent_name": "Mohamed Kamara", "respondent_role": "SUPERVISOR", "collection_mode": "IN_PERSON", "eas_urban": 8, "eas_rural": 2, "enumerators": 10, "capi_version": "2.3.1", "lat": 7.9644, "lng": -11.7383, "ea_codes": ["WAU-SA01-EA01"],
         "answers": {
             "k1_1": "1", "k1_2": ["radio", "leaders"], "k1_3": "2", "k1_3_detail": "Nomadic groups", "k1_4": "Tax rumour", "k1_5": "1", "k1_5_detail": "Chief",
             "k2_1": "2", "k2_2": "1", "k2_3": "1", "k2_4": "2", "k2_5": "1",
-            "k3_1": {"expected": 1200, "done": 480}, "k3_3": {"done": 3, "assigned": 10}, "k3_4": "1", "k3_4_detail": "2 refusals, chief called", "k3_5": "2", "k3_6": "2",
+            "k3_1": {"expected": 1200, "done": 480}, "k3_4": "1", "k3_4_detail": "2 refusals, chief called", "k3_5": "2", "k3_6": "2",
             "k4_1": {"working": 9, "issued": 10}, "k4_2": "2", "k4_3": "1", "k4_4": "1",
             "k5_1": {"urban": 60, "rural": 15}, "k5_2": "1", "k5_3": "Rain in the afternoon",
             "k6_1": {"completed": 480, "synced": 450}, "k6_2": ["connectivity"], "k6_3": "1",
@@ -127,7 +127,10 @@ def test_toe_phase_new_roles_and_practice_coverage(client, admin, geo):
     r = client.post("/api/v1/me/kpi/sync", json={"reports": [body]}, headers=me).json()
     assert r["created"] == 1, r
     rep = client.get(f"/api/v1/me/kpi/reports/{r['results'][0]['id']}", headers=me).json()
-    assert rep["phase_label"].startswith("ToE") and rep["respondent_role_label"] == "Enumerator"
+    assert rep["phase_label"].startswith("ToE") and rep["respondent_role_label"] == "Enumerator" and rep["collection_mode"] is None
+    assert [i["code"] for i in k3["items"]][:2] == ["k3_1", "k3_7"] and k3["items"][0]["text"].startswith("Households expected and completed in the EA")
+    assert {m["value"] for m in spec["collection_modes"]} == {"IN_PERSON", "REMOTE"}
+    assert client.post("/api/v1/me/kpi/sync", json={"reports": [{**body, "client_id": str(uuid.uuid4()), "collection_mode": "PHONE"}]}, headers=me).status_code == 422
     assert rep["answers"]["k3_7_detail"] == "Two houses across the stream" and rep["metrics"]["coverage_pct"] == 75.0 and rep["metrics"]["reinterview_pct"] == 100.0
     assert client.post("/api/v1/me/kpi/sync", json={"reports": [{**body, "client_id": str(uuid.uuid4()), "phase": "XX"}]}, headers=me).status_code == 422
 
