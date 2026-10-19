@@ -179,7 +179,7 @@ function SectionA({ d, set, spec, geo, gpsNote, setGpsNote }: { d: MeKpiReportIn
   const gps = () => {
     if (!navigator.geolocation) { setGpsNote("No GPS on this device: GPS is required, use a phone with location services"); return; }
     setGpsNote("Getting position…");
-    navigator.geolocation.getCurrentPosition((p) => { set({ lat: Math.round(p.coords.latitude * 1e5) / 1e5, lng: Math.round(p.coords.longitude * 1e5) / 1e5 }); setGpsNote(`Position captured (±${Math.round(p.coords.accuracy)} m)`); }, () => setGpsNote("Position not available; you can continue without it"), { enableHighAccuracy: true, timeout: 15000 });
+    navigator.geolocation.getCurrentPosition((p) => { set({ lat: Math.round(p.coords.latitude * 1e5) / 1e5, lng: Math.round(p.coords.longitude * 1e5) / 1e5 }); setGpsNote(`Position captured (±${Math.round(p.coords.accuracy)} m)`); }, () => setGpsNote("Position not available: move outdoors, check that location is switched on and tap Capture GPS again (GPS is required)"), { enableHighAccuracy: true, timeout: 15000 });
   };
   return (
     <div className="space-y-4">
