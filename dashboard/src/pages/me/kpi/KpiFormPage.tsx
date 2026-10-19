@@ -31,7 +31,8 @@ function validate(d: MeKpiReportIn, spec: MeKpiSpec): string[] {
   if (!d.report_date) e.push("Enter the date");
   else if (d.report_date > today()) e.push("The date cannot be in the future");
   if (!d.district_id) e.push("Choose the district");
-  if (d.lat === null || d.lng === null) e.push("Capture the GPS position (section A)");
+  if (!d.collection_mode) e.push("Choose the respondent means of collection (section A)");
+  if (d.collection_mode !== "REMOTE" && (d.lat === null || d.lng === null)) e.push("Capture the GPS position (section A): required for an in-person visit");
   if ((d.phase === "L" || d.phase === "E") && !d.team_id && !d.sa_code) e.push("Choose the SA");
   if ((d.phase === "L" || d.phase === "E") && d.team_id && (d.ea_codes ?? []).length === 0 && knownEas(d.team_id) > 0) e.push("Tap the EA the visit covered");
   if (!(d.phase === "L" || d.phase === "E") && !d.practice_team && !d.team_id) e.push("Enter the practice team or hall");
@@ -151,7 +152,7 @@ function L({ label, children, hint }: { label: string; children: React.ReactNode
 function SectionA({ d, set, spec, geo, gpsNote, setGpsNote }: { d: MeKpiReportIn; set: (p: Partial<MeKpiReportIn>) => void; spec: MeKpiSpec; geo: MeKpiGeo | null; gpsNote: string | null; setGpsNote: (s: string | null) => void }) {
   const field = d.phase === "L" || d.phase === "E";
   const autoGps = useRef(false);
-  useEffect(() => { if (!autoGps.current && d.lat === null) { autoGps.current = true; gps(); } }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (!autoGps.current && d.lat === null && d.collection_mode !== "REMOTE") { autoGps.current = true; gps(); } }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const districts = geo?.districts ?? [];
   const chiefdoms = (geo?.chiefdoms ?? []).filter((c) => c.district_id === d.district_id);
   const chiefdomId = chiefdoms.find((c) => c.name === d.chiefdom)?.id;
@@ -243,7 +244,7 @@ function SectionA({ d, set, spec, geo, gpsNote, setGpsNote }: { d: MeKpiReportIn
         </div>
       </div>
       <div>
-        <span className="mb-1 block text-sm font-medium text-slate-700">Respondent means of collection</span>
+        <span className="mb-1 block text-sm font-medium text-slate-700">Respondent means of collection *</span>
         <div className="grid grid-cols-2 gap-2 sm:max-w-sm">{(spec.collection_modes ?? [{ value: "IN_PERSON", label: "In-person" }, { value: "REMOTE", label: "Remotely" }]).map((m) => <button type="button" key={m.value} onClick={() => set({ collection_mode: d.collection_mode === m.value ? null : (m.value as MeKpiReportIn["collection_mode"]) })} className={clsx("rounded-xl border-2 px-3 py-2.5 text-sm font-semibold", d.collection_mode === m.value ? "border-navy bg-navy text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50")}>{m.label}</button>)}</div>
       </div>
       <div className="grid grid-cols-3 gap-3">
@@ -254,7 +255,8 @@ function SectionA({ d, set, spec, geo, gpsNote, setGpsNote }: { d: MeKpiReportIn
       <div className="grid gap-3 sm:grid-cols-2">
         <L label="CAPI version used" hint="As shown on the tablet"><input className="input py-3 text-base" value={d.capi_version ?? ""} onChange={(e) => set({ capi_version: e.target.value || null })} placeholder="e.g. 2.3.1" maxLength={40} /></L>
         <div>
-          <span className="mb-1 block text-sm font-medium text-slate-700">GPS position *</span>
+          <span className="mb-1 block text-sm font-medium text-slate-700">GPS position{d.collection_mode === "REMOTE" ? "" : " *"}</span>
+          {d.collection_mode === "REMOTE" && <div className="mb-1 text-xs text-slate-500">Not needed for a remote interview; capture it only if you are at the place.</div>}
           <button type="button" className={clsx("w-full py-3", d.lat ? "btn-outline" : "btn-primary")} onClick={gps}><Crosshair size={16} /> {d.lat ? `${d.lat}, ${d.lng}` : "Capture GPS"}</button>
           {gpsNote && <span className="mt-1 block text-xs text-slate-400">{gpsNote}</span>}
         </div>

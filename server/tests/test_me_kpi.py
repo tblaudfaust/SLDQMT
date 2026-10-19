@@ -70,6 +70,7 @@ def test_form_geo_sync_scoping_summary_export_and_rights(client, admin, geo):
     assert client.post("/api/v1/me/kpi/sync", json={"reports": [corrected]}, headers=dist).json()["updated"] == 1
     out = client.post("/api/v1/me/kpi/sync", json={"reports": [report(war), report(wau, team, answers={"k3_1": {"expected": 10, "done": 5}, "b1": "9"}), report(wau, team, report_date=(date.today() + timedelta(days=1)).isoformat())]}, headers=dist).json()
     assert out["errors"] == 3 and "outside your area" in out["results"][0]["message"] and "not one of the options" in out["results"][1]["message"] and "future" in out["results"][2]["message"]
+    assert client.post("/api/v1/me/kpi/sync", json={"reports": [report(wau, team, lat=None, lng=None, collection_mode="REMOTE")]}, headers=dist).json()["created"] == 1  # remote: no GPS needed
     assert "GPS position is required" in client.post("/api/v1/me/kpi/sync", json={"reports": [report(wau, team, lat=None, lng=None)]}, headers=dist).json()["results"][0]["message"]
     # a listing / enumeration report needs an SA; field practice does not
     assert client.post("/api/v1/me/kpi/sync", json={"reports": [report(wau, None)]}, headers=dist).json()["results"][0]["status"] == "error"
