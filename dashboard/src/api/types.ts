@@ -762,7 +762,7 @@ export interface MeFacSpec {
 
 // ---- M&E Field Tool (KPIs), online and offline ----
 export type MeKpiOpt = { value: string; label: string };
-export interface MeKpiItem { code: string; text: string; type: "yesno" | "yesno_na" | "choice" | "multi" | "number" | "numbers" | "text"; required: boolean; options?: MeKpiOpt[]; fields?: { key: string; label: string }[]; phases?: string[]; detail?: string; detail_when?: string; help?: string }
+export interface MeKpiItem { code: string; text: string; type: "yesno" | "yesno_na" | "choice" | "multi" | "number" | "numbers" | "text"; required: boolean | string[]; options?: MeKpiOpt[]; fields?: { key: string; label: string }[]; phases?: string[]; detail?: string; detail_when?: string; help?: string }
 export interface MeKpiSection { code: string; title: string; subtitle?: string; phases?: string[]; items: MeKpiItem[] }
 export interface MeKpiSpec { title: string; version: number; intro: string; phases: MeKpiOpt[]; roles: MeKpiOpt[]; rating: MeKpiOpt[]; sections: MeKpiSection[] }
 export interface MeKpiGeo {
@@ -777,7 +777,7 @@ export interface MeKpiGeo {
 export interface MeKpiGeoEa { team_id: number; code: string; name: string | null; locality: string | null; urban: boolean | null; households: number | null }
 export type MeKpiAnswers = Record<string, string | number | string[] | Record<string, number> | undefined>;
 export interface MeKpiReportIn {
-  client_id: string; phase: "MT" | "TOT" | "L" | "E"; report_date: string; week: number | null; district_id: number | null; chiefdom: string | null; section: string | null; team_id: number | null; sa_code: string | null; ea_codes: string[];
+  client_id: string; phase: "MT" | "TOT" | "TOE" | "L" | "E"; report_date: string; week: number | null; district_id: number | null; chiefdom: string | null; section: string | null; team_id: number | null; sa_code: string | null; ea_codes: string[];
   practice_team: string | null; respondent_name: string | null; respondent_role: string | null; eas_urban: number | null; eas_rural: number | null; enumerators: number | null; capi_version: string | null;
   lat: number | null; lng: number | null; answers: MeKpiAnswers; submitted_at?: string | null; device?: string | null;
 }

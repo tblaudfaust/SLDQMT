@@ -19,7 +19,7 @@ class MeKpiReport(TimestampMixin, Base):
     client_id: Mapped[str] = mapped_column(String(48), unique=True, nullable=False, index=True)  # set by the device, makes offline sync idempotent
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False, index=True)  # the M&E officer
     # Section A
-    phase: Mapped[str] = mapped_column(String(8), nullable=False)  # MT | TOT | L | E
+    phase: Mapped[str] = mapped_column(String(8), nullable=False)  # MT | TOT | TOE | L | E
     report_date: Mapped[date] = mapped_column(Date, nullable=False)
     week: Mapped[int | None] = mapped_column(Integer)
     district_id: Mapped[int | None] = mapped_column(ForeignKey("district.id"), index=True)

@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 class ReportIn(BaseModel):
     client_id: str = Field(min_length=8, max_length=48)
-    phase: str = Field(pattern="^(MT|TOT|L|E)$")
+    phase: str = Field(pattern="^(MT|TOT|TOE|L|E)$")
     report_date: date
     week: int | None = Field(default=None, ge=1, le=60)
     district_id: int | None = None

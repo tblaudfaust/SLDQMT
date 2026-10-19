@@ -4,12 +4,12 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import clsx from "clsx";
 import { Pencil, Trash2, X } from "lucide-react";
 import { ApiError, api, fmtDate, qs } from "../../../api/client";
-import type { MeKpiItem, MeKpiReport, MeKpiSpec, MeKpiSummary } from "../../../api/types";
+import type { MeKpiItem, MeKpiReport, MeKpiReportIn, MeKpiSpec, MeKpiSummary } from "../../../api/types";
 import { useAuth } from "../../../auth/AuthContext";
 import { Card, Empty, ErrorBox, Spinner } from "../../../components/ui";
 import { saveDraft, useKpiStore } from "./kpiStore";
 
-const PHASES = [["MT", "Master trainers' practice"], ["TOT", "ToT practice"], ["L", "Listing"], ["E", "Enumeration"]];
+const PHASES = [["MT", "Master trainers' practice"], ["TOT", "ToT practice"], ["TOE", "ToE practice"], ["L", "Listing"], ["E", "Enumeration"]];
 const pct = (v: number | null | undefined) => (v === null || v === undefined ? "—" : `${v}%`);
 
 function answerText(it: MeKpiItem, v: unknown): string {
@@ -40,7 +40,7 @@ export default function KpiReportsPage() {
   const current = data.find((x) => x.id === open) ?? null;
   const edit = (x: MeKpiReport) => {
     // bring the server copy onto this device as a draft with the same client_id, so sending it updates the report
-    saveDraft({ client_id: x.client_id, phase: x.phase as "MT" | "TOT" | "L" | "E", report_date: x.report_date, week: x.week, district_id: x.district_id, chiefdom: x.chiefdom, section: x.section, team_id: x.team_id, sa_code: x.sa_code, ea_codes: x.ea_codes ?? [], practice_team: x.practice_team, respondent_name: x.respondent_name, respondent_role: x.respondent_role, eas_urban: x.eas_urban, eas_rural: x.eas_rural, enumerators: x.enumerators, capi_version: x.capi_version, lat: x.lat, lng: x.lng, answers: x.answers }, store.geo);
+    saveDraft({ client_id: x.client_id, phase: x.phase as MeKpiReportIn["phase"], report_date: x.report_date, week: x.week, district_id: x.district_id, chiefdom: x.chiefdom, section: x.section, team_id: x.team_id, sa_code: x.sa_code, ea_codes: x.ea_codes ?? [], practice_team: x.practice_team, respondent_name: x.respondent_name, respondent_role: x.respondent_role, eas_urban: x.eas_urban, eas_rural: x.eas_rural, enumerators: x.enumerators, capi_version: x.capi_version, lat: x.lat, lng: x.lng, answers: x.answers }, store.geo);
     nav(`/me/kpi/report/${x.client_id}`);
   };
 

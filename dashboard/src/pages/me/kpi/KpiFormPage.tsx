@@ -16,6 +16,7 @@ import { getLocal, queueReport, refreshReference, saveDraft, syncNow, useOnline,
 
 const today = () => new Date().toISOString().slice(0, 10);
 const applies = (x: { phases?: string[] }, phase: string) => !x.phases || x.phases.includes(phase);
+const isRequired = (it: MeKpiItem, phase: string) => it.required === true || (Array.isArray(it.required) && it.required.includes(phase));
 
 // EAs per SA, from the bundle or fetched once per SA (national scope); shared by the validation and the form
 const eaCache = new Map<number, MeKpiGeoEa[]>();
@@ -33,11 +34,11 @@ function validate(d: MeKpiReportIn, spec: MeKpiSpec): string[] {
   if (d.lat === null || d.lng === null) e.push("Capture the GPS position (section A)");
   if ((d.phase === "L" || d.phase === "E") && !d.team_id && !d.sa_code) e.push("Choose the SA");
   if ((d.phase === "L" || d.phase === "E") && d.team_id && (d.ea_codes ?? []).length === 0 && knownEas(d.team_id) > 0) e.push("Tick the EA(s) the visit covered");
-  if ((d.phase === "MT" || d.phase === "TOT") && !d.practice_team && !d.team_id) e.push("Enter the practice team or hall");
+  if (!(d.phase === "L" || d.phase === "E") && !d.practice_team && !d.team_id) e.push("Enter the practice team or hall");
   for (const s of spec.sections) {
     if (!applies(s, d.phase)) continue;
     for (const it of s.items) {
-      if (!applies(it, d.phase) || !it.required) continue;
+      if (!applies(it, d.phase) || !isRequired(it, d.phase)) continue;
       const v = d.answers[it.code];
       const missing = v === undefined || v === "" || (typeof v === "object" && !Array.isArray(v) && Object.keys(v).length === 0);
       if (missing) e.push(`${s.title.replace(/^.*· /, "")}: ${it.text}`);
@@ -121,7 +122,7 @@ export default function KpiFormPage() {
         {current.subtitle && <p className="mb-4 text-sm text-slate-500">{current.subtitle}</p>}
         {step === 0 ? <SectionA d={d} set={set} spec={spec} geo={geo} gpsNote={gpsNote} setGpsNote={setGpsNote} /> : (
           <div className="space-y-5">
-            {current.items.filter((it) => applies(it, d.phase)).map((it, i) => <ItemField key={it.code} item={it} index={i + 1} answers={d.answers} setA={setA} />)}
+            {current.items.filter((it) => applies(it, d.phase)).map((it, i) => <ItemField key={it.code} item={it} index={i + 1} answers={d.answers} setA={setA} required={isRequired(it, d.phase)} />)}
           </div>
         )}
         {touched && errors.length > 0 && (
@@ -257,14 +258,14 @@ function SectionA({ d, set, spec, geo, gpsNote, setGpsNote }: { d: MeKpiReportIn
 
 // ---- one item ------------------------------------------------------------------------------------
 
-function ItemField({ item, index, answers, setA }: { item: MeKpiItem; index: number; answers: MeKpiAnswers; setA: (code: string, v: MeKpiAnswers[string]) => void }) {
+function ItemField({ item, index, answers, setA, required }: { item: MeKpiItem; index: number; answers: MeKpiAnswers; setA: (code: string, v: MeKpiAnswers[string]) => void; required: boolean }) {
   const v = answers[item.code];
   const detailKey = item.code + "_detail";
   const showDetail = !!item.detail && (!item.detail_when || (Array.isArray(v) ? v.includes(item.detail_when) : v === item.detail_when));
   const chip = (on: boolean, extra?: string) => clsx("rounded-xl border-2 px-3 py-2.5 text-sm font-semibold transition", on ? "border-navy bg-navy text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50", extra);
   return (
-    <div className={clsx("rounded-xl border px-3 py-3", item.required && (v === undefined || v === "") ? "border-amber-200 bg-amber-50/40" : "border-slate-200")}>
-      <div className="font-medium text-slate-800">{index}. {item.text}{item.required ? " *" : ""}</div>
+    <div className={clsx("rounded-xl border px-3 py-3", required && (v === undefined || v === "") ? "border-amber-200 bg-amber-50/40" : "border-slate-200")}>
+      <div className="font-medium text-slate-800">{index}. {item.text}{required ? " *" : ""}</div>
       {item.help && <div className="text-xs text-slate-500">{item.help}</div>}
       <div className="mt-2">
         {(item.type === "yesno" || item.type === "yesno_na" || item.type === "choice") && (

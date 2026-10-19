@@ -111,6 +111,27 @@ def test_form_geo_sync_scoping_summary_export_and_rights(client, admin, geo):
     assert client.get("/api/v1/me/kpi/summary", headers=me).json()["reports"] == 2
 
 
+def test_toe_phase_new_roles_and_practice_coverage(client, admin, geo):
+    """ToE field practice is a phase; enumerators, DQMs and field monitors can be the respondent; KPI 3 and KPI 8 apply in field practice too."""
+    wau = geo["districts"]["WAU"]["id"]
+    me = user(client, admin, "me.spec", "ME")
+    spec = client.get("/api/v1/me/kpi/form", headers=me).json()
+    assert [p["value"] for p in spec["phases"]] == ["MT", "TOT", "TOE", "L", "E"]
+    assert {r["value"] for r in spec["roles"]} >= {"ENUMERATOR", "DQM", "FM", "SUPERVISOR"}
+    k3 = next(s for s in spec["sections"] if s["code"] == "K3")
+    k8 = next(s for s in spec["sections"] if s["code"] == "K8")
+    assert "phases" not in k3 and "phases" not in k8
+    assert {i["code"] for i in k3["items"]} >= {"k3_7", "k3_8", "k3_9"} and {i["code"] for i in k8["items"]} >= {"k8_0", "k8_4"}
+    body = {"client_id": str(uuid.uuid4()), "phase": "TOE", "report_date": date.today().isoformat(), "district_id": wau, "practice_team": "Hall 1 team C", "respondent_name": "Fatmata Sesay", "respondent_role": "ENUMERATOR", "lat": 8.48, "lng": -13.23,
+            "answers": {"k3_1": {"expected": 12, "done": 9}, "k3_7": "2", "k3_7_detail": "Two houses across the stream", "k8_0": "1", "k8_1": {"selected": 3, "done": 3}, "k8_4": "1", "b1": "3"}}
+    r = client.post("/api/v1/me/kpi/sync", json={"reports": [body]}, headers=me).json()
+    assert r["created"] == 1, r
+    rep = client.get(f"/api/v1/me/kpi/reports/{r['results'][0]['id']}", headers=me).json()
+    assert rep["phase_label"].startswith("ToE") and rep["respondent_role_label"] == "Enumerator"
+    assert rep["answers"]["k3_7_detail"] == "Two houses across the stream" and rep["metrics"]["coverage_pct"] == 75.0 and rep["metrics"]["reinterview_pct"] == 100.0
+    assert client.post("/api/v1/me/kpi/sync", json={"reports": [{**body, "client_id": str(uuid.uuid4()), "phase": "XX"}]}, headers=me).status_code == 422
+
+
 def test_me_lead_creates_field_accounts(client, admin, geo):
     """The national M&E account creates the District and Regional M&E Officers who use the app, without the admin."""
     wau = geo["districts"]["WAU"]["id"]

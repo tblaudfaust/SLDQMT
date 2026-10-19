@@ -433,7 +433,7 @@ def summary(db: Session, user: User, **filters) -> Summary:
         trust_pct=_share(ans, lambda a: (a.get("k2_2") == "1") if a.get("k2_2") else None), support_pct=_share(ans, lambda a: (a.get("k2_5") == "1") if a.get("k2_5") else None),
         channel_pct=_share(ans, lambda a: (a.get("k1_5") == "1") if a.get("k1_5") else None), on_schedule_pct=_share(ans, lambda a: (a.get("k5_2") == "1") if a.get("k5_2") else None),
         overall=_mean([x.overall for x in rows], 2), safety_concerns=sum(1 for x in rows if x.safety_concern), escalations=sum(1 for x in rows if x.escalation), follow_ups=sum(1 for a in ans if a.get("b3") == "1"),
-        by_phase=sorted(_group(rows, lambda x: x.phase, lambda x: form.PHASE_LABEL.get(x.phase, x.phase), n), key=lambda g: ["MT", "TOT", "L", "E"].index(g.key) if g.key in ("MT", "TOT", "L", "E") else 9),
+        by_phase=sorted(_group(rows, lambda x: x.phase, lambda x: form.PHASE_LABEL.get(x.phase, x.phase), n), key=lambda g: [p for p, _ in form.PHASES].index(g.key) if g.key in form.PHASE_LABEL else 9),
         by_district=sorted(_group(rows, lambda x: str(x.district_id or 0), district_of, n), key=lambda g: g.label),
         by_week=sorted(_group([x for x in rows if x.week], lambda x: str(x.week), lambda x: f"Week {x.week}", n), key=lambda g: int(g.key)),
         by_officer=sorted(_group(rows, lambda x: str(x.user_id), lambda x: n.users.get(x.user_id, "?"), n), key=lambda g: g.label),

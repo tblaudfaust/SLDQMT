@@ -10,7 +10,7 @@ import { useAuth } from "../../../auth/AuthContext";
 import { Card, Empty, ErrorBox, KpiTile, Spinner } from "../../../components/ui";
 
 const NAVY = "#1F4E79", GREEN = "#15803d", AMBER = "#d97706", RED = "#b91c1c", SKY = "#38bdf8";
-const PHASES = [["MT", "Master trainers' practice"], ["TOT", "ToT practice"], ["L", "Listing"], ["E", "Enumeration"]];
+const PHASES = [["MT", "Master trainers' practice"], ["TOT", "ToT practice"], ["TOE", "ToE practice"], ["L", "Listing"], ["E", "Enumeration"]];
 const pct = (v: number | null | undefined) => (v === null || v === undefined ? "—" : `${v}%`);
 const tone = (v: number | null | undefined, good: number, warn: number, invert = false): "navy" | "green" | "amber" | "red" => {
   if (v === null || v === undefined) return "navy";
