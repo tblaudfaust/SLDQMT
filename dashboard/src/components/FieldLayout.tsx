@@ -69,7 +69,8 @@ export default function FieldLayout() {
       <main className="flex-1 px-3 py-3 sm:px-4">
         <Outlet />
       </main>
-      {user?.must_change_password && <ChangePasswordDialog forced onClose={() => void refreshUser()} />}
+      {user?.must_change_password && online && <ChangePasswordDialog forced onClose={() => void refreshUser()} />}
+      {user?.must_change_password && !online && <div className="border-t border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900">You still use the temporary password. You will be asked to choose your own password when the network is back; you can work offline meanwhile.</div>}
     </div>
   );
 }

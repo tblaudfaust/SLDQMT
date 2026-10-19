@@ -27,6 +27,8 @@ export default function KpiHomePage() {
   const [notice, setNotice] = useState<string | null>((loc.state as { notice?: string } | null)?.notice ?? null);
   const [error, setError] = useState<unknown>(null);
   const pending = pendingCount();
+  // the "will be sent when back online" notice is stale once the queue has gone through
+  useEffect(() => { if (pending === 0 && notice?.includes("back online")) setNotice(null); }, [pending, notice]);
 
   useEffect(() => {
     if (!user) return;

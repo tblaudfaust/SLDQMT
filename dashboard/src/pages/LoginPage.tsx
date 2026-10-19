@@ -4,6 +4,8 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { ErrorBox } from "../components/ui";
 import SiteFooter from "../components/SiteFooter";
+import { useOnline } from "./me/kpi/kpiStore";
+import { hasOfflineSession } from "../auth/offlineAuth";
 
 export default function LoginPage() {
   const { user, login } = useAuth();
@@ -11,6 +13,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
+  const online = useOnline();
   if (user) return <Navigate to="/" replace />;
 
   const submit = async (e: FormEvent) => {
@@ -40,6 +43,7 @@ export default function LoginPage() {
         </div>
         <input className="input" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} autoFocus />
         <input className="input" type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        {!online && <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">{username && hasOfflineSession(username) ? "No network: sign in with the password you used last time on this device." : "No network: you can sign in offline with an account that has already signed in on this device."}</p>}
         <ErrorBox error={error} />
         <button className="btn-primary w-full justify-center" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
         {!isMeSite && !isAppMode && <p className="pt-2 text-center text-xs text-slate-500">The user manual and the tablet app are available after signing in.</p>}

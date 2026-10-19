@@ -6,7 +6,7 @@ import { useAuth } from "../../../auth/AuthContext";
 import { api } from "../../../api/client";
 import type { MeKpiAnswers, MeKpiGeo, MeKpiGeoEa, MeKpiItem, MeKpiReportIn, MeKpiSection, MeKpiSpec } from "../../../api/types";
 import { ErrorBox, Spinner } from "../../../components/ui";
-import { getLocal, queueReport, refreshReference, saveDraft, syncNow, useOnline, uuid } from "./kpiStore";
+import { cachedEas, cacheEas, getLocal, queueReport, refreshReference, saveDraft, syncNow, useOnline, uuid } from "./kpiStore";
 
 /* ------------------------------------------------------------------------------------------------
  * The field form: one screen per section, big tap targets, saved on the device at every change.
@@ -20,7 +20,7 @@ const isRequired = (it: MeKpiItem, phase: string) => it.required === true || (Ar
 
 // EAs per SA, from the bundle or fetched once per SA (national scope); shared by the validation and the form
 const eaCache = new Map<number, MeKpiGeoEa[]>();
-const knownEas = (teamId: number) => eaCache.get(teamId)?.length ?? 0;
+const knownEas = (teamId: number) => (eaCache.get(teamId) ?? cachedEas(teamId))?.length ?? 0;
 
 export function emptyReport(): MeKpiReportIn {
   return { client_id: uuid(), phase: "E", report_date: today(), week: null, district_id: null, chiefdom: null, section: null, team_id: null, sa_code: null, ea_codes: [], practice_team: null, respondent_name: null, respondent_role: "SUPERVISOR", eas_urban: null, eas_rural: null, enumerators: null, capi_version: null, lat: null, lng: null, answers: {} };
@@ -160,16 +160,16 @@ function SectionA({ d, set, spec, geo, gpsNote, setGpsNote }: { d: MeKpiReportIn
   const [teamQuery, setTeamQuery] = useState("");
   const shown = teamQuery ? teams.filter((t) => `${t.code} ${t.name} ${t.supervisor ?? ""} ${t.chiefdom ?? ""}`.toLowerCase().includes(teamQuery.toLowerCase())).slice(0, 30) : teams.slice(0, 30);
   const team = teams.find((t) => t.id === d.team_id) ?? null;
-  const [eas, setEas] = useState<MeKpiGeoEa[]>(() => (d.team_id ? eaCache.get(d.team_id) ?? (geo?.eas ?? []).filter((e) => e.team_id === d.team_id) : []));
+  const [eas, setEas] = useState<MeKpiGeoEa[]>(() => (d.team_id ? eaCache.get(d.team_id) ?? cachedEas(d.team_id) ?? (geo?.eas ?? []).filter((e) => e.team_id === d.team_id) : []));
   const [eaNote, setEaNote] = useState<string | null>(null);
   useEffect(() => {
     if (!d.team_id) { setEas([]); return; }
-    const cached = eaCache.get(d.team_id);
-    if (cached) { setEas(cached); return; }
+    const cached = eaCache.get(d.team_id) ?? cachedEas(d.team_id);
+    if (cached) { eaCache.set(d.team_id, cached); setEas(cached); return; }
     const local = (geo?.eas ?? []).filter((e) => e.team_id === d.team_id);
     if (local.length || !geo?.eas_on_demand) { eaCache.set(d.team_id, local); setEas(local); return; }
     setEaNote("Loading the EAs of this SA…");
-    api.get<MeKpiGeoEa[]>(`/me/kpi/eas?team_id=${d.team_id}`).then((rows) => { eaCache.set(d.team_id!, rows); setEas(rows); setEaNote(null); }).catch(() => setEaNote("No network: the EA list of this SA is not on the device yet. Connect once, or type the EA codes in the comments."));
+    api.get<MeKpiGeoEa[]>(`/me/kpi/eas?team_id=${d.team_id}`).then((rows) => { eaCache.set(d.team_id!, rows); cacheEas(d.team_id!, rows); setEas(rows); setEaNote(null); }).catch(() => setEaNote("No network: the EA list of this SA is not on the device yet. Connect once, or type the EA codes in the comments."));
   }, [d.team_id, geo]);
   const pickTeam = (id: number | null) => {
     const t = teams.find((x) => x.id === id) ?? null;
@@ -178,8 +178,11 @@ function SectionA({ d, set, spec, geo, gpsNote, setGpsNote }: { d: MeKpiReportIn
   const toggleEa = (code: string) => { const cur = d.ea_codes ?? []; set({ ea_codes: cur.includes(code) ? cur.filter((c) => c !== code) : [...cur, code] }); };
   const gps = () => {
     if (!navigator.geolocation) { setGpsNote("No GPS on this device: GPS is required, use a phone with location services"); return; }
-    setGpsNote("Getting position…");
-    navigator.geolocation.getCurrentPosition((p) => { set({ lat: Math.round(p.coords.latitude * 1e5) / 1e5, lng: Math.round(p.coords.longitude * 1e5) / 1e5 }); setGpsNote(`Position captured (±${Math.round(p.coords.accuracy)} m)`); }, () => setGpsNote("Position not available: move outdoors, check that location is switched on and tap Capture GPS again (GPS is required)"), { enableHighAccuracy: true, timeout: 15000 });
+    setGpsNote("Getting position… without network the first GPS fix can take a minute outdoors.");
+    const ok = (p: GeolocationPosition) => { set({ lat: Math.round(p.coords.latitude * 1e5) / 1e5, lng: Math.round(p.coords.longitude * 1e5) / 1e5 }); setGpsNote(`Position captured (±${Math.round(p.coords.accuracy)} m)`); };
+    const failed = () => setGpsNote("Position not available: move outdoors, check that location is switched on and tap Capture GPS again (GPS is required)");
+    // satellites first (works offline); if nothing within a minute, accept the last known position, then give up
+    navigator.geolocation.getCurrentPosition(ok, () => navigator.geolocation.getCurrentPosition(ok, failed, { enableHighAccuracy: false, timeout: 20000, maximumAge: 10 * 60 * 1000 }), { enableHighAccuracy: true, timeout: 60000, maximumAge: 30000 });
   };
   return (
     <div className="space-y-4">

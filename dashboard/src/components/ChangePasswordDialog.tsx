@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { ApiError, api } from "../api/client";
 import { ErrorBox } from "./ui";
+import { useAuth } from "../auth/AuthContext";
 
 /** Self-service password change for the signed-in user. */
 export default function ChangePasswordDialog({ onClose, forced = false }: { onClose: () => void; forced?: boolean }) {
@@ -9,7 +10,8 @@ export default function ChangePasswordDialog({ onClose, forced = false }: { onCl
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
   const [done, setDone] = useState(false);
-  const change = useMutation({ mutationFn: () => api.post("/auth/change-password", { current_password: current, new_password: next }), onSuccess: () => setDone(true) });
+  const { rememberPassword } = useAuth();
+  const change = useMutation({ mutationFn: () => api.post("/auth/change-password", { current_password: current, new_password: next }), onSuccess: () => { setDone(true); void rememberPassword(next); } });
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4" onClick={forced ? undefined : onClose}>
       <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ApiError, api } from "../../../api/client";
-import type { MeKpiGeo, MeKpiReportIn, MeKpiSpec, MeKpiSyncOut } from "../../../api/types";
+import type { MeKpiGeo, MeKpiGeoEa, MeKpiReportIn, MeKpiSpec, MeKpiSyncOut } from "../../../api/types";
 
 /* ------------------------------------------------------------------------------------------------
  * Offline store for the M&E field tool. Everything the officer needs in the field is kept on the device:
@@ -12,9 +12,9 @@ import type { MeKpiGeo, MeKpiReportIn, MeKpiSpec, MeKpiSyncOut } from "../../../
 const KEY = "me-kpi-store-v1";
 
 export type LocalReport = { client_id: string; data: MeKpiReportIn; status: "draft" | "pending" | "sent" | "error"; saved_at: string; sent_at?: string; server_id?: number; error?: string; summary: string };
-type Store = { spec: MeKpiSpec | null; geo: MeKpiGeo | null; geo_at: string | null; spec_at: string | null; reports: LocalReport[]; user_id: number | null };
+type Store = { spec: MeKpiSpec | null; geo: MeKpiGeo | null; geo_at: string | null; spec_at: string | null; reports: LocalReport[]; user_id: number | null; eas_by_team: Record<string, MeKpiGeoEa[]> };
 
-const empty = (): Store => ({ spec: null, geo: null, geo_at: null, spec_at: null, reports: [], user_id: null });
+const empty = (): Store => ({ spec: null, geo: null, geo_at: null, spec_at: null, reports: [], user_id: null, eas_by_team: {} });
 let store: Store = load();
 const listeners = new Set<() => void>();
 
@@ -85,6 +85,13 @@ export function queueReport(data: MeKpiReportIn, geo: MeKpiGeo | null) {
   set({ reports: [entry, ...rest].slice(0, 200) });
 }
 
+/** EAs of an SA fetched on demand (national scope): kept on the device for the next visit without network. */
+export function cachedEas(teamId: number): MeKpiGeoEa[] | null { return store.eas_by_team?.[String(teamId)] ?? null; }
+export function cacheEas(teamId: number, rows: MeKpiGeoEa[]) {
+  const entries = Object.entries(store.eas_by_team ?? {}).slice(-150); // the last 150 SAs looked up
+  set({ eas_by_team: { ...Object.fromEntries(entries), [String(teamId)]: rows } });
+}
+
 export function removeLocal(client_id: string) { set({ reports: store.reports.filter((r) => r.client_id !== client_id) }); }
 export function getLocal(client_id: string) { return store.reports.find((r) => r.client_id === client_id) ?? null; }
 export const pendingCount = () => store.reports.filter((r) => r.status === "pending" || r.status === "error").length;
@@ -114,9 +121,12 @@ export function syncNow(): Promise<MeKpiSyncOut | null> {
   return syncing;
 }
 
-/** Sync automatically when the network returns. */
+/** Sync automatically when the network returns, when the Android app comes back to the front and when the tab becomes visible. */
 export function installAutoSync() {
   const run = () => { void syncNow(); };
+  const visible = () => { if (document.visibilityState === "visible") run(); };
   window.addEventListener("online", run);
-  return () => window.removeEventListener("online", run);
+  window.addEventListener("slphc:resume", run);
+  document.addEventListener("visibilitychange", visible);
+  return () => { window.removeEventListener("online", run); window.removeEventListener("slphc:resume", run); document.removeEventListener("visibilitychange", visible); };
 }
