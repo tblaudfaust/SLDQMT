@@ -47,7 +47,7 @@ export default function KpiReportsPage() {
   return (
     <div className="max-w-7xl">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <div><Link to="/me/kpi" className="text-sm text-navy">← M&amp;E Field Tool</Link><h1 className="text-2xl font-bold">KPI reports</h1><p className="text-sm text-slate-500">Every report sent from the field in your area. Click a row for the full answers.</p></div>
+        <div><Link to="/me/kpi" className="inline-flex items-center gap-1 text-lg font-bold text-navy hover:underline">← M&amp;E Field Tool</Link><h1 className="text-2xl font-bold">KPI reports</h1><p className="text-sm text-slate-500">Every report sent from the field in your area. Click a row for the full answers.</p></div>
         <Link to="/me/kpi/dashboard" className="btn-outline">Dashboard</Link>
       </div>
       <ErrorBox error={error instanceof ApiError ? error.message : error} />

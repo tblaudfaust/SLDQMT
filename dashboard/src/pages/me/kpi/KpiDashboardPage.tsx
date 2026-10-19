@@ -75,7 +75,7 @@ export default function KpiDashboardPage() {
     <div className="max-w-7xl">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <Link to="/me/kpi" className="text-sm text-navy">← M&amp;E Field Tool</Link>
+          <Link to="/me/kpi" className="inline-flex items-center gap-1 text-lg font-bold text-navy hover:underline">← M&amp;E Field Tool</Link>
           <h1 className="text-2xl font-bold">KPI dashboard</h1>
           <p className="text-sm text-slate-500">Scope: <b>{d.scope}</b> · {d.reports} reports from {d.sas} SAs / teams in {d.districts} district{d.districts === 1 ? "" : "s"}{d.last_date ? ` · last report ${fmtDate(d.last_date)}` : ""}</p>
         </div>
