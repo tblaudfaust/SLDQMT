@@ -10,7 +10,7 @@ from app.api.deps import audit, require_perm
 from app.core import me_kpi_form
 from app.db.session import get_db
 from app.models import User
-from app.schemas.me_kpi import GeoBundle, GeoEa, ReportIn, ReportOut, Summary, SyncIn, SyncOut
+from app.schemas.me_kpi import FieldAccountIn, FieldAccountOptions, FieldAccountOut, FieldAccountUpdate, GeoBundle, GeoEa, ReportIn, ReportOut, Summary, SyncIn, SyncOut
 from app.services import me_kpi_service as svc
 from app.services import report_service
 
@@ -19,6 +19,7 @@ view = require_perm("me_kpi.view")
 collect = require_perm("me_kpi.collect")
 manage = require_perm("me_kpi.manage")
 export_perm = require_perm("me_kpi.export")
+accounts_perm = require_perm("me_kpi.accounts")
 
 
 def _filters(phase: str | None = Query(default=None, pattern="^(MT|TOT|L|E)$"), district_id: int | None = None, team_id: int | None = None, week: int | None = Query(default=None, ge=1, le=60),
@@ -74,6 +75,43 @@ def export(request: Request, format: str = Query(default="xlsx", pattern="^(xlsx
     if format == "pdf":
         return Response(report_service.to_pdf(report), media_type="application/pdf", headers={"Content-Disposition": f'attachment; filename="me-kpi-{stamp}.pdf"'})
     return Response(report_service.to_xlsx(report), media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": f'attachment; filename="me-kpi-{stamp}.xlsx"'})
+
+
+# ---- field accounts: the M&E lead creates the officers who use the app ---------------------------
+
+
+@router.get("/me/kpi/accounts/options", response_model=FieldAccountOptions)
+def account_options(db: Session = Depends(get_db), _: User = Depends(accounts_perm)):
+    return svc.account_options(db)
+
+
+@router.get("/me/kpi/accounts", response_model=list[FieldAccountOut])
+def list_accounts(db: Session = Depends(get_db), _: User = Depends(accounts_perm)):
+    return svc.list_accounts(db)
+
+
+@router.post("/me/kpi/accounts", response_model=FieldAccountOut, status_code=201)
+def create_account(body: FieldAccountIn, request: Request, db: Session = Depends(get_db), user: User = Depends(accounts_perm)):
+    out = svc.create_account(db, body)
+    audit(db, user, "me_kpi.account_create", "user", out.id, {"username": out.username, "role": out.role, "district_ids": out.district_ids, "region_ids": out.region_ids}, request)
+    db.commit()
+    return out
+
+
+@router.patch("/me/kpi/accounts/{user_id}", response_model=FieldAccountOut)
+def update_account(user_id: int, body: FieldAccountUpdate, request: Request, db: Session = Depends(get_db), user: User = Depends(accounts_perm)):
+    out = svc.update_account(db, user_id, body)
+    audit(db, user, "me_kpi.account_update", "user", out.id, body.model_dump(exclude_unset=True), request)
+    db.commit()
+    return out
+
+
+@router.post("/me/kpi/accounts/{user_id}/reset-password", response_model=FieldAccountOut)
+def reset_account_password(user_id: int, request: Request, db: Session = Depends(get_db), user: User = Depends(accounts_perm)):
+    out = svc.reset_account_password(db, user_id)
+    audit(db, user, "me_kpi.account_reset", "user", out.id, {"username": out.username}, request)
+    db.commit()
+    return out
 
 
 @router.get("/me/kpi/reports/{report_id}", response_model=ReportOut)

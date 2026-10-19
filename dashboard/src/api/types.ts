@@ -782,6 +782,8 @@ export interface MeKpiReportIn {
   lat: number | null; lng: number | null; answers: MeKpiAnswers; submitted_at?: string | null; device?: string | null;
 }
 export interface MeKpiAppVersion { title: string; package: string; version_code: number; version_name: string; file: string; notes: string; available: boolean; size_bytes: number | null; download_url: string }
+export interface MeKpiFieldAccount { id: number; username: string; full_name: string; phone: string | null; role: "ME_DISTRICT" | "ME_REGIONAL"; role_label: string; active: boolean; districts: string[]; district_ids: number[]; regions: string[]; region_ids: number[]; must_change_password: boolean; last_login_at: string | null; reports: number; temporary_password: string | null }
+export interface MeKpiFieldAccountOptions { districts: { id: number; code: string; name: string; region: string }[]; regions: { id: number; name: string }[] }
 export interface MeKpiSyncOut { results: { client_id: string; id: number | null; status: "created" | "updated" | "error"; message: string | null }[]; created: number; updated: number; errors: number }
 export interface MeKpiMetrics { coverage_pct: number | null; ea_pct: number | null; tablets_pct: number | null; synced_pct: number | null; error_pct: number | null; reinterview_pct: number | null; hh_expected: number | null; hh_done: number | null; hh_today: number | null; on_schedule: boolean | null; safety_concern: boolean; escalation: boolean; follow_up: boolean; overall: number | null }
 export interface MeKpiReport {

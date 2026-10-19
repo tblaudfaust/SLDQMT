@@ -111,6 +111,42 @@ def test_form_geo_sync_scoping_summary_export_and_rights(client, admin, geo):
     assert client.get("/api/v1/me/kpi/summary", headers=me).json()["reports"] == 2
 
 
+def test_me_lead_creates_field_accounts(client, admin, geo):
+    """The national M&E account creates the District and Regional M&E Officers who use the app, without the admin."""
+    wau = geo["districts"]["WAU"]["id"]
+    me = user(client, admin, "me.lead", "ME")
+    dist_only = user(client, admin, "me.dist", "ME_DISTRICT", [wau])
+    assert client.get("/api/v1/me/kpi/accounts", headers=dist_only).status_code == 403
+    opts = client.get("/api/v1/me/kpi/accounts/options", headers=me).json()
+    assert {d["code"] for d in opts["districts"]} >= {"WAU", "WAR"} and opts["regions"]
+    region_id = opts["regions"][0]["id"]
+    r = client.post("/api/v1/me/kpi/accounts", json={"username": "ME.Bo.Officer", "full_name": "Hawa Turay", "phone": "076000000", "role": "ME_DISTRICT", "district_ids": [wau]}, headers=me)
+    assert r.status_code == 201, r.text
+    created = r.json()
+    assert created["username"] == "me.bo.officer" and created["districts"] == ["Western Area Urban"] and created["must_change_password"] and len(created["temporary_password"]) == 10
+    assert client.post("/api/v1/me/kpi/accounts", json={"username": "me.bo.officer", "full_name": "Again", "role": "ME_DISTRICT", "district_ids": [wau]}, headers=me).status_code == 409
+    assert client.post("/api/v1/me/kpi/accounts", json={"username": "no.district", "full_name": "No District", "role": "ME_DISTRICT"}, headers=me).status_code == 422
+    assert client.post("/api/v1/me/kpi/accounts", json={"username": "not.allowed", "full_name": "Admin Try", "role": "ADMIN"}, headers=me).status_code == 422
+    reg = client.post("/api/v1/me/kpi/accounts", json={"username": "me.west.officer", "full_name": "Ibrahim Conteh", "role": "ME_REGIONAL", "region_ids": [region_id]}, headers=me).json()
+    assert reg["role_label"] == "Regional M&E Officer" and reg["regions"]
+    # the new officer signs in with the temporary password and can use the field tool for its district
+    tok = auth(login(client, "me.bo.officer", created["temporary_password"])["access_token"])
+    g = client.get("/api/v1/me/kpi/geo", headers=tok).json()
+    assert [d["code"] for d in g["districts"]] == ["WAU"]
+    # listing, editing and resetting
+    rows = client.get("/api/v1/me/kpi/accounts", headers=me).json()
+    assert {x["username"] for x in rows} >= {"me.bo.officer", "me.west.officer", "me.dist"} and all(x["temporary_password"] is None for x in rows)
+    upd = client.patch(f"/api/v1/me/kpi/accounts/{created['id']}", json={"active": False, "full_name": "Hawa Turay-Kamara"}, headers=me).json()
+    assert upd["active"] is False and upd["full_name"] == "Hawa Turay-Kamara"
+    reset = client.post(f"/api/v1/me/kpi/accounts/{created['id']}/reset-password", headers=me).json()
+    assert len(reset["temporary_password"]) == 10 and reset["must_change_password"]
+    assert client.patch(f"/api/v1/me/kpi/accounts/{admin_id(client, admin)}", json={"active": False}, headers=me).status_code == 404  # only field accounts
+
+
+def admin_id(client, admin):
+    return next(u["id"] for u in client.get("/api/v1/admin/users", headers=admin).json() if u["username"] == "admin")
+
+
 def test_regional_officer_scope(client, admin, geo):
     wau = geo["districts"]["WAU"]["id"]
     r = client.post("/api/v1/admin/users", json={"username": "me.west", "password": "Password123", "full_name": "me.west", "role": "ME_REGIONAL", "region_ids": [geo["districts"]["WAU"]["region_id"]]}, headers=admin)

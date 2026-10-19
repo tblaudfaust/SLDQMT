@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import clsx from "clsx";
-import { AlertCircle, BarChart3, CheckCircle2, ClipboardList, CloudOff, CloudUpload, FilePlus2, ListChecks, Pencil, Trash2, Wifi, WifiOff } from "lucide-react";
+import { AlertCircle, BarChart3, CheckCircle2, ClipboardList, CloudOff, CloudUpload, FilePlus2, ListChecks, Pencil, Trash2, Users, Wifi, WifiOff } from "lucide-react";
 import { useAuth } from "../../../auth/AuthContext";
 import { isAppMode } from "../../../brand";
 import { Card, ErrorBox } from "../../../components/ui";
@@ -58,11 +58,12 @@ export default function KpiHomePage() {
             {online ? <Wifi size={16} /> : <WifiOff size={16} />} {online ? "Online" : "Offline · saving on this device"}
           </div>
         </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Link to="/me/kpi/new" className="flex items-center gap-3 rounded-xl bg-white px-4 py-4 text-navy shadow hover:bg-sky-50"><FilePlus2 size={26} /><div><div className="text-base font-bold">Start a new report</div><div className="text-xs text-slate-500">one SA or practice team</div></div></Link>
           <button onClick={send} disabled={busy} className={clsx("flex items-center gap-3 rounded-xl px-4 py-4 text-left shadow", pending ? "bg-amber-400 text-amber-950 hover:bg-amber-300" : "bg-white/15 text-white hover:bg-white/25")}>
             {pending ? <CloudUpload size={26} /> : <CheckCircle2 size={26} />}<div><div className="text-base font-bold">{pending ? `Send ${pending} waiting` : "All reports sent"}</div><div className="text-xs opacity-80">{pending ? (online ? "tap to send now" : "sends when back online") : `${sentToday} sent today from this device`}</div></div>
           </button>
+          {can("me_kpi.accounts") && !isAppMode && <Link to="/me/kpi/accounts" className="flex items-center gap-3 rounded-xl bg-white/15 px-4 py-4 text-white shadow hover:bg-white/25"><Users size={26} /><div><div className="text-base font-bold">Field accounts</div><div className="text-xs opacity-80">officers who use the app</div></div></Link>}
           {can("me_kpi.view") && !isAppMode && <Link to="/me/kpi/dashboard" className="flex items-center gap-3 rounded-xl bg-white/15 px-4 py-4 text-white shadow hover:bg-white/25"><BarChart3 size={26} /><div><div className="text-base font-bold">Dashboard</div><div className="text-xs opacity-80">KPIs by district and week</div></div></Link>}
         </div>
       </div>

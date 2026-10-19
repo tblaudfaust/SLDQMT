@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { useAuth } from "../auth/AuthContext";
 import type { MeKpiAppVersion } from "../api/types";
 import { useOnline } from "../pages/me/kpi/kpiStore";
+import ChangePasswordDialog from "./ChangePasswordDialog";
 
 declare global {
   interface Window { SLPHCApp?: { version(): string; versionCode?(): number; openExternal?(url: string): void; reload(): void } }
@@ -24,7 +25,7 @@ const nameToNumber = (v: string) => v.split(".").slice(0, 3).reduce((n, p) => n 
 
 /** The frame of the Android field app: no menu, just the tool. Sign-out, the network state and the update icon at the top. */
 export default function FieldLayout() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const online = useOnline();
   const [update, setUpdate] = useState<MeKpiAppVersion | null>(null);
   const [showNote, setShowNote] = useState(false);
@@ -68,6 +69,7 @@ export default function FieldLayout() {
       <main className="flex-1 px-3 py-3 sm:px-4">
         <Outlet />
       </main>
+      {user?.must_change_password && <ChangePasswordDialog forced onClose={() => void refreshUser()} />}
     </div>
   );
 }

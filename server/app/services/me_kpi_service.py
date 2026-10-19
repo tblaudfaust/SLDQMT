@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import secrets
+import string
 from collections import defaultdict
 from datetime import date, datetime, timezone
 
@@ -13,9 +15,11 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core import me_kpi_form as form
-from app.models import District, Enumerator, EnumerationArea, MeKpiReport, Region, Supervisor, Team, User
+from app.core.security import hash_password
+from app.models import District, Enumerator, EnumerationArea, MeKpiReport, Region, Supervisor, Team, User, UserScope
+from app.models.user import Role
 from app.models.mefm import MefmChiefdom, MefmSection
-from app.schemas.me_kpi import Attention, CountRow, GeoBundle, GeoChiefdom, GeoDistrict, GeoEa, GeoSection, GeoTeam, GroupRow, ReportIn, ReportOut, Summary, SyncIn, SyncOut, SyncResult
+from app.schemas.me_kpi import Attention, CountRow, FieldAccountIn, FieldAccountOptions, FieldAccountOut, FieldAccountUpdate, GeoBundle, GeoChiefdom, GeoDistrict, GeoEa, GeoSection, GeoTeam, GroupRow, ReportIn, ReportOut, Summary, SyncIn, SyncOut, SyncResult
 from app.services import report_service
 from app.services.scope import district_ids_for
 
@@ -254,6 +258,105 @@ def query(db: Session, user: User, phase: str | None = None, district_id: int | 
     if date_to:
         q = q.where(R.report_date <= date_to)
     return db.execute(q.order_by(R.report_date.desc(), R.submitted_at.desc())).scalars().all()
+
+
+# ---- field accounts ----------------------------------------------------------------------------------
+
+FIELD_ROLES = {Role.ME_DISTRICT: "District M&E Officer", Role.ME_REGIONAL: "Regional M&E Officer"}
+
+
+def _temporary_password() -> str:
+    """10 readable characters without look-alikes, read out to the officer and changed at first sign-in."""
+    alphabet = [c for c in string.ascii_letters + string.digits if c not in "0O1lI"]
+    return "".join(secrets.choice(alphabet) for _ in range(10))
+
+
+def account_options(db: Session) -> FieldAccountOptions:
+    regions = {r.id: r.name for r in db.execute(select(Region).order_by(Region.name)).scalars()}
+    districts = [GeoDistrict(id=d.id, code=d.code, name=d.name, region=regions.get(d.region_id, "")) for d in db.execute(select(District).order_by(District.name)).scalars()]
+    return FieldAccountOptions(districts=districts, regions=[{"id": i, "name": n} for i, n in regions.items()])
+
+
+def _account_out(db: Session, u: User, temporary_password: str | None = None) -> FieldAccountOut:
+    dids = [sc.district_id for sc in u.scopes if sc.district_id]
+    rids = [sc.region_id for sc in u.scopes if sc.region_id]
+    dn = {d.id: d.name for d in db.execute(select(District).where(District.id.in_(dids))).scalars()} if dids else {}
+    rn = {r.id: r.name for r in db.execute(select(Region).where(Region.id.in_(rids))).scalars()} if rids else {}
+    reports = db.execute(select(func.count()).select_from(R).where(R.user_id == u.id, R.deleted.is_(False))).scalar_one()
+    return FieldAccountOut(id=u.id, username=u.username, full_name=u.full_name, phone=u.phone, role=u.role.value, role_label=FIELD_ROLES.get(u.role, u.role.value), active=u.active,
+                           districts=[dn.get(i, str(i)) for i in dids], district_ids=dids, regions=[rn.get(i, str(i)) for i in rids], region_ids=rids,
+                           must_change_password=bool(u.must_change_password), last_login_at=u.last_login_at, reports=reports, temporary_password=temporary_password)
+
+
+def list_accounts(db: Session) -> list[FieldAccountOut]:
+    rows = db.execute(select(User).where(User.role.in_(list(FIELD_ROLES))).order_by(User.full_name)).scalars().all()
+    return [_account_out(db, u) for u in rows]
+
+
+def _set_scopes(db: Session, u: User, district_ids: list[int], region_ids: list[int], role: Role) -> None:
+    if role == Role.ME_DISTRICT and not district_ids:
+        raise HTTPException(422, "Choose at least one district for a District M&E Officer")
+    if role == Role.ME_REGIONAL and not region_ids:
+        raise HTTPException(422, "Choose the region for a Regional M&E Officer")
+    for d in district_ids:
+        if db.get(District, d) is None:
+            raise HTTPException(400, f"Unknown district id {d}")
+    for r in region_ids:
+        if db.get(Region, r) is None:
+            raise HTTPException(400, f"Unknown region id {r}")
+    u.scopes.clear()
+    for d in district_ids:
+        u.scopes.append(UserScope(district_id=d))
+    for r in region_ids:
+        u.scopes.append(UserScope(region_id=r))
+
+
+def _field_user(db: Session, user_id: int) -> User:
+    u = db.get(User, user_id)
+    if u is None or u.role not in FIELD_ROLES:
+        raise HTTPException(404, "Field account not found")
+    return u
+
+
+def create_account(db: Session, body: FieldAccountIn) -> FieldAccountOut:
+    username = body.username.strip().lower()
+    if not username.replace(".", "").replace("-", "").replace("_", "").isalnum():
+        raise HTTPException(422, "The username may contain letters, digits, dots, dashes and underscores only")
+    if db.execute(select(User).where(User.username == username)).scalars().first():
+        raise HTTPException(409, f"The username {username} is already taken")
+    role = Role(body.role)
+    temp = body.password or _temporary_password()
+    u = User(username=username, password_hash=hash_password(temp), full_name=body.full_name.strip(), phone=(body.phone or "").strip() or None, role=role, must_change_password=True)
+    db.add(u)
+    db.flush()
+    _set_scopes(db, u, body.district_ids if role == Role.ME_DISTRICT else [], body.region_ids if role == Role.ME_REGIONAL else [], role)
+    db.flush()
+    return _account_out(db, u, temporary_password=temp)
+
+
+def update_account(db: Session, user_id: int, body: FieldAccountUpdate) -> FieldAccountOut:
+    u = _field_user(db, user_id)
+    if body.full_name is not None:
+        u.full_name = body.full_name.strip()
+    if body.phone is not None:
+        u.phone = body.phone.strip() or None
+    if body.active is not None:
+        u.active = body.active
+    if body.district_ids is not None or body.region_ids is not None:
+        cur_d = [sc.district_id for sc in u.scopes if sc.district_id]
+        cur_r = [sc.region_id for sc in u.scopes if sc.region_id]
+        _set_scopes(db, u, body.district_ids if body.district_ids is not None else cur_d, body.region_ids if body.region_ids is not None else cur_r, u.role)
+    db.flush()
+    return _account_out(db, u)
+
+
+def reset_account_password(db: Session, user_id: int) -> FieldAccountOut:
+    u = _field_user(db, user_id)
+    temp = _temporary_password()
+    u.password_hash = hash_password(temp)
+    u.must_change_password = True
+    db.flush()
+    return _account_out(db, u, temporary_password=temp)
 
 
 # ---- summary -----------------------------------------------------------------------------------------

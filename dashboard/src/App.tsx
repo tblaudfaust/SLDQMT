@@ -40,6 +40,7 @@ import KpiHomePage from "./pages/me/kpi/KpiHomePage";
 import KpiFormPage from "./pages/me/kpi/KpiFormPage";
 import KpiDashboardPage from "./pages/me/kpi/KpiDashboardPage";
 import KpiReportsPage from "./pages/me/kpi/KpiReportsPage";
+import KpiAccountsPage from "./pages/me/kpi/KpiAccountsPage";
 import IncidentsDashboardPage from "./pages/incidents/IncidentsDashboardPage";
 import IncidentsRegisterPage from "./pages/incidents/IncidentsRegisterPage";
 import IncidentSaCodesPage from "./pages/incidents/IncidentSaCodesPage";
@@ -172,6 +173,7 @@ export default function App() {
                   <Route path="me/kpi/dashboard" element={<KpiDashboardPage />} />
                   <Route path="me/kpi/reports" element={<KpiReportsPage />} />
                 </Route>
+                <Route element={<RequirePerm code="me_kpi.accounts" />}><Route path="me/kpi/accounts" element={<KpiAccountsPage />} /></Route>
                 <Route element={<RequirePerm code="users.manage" />}><Route path="admin/users" element={<UsersPage />} /></Route>
                 <Route element={<RequirePerm code="roles.manage" />}><Route path="admin/roles" element={<RolesPage />} /></Route>
                 <Route element={<RequirePerm code="devices.manage" />}><Route path="admin/devices" element={<DevicesPage />} /></Route>

@@ -140,6 +140,47 @@ class GeoBundle(BaseModel):
     eas_on_demand: bool = False
 
 
+class FieldAccountIn(BaseModel):
+    username: str = Field(min_length=3, max_length=64)
+    full_name: str = Field(min_length=2, max_length=160)
+    phone: str | None = Field(default=None, max_length=32)
+    role: str = Field(pattern="^(ME_DISTRICT|ME_REGIONAL)$")
+    district_ids: list[int] = Field(default_factory=list, max_length=20)
+    region_ids: list[int] = Field(default_factory=list, max_length=5)
+    password: str | None = Field(default=None, min_length=8, max_length=256)  # generated when absent
+
+
+class FieldAccountUpdate(BaseModel):
+    full_name: str | None = Field(default=None, min_length=2, max_length=160)
+    phone: str | None = Field(default=None, max_length=32)
+    active: bool | None = None
+    district_ids: list[int] | None = Field(default=None, max_length=20)
+    region_ids: list[int] | None = Field(default=None, max_length=5)
+
+
+class FieldAccountOut(BaseModel):
+    id: int
+    username: str
+    full_name: str
+    phone: str | None = None
+    role: str
+    role_label: str
+    active: bool
+    districts: list[str] = []
+    district_ids: list[int] = []
+    regions: list[str] = []
+    region_ids: list[int] = []
+    must_change_password: bool = False
+    last_login_at: datetime | None = None
+    reports: int = 0
+    temporary_password: str | None = None  # only on creation or reset
+
+
+class FieldAccountOptions(BaseModel):
+    districts: list[GeoDistrict]
+    regions: list[dict]
+
+
 class CountRow(BaseModel):
     code: str
     label: str
