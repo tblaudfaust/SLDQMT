@@ -1,5 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { useEffect } from "react";
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
+import { reloadIfPending } from "./appUpdate";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import Layout from "./components/Layout";
 import FieldLayout from "./components/FieldLayout";
@@ -88,6 +90,13 @@ function RequirePerm({ code }: { code: string }) {
 }
 
 /** The Android field app: sign in, then only the KPI form and the reports on the device. */
+/** Applies a web app update that waited while the officer was in the form. */
+function UpdateOnRouteChange() {
+  const loc = useLocation();
+  useEffect(() => { reloadIfPending(loc.pathname); }, [loc.pathname]);
+  return null;
+}
+
 function FieldApp() {
   return (
     <Routes>
@@ -123,6 +132,7 @@ export default function App() {
     <QueryClientProvider client={client}>
       <AuthProvider>
         <BrowserRouter>
+          <UpdateOnRouteChange />
           {isAppMode ? <FieldApp /> : (
           <Routes>
             <Route path="/login" element={<LoginPage />} />

@@ -6,6 +6,7 @@ import { useAuth } from "../auth/AuthContext";
 import type { MeKpiAppVersion } from "../api/types";
 import { useOnline } from "../pages/me/kpi/kpiStore";
 import ChangePasswordDialog from "./ChangePasswordDialog";
+import { checkForUpdate } from "../appUpdate";
 
 declare global {
   interface Window { SLPHCApp?: { version(): string; versionCode?(): number; openExternal?(url: string): void; reload(): void } }
@@ -29,6 +30,13 @@ export default function FieldLayout() {
   const online = useOnline();
   const [update, setUpdate] = useState<MeKpiAppVersion | null>(null);
   const [showNote, setShowNote] = useState(false);
+  const [checkNote, setCheckNote] = useState<string | null>(null);
+  const check = async () => {
+    setCheckNote("Checking…");
+    const r = await checkForUpdate();
+    setCheckNote(r === "updating" ? "New version found: installing, the app refreshes in a moment." : r === "current" ? "You have the latest version." : r === "offline" ? "No network: try again when connected." : "Updates are checked when the app opens.");
+    window.setTimeout(() => setCheckNote(null), 6000);
+  };
   useEffect(() => {
     const me = installed();
     if (!me.name) return; // in a browser, not the app
@@ -45,7 +53,7 @@ export default function FieldLayout() {
         <img src="/statsl-logo.png" alt="" className="h-8 w-8 rounded-full bg-white p-0.5" />
         <div className="min-w-0 flex-1 leading-tight">
           <div className="truncate text-sm font-bold">M&amp;E Field Tool</div>
-          <div className="truncate text-[11px] text-sky-100/80">{user?.full_name}</div>
+          <div className="truncate text-[11px] text-sky-100/80">{user?.full_name} · <button type="button" onClick={() => void check()} className="underline decoration-dotted" title="Check for updates">build {__BUILD__}{window.SLPHCApp ? ` · app ${installed().name}` : ""}</button></div>
         </div>
         {update && (
           <button onClick={() => setShowNote((s) => !s)} className="relative rounded-md bg-amber-400 px-2 py-1 text-[11px] font-bold text-amber-950" title={`Update to version ${update.version_name}`}>
@@ -56,6 +64,7 @@ export default function FieldLayout() {
         <span className={clsx("flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold", online ? "bg-emerald-500/30" : "bg-amber-400/40")}>{online ? <Wifi size={12} /> : <WifiOff size={12} />}{online ? "Online" : "Offline"}</span>
         <button onClick={() => { if (confirm("Sign out? Reports waiting to be sent stay on this device until you sign in again.")) logout(); }} className="rounded-md p-1.5 hover:bg-white/10" title="Sign out"><LogOut size={18} /></button>
       </header>
+      {checkNote && <div className="border-b border-sky-200 bg-sky-50 px-4 py-2 text-xs text-sky-900">{checkNote}</div>}
       {update && showNote && (
         <div className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <div className="font-semibold">Version {update.version_name} of the app is available{update.notes ? `: ${update.notes}` : "."}</div>

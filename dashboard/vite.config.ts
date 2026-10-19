@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  define: { __BUILD__: JSON.stringify(new Date().toISOString().slice(0, 16).replace("T", " ")) }, // shown in the field app so a device's version can be checked
   plugins: [
     react(),
     // Installable, offline-capable: the app shell is precached; the M&E field tool keeps its form, geography
