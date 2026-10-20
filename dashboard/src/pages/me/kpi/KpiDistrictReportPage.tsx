@@ -69,7 +69,7 @@ export default function KpiDistrictReportPage() {
 
       {d.reports === 0 ? <Panel title="No data"><Empty text="No report for this district yet." /></Panel> : (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-6">
             <Scorecard value={pct(d.coverage_pct)} raw={d.coverage_pct} {...KPIS.coverage} />
             <Scorecard value={pct(d.synced_pct)} raw={d.synced_pct} {...KPIS.synced} />
             <Scorecard value={pct(d.error_pct, 1)} raw={d.error_pct} {...KPIS.error} />

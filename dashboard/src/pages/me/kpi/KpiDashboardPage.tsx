@@ -73,7 +73,7 @@ export default function KpiDashboardPage() {
       <ErrorBox error={error instanceof ApiError ? error.message : error} />
 
       {/* ---- scorecards ---- */}
-      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-6">
         <Scorecard value={pct(d.coverage_pct)} raw={d.coverage_pct} {...KPIS.coverage} />
         <Scorecard value={pct(d.synced_pct)} raw={d.synced_pct} {...KPIS.synced} />
         <Scorecard value={pct(d.error_pct, 1)} raw={d.error_pct} {...KPIS.error} />
