@@ -28,7 +28,7 @@ export default function FiltersBar({ compact = false }: { compact?: boolean }) {
             {districts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
         </Field>
-        <Field label="Team">
+        <Field label="SA">
           <select className="input" value={f.team_id ?? ""} disabled={!f.district_id?.length} onChange={(e) => update({ team_id: e.target.value ? Number(e.target.value) : undefined })}>
             <option value="">{f.district_id?.length ? "All" : "Choose a district first"}</option>
             {visibleTeams.map((t) => <option key={t.id} value={t.id}>{t.code} {t.name}</option>)}
