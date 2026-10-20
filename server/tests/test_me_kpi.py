@@ -182,3 +182,36 @@ def test_regional_officer_scope(client, admin, geo):
     assert {d["code"] for d in g["districts"]} == {"WAU", "WAR"}
     assert client.post("/api/v1/me/kpi/sync", json={"reports": [report(wau, geo["teams"]["WAU-SA01"]["id"])]}, headers=reg).json()["created"] == 1
     assert client.get("/api/v1/me/kpi/export", headers=reg).status_code == 200
+
+
+def test_demo_data_is_loaded_once_per_version(client, admin, geo):
+    """The demo seed creates Demo User and the same reports in every district; running it again changes nothing."""
+    from app.db.session import SessionLocal
+    from app.services import me_kpi_demo as demo
+
+    me = user(client, admin, "me.demo.view", "ME")
+    db = SessionLocal()
+    try:
+        first = demo.seed_demo(db); db.commit()
+        again = demo.seed_demo(db); db.commit()
+    finally:
+        db.close()
+    assert first["status"] == "loaded" and first["created"] > 0 and not first["errors"], first
+    assert again["status"] == "already loaded" and again["created"] == 0
+    rows = client.get("/api/v1/me/kpi/reports", headers=me).json()
+    demo_rows = [r for r in rows if r["officer"] == "Demo User"]
+    assert len(demo_rows) == first["created"]
+    # the same set in each district (two districts in the fixture)
+    by_district = {}
+    for r in demo_rows:
+        by_district.setdefault(r["district"], []).append((r["phase"], r["week"], r["metrics"]["coverage_pct"]))
+    assert len(by_district) == 2 and len({tuple(sorted(v)) for v in by_district.values()}) == 1
+    sm = client.get("/api/v1/me/kpi/summary", headers=me).json()
+    assert sm["reports"] >= first["created"] and any(g["label"] == "Demo User" for g in sm["by_officer"])
+    # the demo account cannot sign in
+    assert client.post("/api/v1/auth/login", json={"username": "demo.me", "password": "anything"}).status_code in (401, 403)
+    db = SessionLocal()
+    try:
+        assert demo.remove_demo(db) == first["created"]; db.commit()
+    finally:
+        db.close()

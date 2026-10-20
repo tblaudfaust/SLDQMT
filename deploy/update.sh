@@ -23,6 +23,8 @@ main() {
   for _ in $(seq 1 30); do
     if docker compose -f docker-compose.prod.yml exec -T server python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=3)" >/dev/null 2>&1; then
       echo "== healthy: $(git log -1 --format='%h %s')"
+      # demo data of the M&E Field Tool (idempotent: loads once per version, see app/services/me_kpi_demo.py)
+      docker compose -f docker-compose.prod.yml exec -T server python -m app.services.me_kpi_demo || echo "!! demo data step failed (ignored)"
       exit 0
     fi
     sleep 2

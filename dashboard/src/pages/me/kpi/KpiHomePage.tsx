@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import clsx from "clsx";
-import { AlertCircle, BarChart3, CheckCircle2, ClipboardList, CloudOff, CloudUpload, FilePlus2, ListChecks, Pencil, Trash2, Users, Wifi, WifiOff } from "lucide-react";
+import { AlertCircle, BarChart3, CheckCircle2, ClipboardList, CloudOff, CloudUpload, FilePlus2, FileText, ListChecks, Pencil, Trash2, Users, Wifi, WifiOff } from "lucide-react";
 import { useAuth } from "../../../auth/AuthContext";
 import { isAppMode } from "../../../brand";
 import { Card, ErrorBox } from "../../../components/ui";
@@ -67,6 +67,7 @@ export default function KpiHomePage() {
           </button>
           {can("me_kpi.accounts") && !isAppMode && <Link to="/me/kpi/accounts" className="flex items-center gap-3 rounded-xl bg-white/15 px-4 py-4 text-white shadow hover:bg-white/25"><Users size={26} /><div><div className="text-base font-bold">Field accounts</div><div className="text-xs opacity-80">officers who use the app</div></div></Link>}
           {can("me_kpi.view") && !isAppMode && <Link to="/me/kpi/dashboard" className="flex items-center gap-3 rounded-xl bg-white/15 px-4 py-4 text-white shadow hover:bg-white/25"><BarChart3 size={26} /><div><div className="text-base font-bold">Dashboard</div><div className="text-xs opacity-80">KPIs by district and week</div></div></Link>}
+          {can("me_kpi.view") && !isAppMode && <Link to="/me/kpi/district-report" className="flex items-center gap-3 rounded-xl bg-white/15 px-4 py-4 text-white shadow hover:bg-white/25"><FileText size={26} /><div><div className="text-base font-bold">District report</div><div className="text-xs opacity-80">printable summary</div></div></Link>}
         </div>
       </div>
       {notice && <div className="mb-3 flex items-center justify-between rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-900"><span>{notice}</span><button className="text-xs underline" onClick={() => setNotice(null)}>Close</button></div>}
