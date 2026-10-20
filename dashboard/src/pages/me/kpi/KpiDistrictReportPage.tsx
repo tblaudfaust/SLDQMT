@@ -6,7 +6,7 @@ import { Printer } from "lucide-react";
 import { api, fmtDate, qs } from "../../../api/client";
 import type { MeKpiReport, MeKpiSummary } from "../../../api/types";
 import { Empty, ErrorBox, Spinner } from "../../../components/ui";
-import { HeatCell, KPIS, PHASES, Panel, Progress, Scorecard, pct, phaseLabel, ratingLabel, status, statusBg } from "./kpiUi";
+import { HeatCell, KPIS, PHASES, Panel, Progress, Scorecard, pct, phaseLabel, phaseShort, ratingLabel, status, statusBg } from "./kpiUi";
 
 /** Printable M&E report for one district (or the whole scope): scorecards, SA table, flagged visits,
  *  community engagement and what the officers wrote about strengths, weaknesses, safety and escalations. */
@@ -96,10 +96,10 @@ export default function KpiDistrictReportPage() {
                     const m = s.latest.metrics;
                     return (
                       <tr key={s.key}>
-                        <td className="font-semibold">{s.code || s.name}{s.code && s.name ? <span className="block text-[11px] font-normal text-slate-500">{s.name}</span> : null}</td>
-                        <td>{s.chiefdom ?? "—"}</td><td className="text-xs">{[...s.phases].map(phaseLabel).join(", ")}</td><td className="text-right tabular-nums">{s.visits}</td>
+                        <td className="min-w-[200px] font-semibold">{s.code || s.name}{s.code && s.name ? <span className="block max-w-[260px] truncate text-[11px] font-normal text-slate-500" title={s.name}>{s.name}</span> : null}</td>
+                        <td>{s.chiefdom ?? "—"}</td><td className="whitespace-nowrap text-xs">{[...s.phases].map(phaseShort).join(", ")}</td><td className="text-right tabular-nums">{s.visits}</td>
                         <td className="whitespace-nowrap">{fmtDate(s.latest.report_date)}{s.latest.week ? <span className="text-xs text-slate-400"> · wk {s.latest.week}</span> : ""}</td>
-                        <td>{s.latest.respondent_name ?? "—"}<span className="block text-[11px] text-slate-400">{s.latest.respondent_role_label ?? ""}{s.latest.collection_mode_label ? ` · ${s.latest.collection_mode_label.toLowerCase()}` : ""}</span></td>
+                        <td className="whitespace-nowrap">{s.latest.respondent_name ?? "—"}<span className="block text-[11px] text-slate-400">{s.latest.respondent_role_label ?? ""}{s.latest.collection_mode_label ? ` · ${s.latest.collection_mode_label.toLowerCase()}` : ""}</span></td>
                         <HeatCell v={m.coverage_pct} {...KPIS.coverage} /><HeatCell v={m.synced_pct} {...KPIS.synced} /><HeatCell v={m.error_pct} {...KPIS.error} /><HeatCell v={m.tablets_pct} {...KPIS.tablets} />
                         <td><span className={clsx("rounded-full px-2 py-0.5 text-xs font-semibold", statusBg[status(m.overall === null ? null : m.overall * 25, 75, 50)])}>{m.overall ? ["", "Poor", "Weak", "Good", "Very good"][m.overall] : "—"}</span></td>
                         <td className="text-xs">{m.safety_concern && <span className="mr-1 rounded-full bg-red-100 px-2 py-0.5 font-semibold text-red-800">Safety</span>}{m.escalation && <span className="mr-1 rounded-full bg-amber-100 px-2 py-0.5 font-semibold text-amber-800">Escalate</span>}{m.follow_up && <span className="rounded-full bg-sky-100 px-2 py-0.5 font-semibold text-sky-800">Follow-up</span>}</td>

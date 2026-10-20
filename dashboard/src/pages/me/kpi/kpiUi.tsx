@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 export const NAVY = "#1F4E79", GREEN = "#15803d", LIME = "#65a30d", AMBER = "#d97706", RED = "#b91c1c", SKY = "#0ea5e9", SLATE = "#94a3b8";
 export const PHASES: [string, string][] = [["MT", "Master trainers' practice"], ["TOT", "ToT practice"], ["TOE", "ToE practice"], ["L", "Listing"], ["E", "Enumeration"]];
 export const phaseLabel = (code: string) => PHASES.find(([v]) => v === code)?.[1] ?? code;
+export const phaseShort = (code: string) => ({ MT: "MT", TOT: "ToT", TOE: "ToE", L: "Listing", E: "Enumeration" } as Record<string, string>)[code] ?? code;
 export const pct = (v: number | null | undefined, digits = 0) => (v === null || v === undefined ? "—" : `${digits ? v.toFixed(digits) : Math.round(v)}%`);
 export const ratingLabel = (v: number | null | undefined) => (v === null || v === undefined ? "—" : v >= 3.5 ? "Very good" : v >= 2.5 ? "Good" : v >= 1.5 ? "Weak" : "Poor");
 
@@ -37,12 +38,12 @@ export function Scorecard({ label, value, raw, good, warn, invert, help, count }
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-2">
-        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</div>
-        <span className={clsx("rounded-full px-2 py-0.5 text-[10px] font-bold", statusBg[st])}>{statusText[st]}</span>
+        <div className="truncate text-xs font-semibold uppercase tracking-wide text-slate-500" title={label}>{label}</div>
+        <span className={clsx("shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold", statusBg[st])}>{statusText[st]}</span>
       </div>
       <div className="mt-1 text-3xl font-extrabold tabular-nums" style={{ color: statusColor[st] === SLATE ? NAVY : statusColor[st] }}>{value}</div>
       <div className="mt-2 h-1.5 rounded-full bg-slate-100"><div className="h-1.5 rounded-full" style={{ width: `${width}%`, background: statusColor[st] }} /></div>
-      <div className="mt-1 flex justify-between text-[11px] text-slate-400"><span>{help}</span><span>target {invert ? "≤" : "≥"} {good}%</span></div>
+      <div className="mt-1 text-[11px] leading-tight text-slate-400"><div className="truncate" title={help}>{help}</div><div className="font-semibold text-slate-500">target {invert ? "≤" : "≥"} {good}%</div></div>
       {count !== undefined && <div className="mt-1 text-xs text-slate-500">{count}</div>}
     </div>
   );
