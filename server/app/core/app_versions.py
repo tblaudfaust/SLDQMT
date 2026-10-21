@@ -13,7 +13,7 @@ from app.core.config import settings
 
 APPS: dict[str, dict] = {
     "fieldtool": {"title": "SLPHC M&E Field Tool", "package": "sl.gov.statistics.mefieldtool", "version_code": 2, "version_name": "1.1.0", "file": "SLPHC-ME-FieldTool.apk", "notes": "EAs under the SA, GPS required, update check."},
-    "fieldmonitor": {"title": "SLPHC Field Monitor", "package": "sl.gov.statistics.fieldmonitor", "version_code": 4, "version_name": "0.4.0", "file": "SLPHC-FieldMonitor.apk", "notes": ""},
+    "fieldmonitor": {"title": "SLPHC Field Monitor", "package": "sl.gov.statistics.fieldmonitor", "version_code": 5, "version_name": "0.4.1", "file": "SLPHC-FieldMonitor.apk", "notes": "SA filter, enumerator linked to the EA, no future date received"},
 }
 
 

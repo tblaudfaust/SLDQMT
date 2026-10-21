@@ -7,11 +7,33 @@ cd "$(dirname "$0")/.."
 # Everything lives in a function so bash parses the whole file before running it:
 # the git reset below replaces this very script, and bash would otherwise keep
 # executing the old copy from its previous offset.
+# The Android workflow attaches SLPHC-FieldMonitor-<tag>-<sha>.apk and SLPHC-ME-FieldTool-<tag>-<sha>.apk to every
+# tag release; the server serves them from downloads/ under fixed names (see app/api/v1/resources.py).
+fetch_apks() {
+  local api="https://api.github.com/repos/tblaudfaust/SLDQMT/releases/latest"
+  local json; json=$(curl -fsSL -H "Accept: application/vnd.github+json" "$api") || return 1
+  mkdir -p downloads
+  local name url
+  for name in SLPHC-FieldMonitor SLPHC-ME-FieldTool; do
+    url=$(printf '%s' "$json" | grep -o "\"browser_download_url\": *\"[^\"]*/$name-[^\"]*\.apk\"" | head -1 | sed 's/.*"\(https[^"]*\)"/\1/')
+    [ -n "$url" ] || { echo "   no $name asset in the latest release"; continue; }
+    # -z: only download when the asset is newer than the file we already serve
+    if curl -fsSL -z "downloads/$name.apk" -o "downloads/$name.apk.tmp" "$url" && [ -s "downloads/$name.apk.tmp" ]; then
+      mv -f "downloads/$name.apk.tmp" "downloads/$name.apk"; echo "   updated downloads/$name.apk from $url"
+    else
+      rm -f "downloads/$name.apk.tmp"; echo "   downloads/$name.apk is current"
+    fi
+  done
+}
+
 main() {
 
   echo "== $(date -u +%FT%TZ) pulling latest main"
   git fetch --quiet origin main
   git reset --hard --quiet origin/main
+
+  echo "== fetching the latest released APKs into downloads/ (GitHub release assets; kept if unchanged)"
+  fetch_apks || echo "!! could not fetch the APKs (ignored)"
 
   echo "== building and restarting containers"
   docker compose -f docker-compose.prod.yml up -d --build --remove-orphans

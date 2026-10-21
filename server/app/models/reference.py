@@ -90,6 +90,8 @@ class EnumerationArea(TimestampMixin, Base):
     section_code: Mapped[str | None] = mapped_column(String(16), index=True)
     loc_status: Mapped[str | None] = mapped_column(String(8))  # 1 rural, 2 urban
     expected_households: Mapped[int | None] = mapped_column(Integer)
+    # the enumerator assigned to the EA in the frame (same row of the ENUMERATION_AREA sheet)
+    enumerator_id: Mapped[int | None] = mapped_column(ForeignKey("enumerator.id"), index=True)
     lat: Mapped[float | None] = mapped_column(Float)
     lng: Mapped[float | None] = mapped_column(Float)
     active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

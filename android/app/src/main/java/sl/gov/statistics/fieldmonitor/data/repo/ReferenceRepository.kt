@@ -35,7 +35,7 @@ class ReferenceRepository @Inject constructor(private val db: AppDatabase) {
             teams = bundle.teams.map { TeamEntity(it.id, it.districtId, it.code, it.name, it.chiefdom, it.active) },
             supervisors = bundle.supervisors.map { SupervisorEntity(it.id, it.teamId, it.code, it.name, it.phone, it.active) },
             enumerators = bundle.enumerators.map { EnumeratorEntity(it.id, it.teamId, it.code, it.name, it.phone, it.active) },
-            eas = bundle.eas.map { EaEntity(it.id, it.teamId, it.code, it.name, it.locality, it.households, it.active) },
+            eas = bundle.eas.map { EaEntity(it.id, it.teamId, it.code, it.name, it.locality, it.households, it.active, it.enumeratorId) },
             pickLists = bundle.categories.map { PickListEntity("category:${it.id}", "category", it.id, it.code, it.name, it.active, it.sortOrder) } +
                 bundle.sources.map { PickListEntity("source:${it.id}", "source", it.id, it.code, it.name, it.active, it.sortOrder) },
             settings = bundle.settings.map { SettingEntity(it.key, it.value) },

@@ -49,6 +49,8 @@ import sl.gov.statistics.fieldmonitor.data.repo.NewError
 import sl.gov.statistics.fieldmonitor.data.repo.ReferenceRepository
 import sl.gov.statistics.fieldmonitor.ui.DropdownField
 import sl.gov.statistics.fieldmonitor.ui.Option
+import sl.gov.statistics.fieldmonitor.ui.SearchableDropdownField
+import androidx.compose.material3.SelectableDates
 import sl.gov.statistics.fieldmonitor.util.GpsFix
 import sl.gov.statistics.fieldmonitor.util.LocationHelper
 import sl.gov.statistics.fieldmonitor.util.Time
@@ -121,6 +123,7 @@ class ErrorFormViewModel @Inject constructor(
             f.description.isBlank() -> "Describe the error"
             f.sourceId == null -> "Select how the error was received"
             f.actionTaken.isBlank() -> "Record the action taken"
+            f.dateReceived > Time.today() -> "The date received cannot be in the future"
             else -> null
         }
         if (missing != null) { update { copy(error = missing) }; return }
@@ -162,7 +165,7 @@ fun ErrorFormScreen(onSaved: (String) -> Unit, onBack: () -> Unit, vm: ErrorForm
             Text("Where", style = MaterialTheme.typography.titleMedium)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 DropdownField("District", districts.map { Option(it.id, it.name) }, f.districtId, { vm.update { copy(districtId = it.id, teamId = null, supervisorId = null, supervisorName = "", enumeratorId = null, enumeratorName = "", eaId = null) } }, Modifier.weight(1f))
-                DropdownField("Team (supervisory area)", teams.map { Option(it.id, "${it.code} ${it.name}") }, f.teamId, { vm.update { copy(teamId = it.id, supervisorId = null, supervisorName = "", enumeratorId = null, enumeratorName = "", eaId = null) } }, Modifier.weight(1f), enabled = f.districtId != null)
+                SearchableDropdownField("SA (supervisory area)", teams.map { Option(it.id, "${it.code} ${it.name}") }, f.teamId, { vm.update { copy(teamId = it.id, supervisorId = null, supervisorName = "", enumeratorId = null, enumeratorName = "", eaId = null) } }, Modifier.weight(1f), enabled = f.districtId != null, placeholder = "Type the SA code or name")
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (supervisors.isNotEmpty()) {
@@ -171,11 +174,11 @@ fun ErrorFormScreen(onSaved: (String) -> Unit, onBack: () -> Unit, vm: ErrorForm
                     OutlinedTextField(f.supervisorName, { s -> vm.update { copy(supervisorName = s) } }, label = { Text("Supervisor") }, modifier = Modifier.weight(1f), singleLine = true)
                 }
                 if (enumerators.isNotEmpty()) {
-                    DropdownField("Enumerator", listOf(Option(null, "Not applicable")) + enumerators.map { Option(it.id, it.name) }, f.enumeratorId, { o -> vm.update { copy(enumeratorId = o.id, enumeratorName = if (o.id == null) "" else o.label) } }, Modifier.weight(1f), enabled = f.teamId != null)
+                    DropdownField("Enumerator", listOf(Option(null, "Not applicable")) + enumerators.map { Option(it.id, it.name) }, f.enumeratorId, { o -> val own = if (o.id == null) null else eas.firstOrNull { it.enumeratorId == o.id }; vm.update { copy(enumeratorId = o.id, enumeratorName = if (o.id == null) "" else o.label, eaId = own?.id ?: eaId) } }, Modifier.weight(1f), enabled = f.teamId != null)
                 } else {
                     OutlinedTextField(f.enumeratorName, { s -> vm.update { copy(enumeratorName = s) } }, label = { Text("Enumerator (optional)") }, modifier = Modifier.weight(1f), singleLine = true)
                 }
-                DropdownField("EA", listOf(Option(null, "Not applicable")) + eas.map { Option(it.id, "EA ${it.code.takeLast(4)} · ${it.name ?: ""}${it.locality?.let { l -> " ($l)" } ?: ""}") }, f.eaId, { vm.update { copy(eaId = it.id) } }, Modifier.weight(1f), enabled = f.teamId != null)
+                DropdownField("EA", listOf(Option(null, "Not applicable")) + eas.sortedBy { if (f.enumeratorId != null && it.enumeratorId == f.enumeratorId) 0 else 1 }.map { Option(it.id, "EA ${it.code.takeLast(4)} · ${it.name ?: ""}${it.locality?.let { l -> " ($l)" } ?: ""}${if (f.enumeratorId != null && it.enumeratorId == f.enumeratorId) " · this enumerator" else ""}") }, f.eaId, { o -> val en = eas.firstOrNull { it.id == o.id }?.enumeratorId?.let { id -> enumerators.firstOrNull { it.id == id } }; vm.update { copy(eaId = o.id, enumeratorId = en?.id ?: enumeratorId, enumeratorName = en?.name ?: enumeratorName) } }, Modifier.weight(1f), enabled = f.teamId != null)
             }
 
             Text("What", style = MaterialTheme.typography.titleMedium)
@@ -206,7 +209,11 @@ fun ErrorFormScreen(onSaved: (String) -> Unit, onBack: () -> Unit, vm: ErrorForm
     }
 
     if (showDate) {
-        val state = rememberDatePickerState(initialSelectedDateMillis = Instant.parse(f.dateReceived + "T00:00:00Z").toEpochMilli())
+        val todayEnd = Instant.parse(Time.today() + "T23:59:59Z").toEpochMilli()
+        val state = rememberDatePickerState(
+            initialSelectedDateMillis = Instant.parse(f.dateReceived + "T00:00:00Z").toEpochMilli(),
+            selectableDates = object : SelectableDates { override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis <= todayEnd },
+        )
         DatePickerDialog(
             onDismissRequest = { showDate = false },
             confirmButton = {

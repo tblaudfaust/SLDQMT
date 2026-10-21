@@ -17,6 +17,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -107,6 +108,47 @@ fun DropdownField(
             options.forEach { opt ->
                 DropdownMenuItem(text = { Text(opt.label) }, onClick = { onSelect(opt); expanded = false })
             }
+        }
+    }
+}
+
+/** A dropdown with a filter box: type part of the code or name to narrow a long list (hundreds of SAs). */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SearchableDropdownField(
+    label: String,
+    options: List<Option>,
+    selected: Int?,
+    onSelect: (Option) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    placeholder: String = "Type to filter",
+    maxItems: Int = 80,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = options.firstOrNull { it.id != null && it.id == selected }?.label ?: ""
+    var query by remember(selected, options) { mutableStateOf(selectedLabel) }
+    val filtered = remember(query, options, selectedLabel) {
+        val q = query.trim().lowercase()
+        if (q.isEmpty() || q == selectedLabel.lowercase()) options.take(maxItems) else options.filter { it.label.lowercase().contains(q) }.take(maxItems)
+    }
+    ExposedDropdownMenuBox(expanded = expanded && enabled, onExpandedChange = { expanded = it }, modifier = modifier) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it; expanded = true },
+            enabled = enabled,
+            singleLine = true,
+            label = { Text(label) },
+            placeholder = { Text(placeholder) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable, enabled).fillMaxWidth(),
+        )
+        ExposedDropdownMenu(expanded = expanded && enabled, onDismissRequest = { expanded = false; query = selectedLabel }) {
+            if (filtered.isEmpty()) DropdownMenuItem(text = { Text("No match") }, onClick = { expanded = false }, enabled = false)
+            filtered.forEach { opt ->
+                DropdownMenuItem(text = { Text(opt.label) }, onClick = { onSelect(opt); query = opt.label; expanded = false })
+            }
+            if (options.size > filtered.size && query.trim().isEmpty()) DropdownMenuItem(text = { Text("${options.size - filtered.size} more: type to filter") }, onClick = {}, enabled = false)
         }
     }
 }

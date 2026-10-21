@@ -55,6 +55,9 @@ def test_frame_workbook_import(client, admin):
     assert {e["code"] for e in eas} == {"229010130011", "229010110021"}
     first = next(e for e in eas if e["code"] == "229010130011")
     assert first["locality"] == "Bilimaia" and first["households"] == 98 and first["lat"] == 9.363
+    # each EA is linked to the enumerator of its frame row, so the tablet can pick the EA from the enumerator
+    enums = {e["id"]: e for e in client.get(f"/api/v1/admin/reference/enumerators?team_id={t1['id']}", headers=admin).json()}
+    assert all(e["enumerator_id"] in enums for e in eas) and len({e["enumerator_id"] for e in eas}) == 2
 
     # Re-import: nothing new, names unchanged, ids stable
     r2 = client.post("/api/v1/admin/reference/import", files={"file": ("FALABA_EA_FRAME_11_09_2026.xlsx", make_frame(), "application/octet-stream")}, headers=admin)

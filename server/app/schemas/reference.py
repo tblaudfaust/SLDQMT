@@ -111,6 +111,7 @@ class EAOut(ORMModel):
     households: int | None = None
     lat: float | None = None
     lng: float | None = None
+    enumerator_id: int | None = None
     active: bool
 
 

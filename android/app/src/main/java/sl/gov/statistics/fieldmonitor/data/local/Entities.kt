@@ -1,5 +1,6 @@
 package sl.gov.statistics.fieldmonitor.data.local
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -50,6 +51,7 @@ data class EaEntity(
     val locality: String?,
     val households: Int?,
     val active: Boolean,
+    @ColumnInfo(defaultValue = "NULL") val enumeratorId: Int? = null, // the enumerator assigned to the EA in the frame
 )
 
 @Entity(tableName = "pick_list")

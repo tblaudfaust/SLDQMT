@@ -64,7 +64,7 @@ COLUMNS: dict[str, list[str]] = {
     "supervisor_external_id": ["supid", "supervisorid"],
     "supervisor": ["supervisor", "supervisorname"],
     "supervisor_phone": ["supervisorphone", "supervisorcontact", "supervisortel", "supphone"],
-    "enumerator_code": ["enumeratorcode", "enumcode", "enumeratorno", "enumeratornumber"],
+    "enumerator_code": ["enumeratorcode", "enumcode", "enumeratorno", "enumeratornumber", "enumno"],
     "enumerator_external_id": ["enumid", "enumeratorid"],
     "enumerator": ["enumerator", "enumeratorname"],
     "enumerator_phone": ["enumeratorphone", "enumeratorcontact", "enumeratortel"],
@@ -292,7 +292,7 @@ class _Importer:
 
     def person(self, model, cache: dict, counter: str, team: Team, name: str | None, code: str | None, external_id: str | None, phone: str | None):
         if not (name or code):
-            return
+            return None
         label = clean_name(name) or f"{'Supervisor' if model is Supervisor else 'Enumerator'} {code}"
         key = (team.id, code or label.lower())
         row = cache.get(key)
@@ -313,8 +313,9 @@ class _Importer:
             if external_id and not row.external_id:
                 row.external_id = external_id
         cache[key] = row
+        return row
 
-    def ea(self, row: dict, team: Team):
+    def ea(self, row: dict, team: Team, enumerator: Enumerator | None = None):
         code = row.get("ea_code")
         if not code:
             return
@@ -349,6 +350,9 @@ class _Importer:
                 setattr(ea, attr, str(row[col]))
         if households is not None and ea.expected_households != households:
             ea.expected_households = households
+        if enumerator is not None and ea.enumerator_id != enumerator.id:
+            ea.enumerator_id = enumerator.id  # links the enumerator to the EA for the tablet's error form
+            self.counts["assigned"] += 1
         self.eas[key] = ea
         self.seen_eas.add(ea.id)
 
@@ -363,8 +367,8 @@ class _Importer:
             if team is None:
                 continue
             self.person(Supervisor, self.supervisors, "supervisors", team, row.get("supervisor"), row.get("supervisor_code"), row.get("supervisor_external_id"), row.get("supervisor_phone"))
-            self.person(Enumerator, self.enumerators, "enumerators", team, row.get("enumerator"), row.get("enumerator_code"), row.get("enumerator_external_id"), row.get("enumerator_phone"))
-            self.ea(row, team)
+            enumerator = self.person(Enumerator, self.enumerators, "enumerators", team, row.get("enumerator"), row.get("enumerator_code"), row.get("enumerator_external_id"), row.get("enumerator_phone"))
+            self.ea(row, team, enumerator)
             if self.rows % 2000 == 0:
                 self.db.flush()
         removed = self.removed()

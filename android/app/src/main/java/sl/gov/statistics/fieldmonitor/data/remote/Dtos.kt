@@ -137,7 +137,7 @@ data class TeamDto(val id: Int, @SerialName("district_id") val districtId: Int, 
 data class PersonDto(val id: Int, @SerialName("team_id") val teamId: Int, val code: String? = null, val name: String, val phone: String? = null, val active: Boolean)
 
 @Serializable
-data class EaDto(val id: Int, @SerialName("team_id") val teamId: Int, val code: String, val name: String? = null, val locality: String? = null, val households: Int? = null, val active: Boolean)
+data class EaDto(val id: Int, @SerialName("team_id") val teamId: Int, val code: String, val name: String? = null, val locality: String? = null, val households: Int? = null, val active: Boolean, @SerialName("enumerator_id") val enumeratorId: Int? = null)
 
 @Serializable
 data class PickListDto(val id: Int, val code: String, val name: String, val active: Boolean, @SerialName("sort_order") val sortOrder: Int)
