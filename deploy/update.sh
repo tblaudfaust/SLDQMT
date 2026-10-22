@@ -21,10 +21,10 @@ fetch_apks() {
     if [ -f "downloads/$name.apk" ] && [ "$(cat "downloads/$name.apk.src" 2>/dev/null)" = "$url" ]; then
       echo "   downloads/$name.apk is current ($url)"; continue
     fi
-    if curl -fsSL -o "downloads/$name.apk.tmp" "$url" && [ -s "downloads/$name.apk.tmp" ]; then
-      mv -f "downloads/$name.apk.tmp" "downloads/$name.apk"; printf '%s' "$url" > "downloads/$name.apk.src"; echo "   updated downloads/$name.apk from $url"
+    if curl -fsSL --retry 3 --retry-all-errors --retry-delay 5 -o "downloads/$name.apk.tmp.$$" "$url" && [ -s "downloads/$name.apk.tmp.$$" ]; then
+      mv -f "downloads/$name.apk.tmp.$$" "downloads/$name.apk"; printf '%s' "$url" > "downloads/$name.apk.src"; echo "   updated downloads/$name.apk from $url"
     else
-      rm -f "downloads/$name.apk.tmp"; echo "   could not download $url"
+      rm -f "downloads/$name.apk.tmp.$$"; echo "   could not download $url"
     fi
   done
 }

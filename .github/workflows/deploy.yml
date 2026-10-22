@@ -7,6 +7,11 @@ on:
     types: [completed]
     branches: [main, "v*"]  # a tag's APK build (head branch = the tag) must also publish the APKs
   workflow_dispatch:
+# One deploy at a time: a push and a tag build can finish within the same minute.
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
 jobs:
   deploy:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
