@@ -34,6 +34,7 @@ class UserOut(ORMModel):
     active_from: date | None = None
     active_until: date | None = None
     assigned_sas: int = 0  # SAs in this officer's workload (0 = none assigned, district scope applies)
+    assigned_district_ids: list[int] = []  # the district(s) of those SAs
     district_ids: list[int] | None = None
     scopes: list[ScopeOut] = []
     permissions: list[str] = []

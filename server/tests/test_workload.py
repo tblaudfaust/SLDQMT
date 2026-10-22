@@ -193,3 +193,31 @@ def test_csv_import_from_the_user_template(client, admin, geo):
     assert fm["staff_code"] == "FM-WAU-001" and fm["assigned_sas"] == 1
     dqm = login(client, "dqm-wau-001", "ChangeMe123")["user"]
     assert dqm["district_ids"] == [geo["districts"]["WAU"]["id"]] and dqm["assigned_sas"] == 1
+
+
+def test_officer_scope_follows_the_workload_not_the_account_district(client, admin, geo, monitor):
+    """A DQM account created with the wrong district (DQM-51-008 given Western Urban while its SAs are in
+    Western Rural) is scoped to the district of its SAs, so its cases show on the dashboard."""
+    _import_workload(client, admin)
+    wau, war = geo["districts"]["WAU"]["id"], geo["districts"]["WAR"]["id"]
+    teams = {t["code"]: t for t in client.get("/api/v1/admin/reference/teams", headers=admin).json()}
+    war_sa = teams["WAR-SA01"]
+    assert war_sa["dqm_code"] == "DQM-WAR-001"
+    # a Western Rural Field Monitor logs an error on WAR-SA01
+    r = client.post("/api/v1/admin/users", json={"username": "fm-war-001", "password": "Password123", "full_name": "FM WAR 001", "role": "FIELD_MONITOR", "district_ids": [war], "staff_code": "FM-WAR-001"}, headers=admin)
+    assert r.status_code == 201, r.text
+    device = str(uuid.uuid4())
+    fm = auth(login(client, "fm-war-001", "Password123", device)["access_token"])
+    assert client.post("/api/v1/devices/register", json={"device_id": device, "model": "T", "android_version": "13", "app_version": "0.4.5"}, headers=fm).status_code == 200
+    err = make_error(geo, district="WAR", team="WAR-SA01", description="error on WAR-SA01")
+    r = client.post("/api/v1/sync/push", json={"device_id": device, "errors": [err]}, headers=fm)
+    assert r.status_code == 200 and r.json()["applied"] == 1, r.text
+    r = client.post("/api/v1/admin/users", json={"username": "dqm-51-001", "password": "Password123", "full_name": "DQM 51-001", "role": "DISTRICT_DQM", "district_ids": [wau], "staff_code": "DQM-WAR-001"}, headers=admin)
+    assert r.status_code == 201, r.text
+    dqm = auth(login(client, "dqm-51-001", "Password123")["access_token"])
+    me = client.get("/api/v1/auth/me", headers=dqm).json()
+    assert me["assigned_sas"] == 1 and me["assigned_district_ids"] == [war] and me["district_ids"] == [war]
+    assert [d["id"] for d in client.get("/api/v1/admin/reference/districts", headers=dqm).json()] == [war]
+    own = client.get("/api/v1/errors", headers=dqm).json()
+    assert own["total"] == 1 and own["items"][0]["team"].startswith("WAR-SA01")
+    assert client.get("/api/v1/dashboard/summary", headers=dqm).json()["total"] == 1

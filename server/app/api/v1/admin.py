@@ -531,13 +531,21 @@ def regions(db: Session = Depends(get_db), _: User = Depends(require_web)):
 
 
 @router.get("/reference/districts", response_model=list[DistrictOut])
-def districts(db: Session = Depends(get_db), _: User = Depends(require_web)):
-    return db.execute(select(District).order_by(District.name)).scalars().all()
+def districts(db: Session = Depends(get_db), user: User = Depends(require_web)):
+    """The districts the signed-in user may see: a district officer gets only their own district(s)."""
+    q = select(District).order_by(District.name)
+    scope = district_ids_for(db, user)
+    if scope is not None:
+        q = q.where(District.id.in_(scope))
+    return db.execute(q).scalars().all()
 
 
 @router.get("/reference/teams", response_model=list[TeamOut])
-def teams(district_id: int | None = None, db: Session = Depends(get_db), _: User = Depends(require_web)):
+def teams(district_id: int | None = None, db: Session = Depends(get_db), user: User = Depends(require_web)):
     q = select(Team).order_by(Team.code)
+    scope = district_ids_for(db, user)
+    if scope is not None:
+        q = q.where(Team.district_id.in_(scope))
     if district_id:
         q = q.where(Team.district_id == district_id)
     return db.execute(q).scalars().all()

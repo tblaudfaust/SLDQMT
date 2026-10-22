@@ -17,6 +17,10 @@ export default function FiltersBar({ compact = false }: { compact?: boolean }) {
   const { user } = useAuth();
   const { districts, teams, categories } = useReference();
   const assigned = user?.assigned_sas ?? 0;
+  const myDistricts = user?.assigned_district_ids ?? [];
+  // "My SAs only" with a district that holds none of them would show nothing: say so and offer the right district
+  const offMyDistrict = assigned > 0 && f.own_sas !== false && !!f.district_id?.length && !f.district_id.some((d) => myDistricts.includes(d));
+  const myDistrictNames = districts.filter((d) => myDistricts.includes(d.id)).map((d) => d.name).join(", ");
   // Nearly 5,000 teams nationally: only list them once a district is chosen.
   const visibleTeams = f.district_id?.length ? teams.filter((t) => f.district_id!.includes(t.district_id)) : [];
   return (
@@ -75,6 +79,13 @@ export default function FiltersBar({ compact = false }: { compact?: boolean }) {
         )}
         <button className="btn-outline mt-5" onClick={clear}>Clear filters</button>
       </div>
+      {offMyDistrict && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          Your {assigned} SAs are in {myDistrictNames || "another district"}, not in the district selected, so nothing matches.
+          <button className="font-semibold underline" onClick={() => update({ district_id: myDistricts, team_id: undefined })}>Show my SAs</button>
+          <span>or untick "My {assigned} SAs only" to see the whole district.</span>
+        </div>
+      )}
     </div>
   );
 }

@@ -15,6 +15,7 @@ export interface User {
   active_from?: string | null;
   active_until?: string | null;
   assigned_sas?: number;
+  assigned_district_ids?: number[]; // the district(s) of the SAs in this officer's workload
   district_ids?: number[] | null;
   scopes: { region_id: number | null; district_id: number | null }[];
   permissions: string[];
