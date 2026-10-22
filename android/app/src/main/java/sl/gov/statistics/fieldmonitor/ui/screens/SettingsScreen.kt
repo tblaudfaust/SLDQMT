@@ -1,5 +1,8 @@
 package sl.gov.statistics.fieldmonitor.ui.screens
 
+import sl.gov.statistics.fieldmonitor.util.AppUpdater
+import sl.gov.statistics.fieldmonitor.util.UpdateState
+import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -44,7 +47,14 @@ import sl.gov.statistics.fieldmonitor.ui.LabelValue
 import javax.inject.Inject
 
 @HiltViewModel
-class SettingsViewModel @Inject constructor(private val auth: AuthRepository, errors: ErrorRepository, mefm: MefmRepository) : ViewModel() {
+class SettingsViewModel @Inject constructor(private val auth: AuthRepository, errors: ErrorRepository, mefm: MefmRepository, private val updater: AppUpdater) : ViewModel() {
+    val update = updater.state
+    val checking = MutableStateFlow(false)
+    val checkNote = MutableStateFlow<String?>(null)
+    fun checkForUpdates() { viewModelScope.launch { checking.value = true; checkNote.value = null; updater.check(force = true); checking.value = false; checkNote.value = if (updater.state.value is UpdateState.Idle) "You have the latest version (${BuildConfig.VERSION_NAME})." else null } }
+    fun downloadUpdate() { val s = update.value; if (s is UpdateState.Available || s is UpdateState.Failed) viewModelScope.launch { updater.download((s as? UpdateState.Available)?.info ?: (s as UpdateState.Failed).info) } }
+    fun installUpdate() { when (val s = update.value) { is UpdateState.Ready -> updater.install(s.info, s.file); is UpdateState.NeedPermission -> updater.install(s.info, s.file); else -> {} } }
+    fun dismissUpdate() = updater.dismiss()
     val fullName = auth.fullName
     val pending = combine(errors.observePendingCount(), mefm.pendingVisits(), mefm.pendingCheckins()) { a, b, c -> a + b + c }
     fun changePin(pin: String) = auth.setPin(pin)
@@ -65,6 +75,12 @@ fun SettingsScreen(onBack: () -> Unit, onLoggedOut: () -> Unit, vm: SettingsView
             LabelValue("Signed in as", vm.fullName)
             LabelValue("App version", BuildConfig.VERSION_NAME)
             LabelValue("Server", BuildConfig.API_BASE_URL)
+            val update by vm.update.collectAsStateWithLifecycle()
+            val checking by vm.checking.collectAsStateWithLifecycle()
+            val checkNote by vm.checkNote.collectAsStateWithLifecycle()
+            OutlinedButton(onClick = { vm.checkForUpdates() }, enabled = !checking) { Text(if (checking) "Checking…" else "Check for updates") }
+            checkNote?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            if (update !is UpdateState.Idle) UpdateCard(update, vm::downloadUpdate, vm::installUpdate, vm::dismissUpdate)
             Text("Change PIN", style = MaterialTheme.typography.titleMedium)
             OutlinedTextField(
                 newPin, { if (it.length <= 4 && it.all(Char::isDigit)) newPin = it }, label = { Text("New 4-digit PIN") }, singleLine = true,

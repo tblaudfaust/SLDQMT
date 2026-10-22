@@ -1,5 +1,6 @@
 package sl.gov.statistics.fieldmonitor.sync
 
+import sl.gov.statistics.fieldmonitor.util.AppUpdater
 import androidx.room.withTransaction
 import sl.gov.statistics.fieldmonitor.BuildConfig
 import sl.gov.statistics.fieldmonitor.data.SessionStore
@@ -39,6 +40,7 @@ class SyncEngine @Inject constructor(
     private val session: SessionStore,
     private val reference: ReferenceRepository,
     private val mefm: MefmSyncEngine,
+    private val updater: AppUpdater,
 ) {
     private val errors = db.errorDao()
     private val followUps = db.followUpDao()
@@ -131,6 +133,7 @@ class SyncEngine @Inject constructor(
                 state.upsert(current)
             }
             state.upsert(current.copy(lastSyncAt = Time.nowIso(), lastResult = "OK", lastError = null))
+            runCatching { updater.check() }  // online now: is there a newer app?
             return SyncOutcome.Ok(pushed, pulled, rejected)
         } catch (e: IOException) {
             recordFailure("offline")

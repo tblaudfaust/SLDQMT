@@ -146,7 +146,7 @@ fun HomeScreen(
 
 /** "A new version is available": download with the system downloader, then open the installer. */
 @Composable
-private fun UpdateCard(u: UpdateState, onDownload: () -> Unit, onInstall: () -> Unit, onDismiss: () -> Unit) {
+internal fun UpdateCard(u: UpdateState, onDownload: () -> Unit, onInstall: () -> Unit, onDismiss: () -> Unit) {
     val info = when (u) { is UpdateState.Available -> u.info; is UpdateState.Downloading -> u.info; is UpdateState.Ready -> u.info; is UpdateState.NeedPermission -> u.info; is UpdateState.Failed -> u.info; else -> return }
     Card(colors = CardDefaults.cardColors(containerColor = Amber.copy(alpha = 0.18f)), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
