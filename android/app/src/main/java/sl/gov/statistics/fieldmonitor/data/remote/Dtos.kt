@@ -136,6 +136,18 @@ data class TeamDto(val id: Int, @SerialName("district_id") val districtId: Int, 
 @Serializable
 data class PersonDto(val id: Int, @SerialName("team_id") val teamId: Int, val code: String? = null, val name: String, val phone: String? = null, val active: Boolean)
 
+/** GET /public/app-version: the newest APK the server serves for each app. */
+@Serializable
+data class AppVersionDto(
+    val title: String = "",
+    @SerialName("version_code") val versionCode: Int,
+    @SerialName("version_name") val versionName: String,
+    val notes: String? = null,
+    val available: Boolean = false,
+    @SerialName("size_bytes") val sizeBytes: Long? = null,
+    @SerialName("download_url") val downloadUrl: String = "",
+)
+
 @Serializable
 data class EaDto(val id: Int, @SerialName("team_id") val teamId: Int, val code: String, val name: String? = null, val locality: String? = null, val households: Int? = null, val active: Boolean, @SerialName("enumerator_id") val enumeratorId: Int? = null)
 

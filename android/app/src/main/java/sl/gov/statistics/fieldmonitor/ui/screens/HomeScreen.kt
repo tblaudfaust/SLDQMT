@@ -51,7 +51,16 @@ import sl.gov.statistics.fieldmonitor.ui.theme.Amber
 import sl.gov.statistics.fieldmonitor.ui.theme.Green
 import sl.gov.statistics.fieldmonitor.ui.theme.Navy
 import sl.gov.statistics.fieldmonitor.ui.theme.Red
+import sl.gov.statistics.fieldmonitor.util.AppUpdater
 import sl.gov.statistics.fieldmonitor.util.Time
+import sl.gov.statistics.fieldmonitor.util.UpdateState
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.filled.SystemUpdate
 import javax.inject.Inject
 
 data class HomeState(val counts: Counts, val pending: Int, val sync: SyncStateEntity?)
@@ -62,12 +71,20 @@ class HomeViewModel @Inject constructor(
     db: AppDatabase,
     auth: AuthRepository,
     private val scheduler: SyncScheduler,
+    private val updater: AppUpdater,
 ) : ViewModel() {
     val fullName = auth.fullName
     val state: Flow<HomeState> = combine(errors.observeCounts(), errors.observePendingCount(), db.syncStateDao().observe()) { c, p, s ->
         HomeState(c, p, s)
     }
-    fun syncNow() = scheduler.syncNow()
+    val update = updater.state
+
+    init { viewModelScope.launch { updater.check() } }
+
+    fun syncNow() { scheduler.syncNow(); viewModelScope.launch { updater.check(force = true) } }
+    fun downloadUpdate() { val s = update.value; if (s is UpdateState.Available) viewModelScope.launch { updater.download(s.info) } else if (s is UpdateState.Failed) viewModelScope.launch { updater.download(s.info) } }
+    fun installUpdate() { when (val s = update.value) { is UpdateState.Ready -> updater.install(s.info, s.file); is UpdateState.NeedPermission -> updater.install(s.info, s.file); else -> {} } }
+    fun dismissUpdate() = updater.dismiss()
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -81,6 +98,7 @@ fun HomeScreen(
     vm: HomeViewModel = hiltViewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle(initialValue = HomeState(Counts(0, 0, 0, 0), 0, null))
+    val update by vm.update.collectAsStateWithLifecycle()
     val permissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
     LaunchedEffect(Unit) {
         val wanted = mutableListOf(Manifest.permission.ACCESS_FINE_LOCATION)
@@ -108,6 +126,7 @@ fun HomeScreen(
                 StatTile("Unresolved", state.counts.unresolved, Amber, Modifier.weight(1f), onErrors)
                 StatTile("Overdue follow-ups", state.counts.overdue, Red, Modifier.weight(1f), onDue)
             }
+            if (update !is UpdateState.Idle) UpdateCard(update, vm::downloadUpdate, vm::installUpdate, vm::dismissUpdate)
             Button(onClick = onNewError, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.Default.Add, null); Text("  Log new error", style = MaterialTheme.typography.titleMedium)
             }
@@ -121,6 +140,40 @@ fun HomeScreen(
                 supportingContent = { Text(syncDetail(state)) },
                 trailingContent = { OutlinedButton(onClick = { vm.syncNow() }) { Text("Sync now") } },
             )
+        }
+    }
+}
+
+/** "A new version is available": download with the system downloader, then open the installer. */
+@Composable
+private fun UpdateCard(u: UpdateState, onDownload: () -> Unit, onInstall: () -> Unit, onDismiss: () -> Unit) {
+    val info = when (u) { is UpdateState.Available -> u.info; is UpdateState.Downloading -> u.info; is UpdateState.Ready -> u.info; is UpdateState.NeedPermission -> u.info; is UpdateState.Failed -> u.info; else -> return }
+    Card(colors = CardDefaults.cardColors(containerColor = Amber.copy(alpha = 0.18f)), modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(Icons.Default.SystemUpdate, null, tint = Navy)
+                Text("Update available: SLPHC Field Monitor ${info.versionName}", style = MaterialTheme.typography.titleMedium)
+            }
+            if (info.notes.isNotBlank()) Text(info.notes, style = MaterialTheme.typography.bodyMedium)
+            when (u) {
+                is UpdateState.Downloading -> {
+                    val total = if (u.total > 0) u.total else (info.sizeBytes ?: 0L)
+                    if (total > 0) LinearProgressIndicator(progress = { (u.downloaded.toFloat() / total).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth()) else LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    Text("Downloading… ${u.downloaded / 1_000_000} MB${if (total > 0) " of ${total / 1_000_000} MB" else ""}", style = MaterialTheme.typography.bodySmall)
+                }
+                is UpdateState.Ready -> Text("Downloaded. Tap Install: Android asks you to confirm, and the app reopens on the new version with your data in place.", style = MaterialTheme.typography.bodySmall)
+                is UpdateState.NeedPermission -> Text("Allow this app to install updates on the settings page that opened, then come back and tap Install.", style = MaterialTheme.typography.bodySmall)
+                is UpdateState.Failed -> Text(u.message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                else -> Text("Your reports and drafts stay on the tablet. The download is ${info.sizeBytes?.let { "${it / 1_000_000} MB" } ?: "about 25 MB"}; use Wi-Fi if you can.", style = MaterialTheme.typography.bodySmall)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                when (u) {
+                    is UpdateState.Available, is UpdateState.Failed -> Button(onClick = onDownload) { Text(if (u is UpdateState.Failed) "Try again" else "Download update") }
+                    is UpdateState.Ready, is UpdateState.NeedPermission -> Button(onClick = onInstall) { Text("Install") }
+                    else -> {}
+                }
+                if (u !is UpdateState.Downloading) TextButton(onClick = onDismiss) { Text("Later") }
+            }
         }
     }
 }

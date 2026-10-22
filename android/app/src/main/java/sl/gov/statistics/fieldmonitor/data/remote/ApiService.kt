@@ -6,6 +6,9 @@ import retrofit2.http.POST
 import retrofit2.http.Query
 
 interface ApiService {
+    @GET("public/app-version")
+    suspend fun appVersion(): Map<String, AppVersionDto>
+
     @POST("auth/login")
     suspend fun login(@Body body: LoginRequest): TokenPair
 
