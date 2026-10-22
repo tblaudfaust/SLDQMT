@@ -112,3 +112,35 @@ def test_blocked_device_rejected(client, admin, geo, monitor):
 def test_batch_limit(client, geo, monitor):
     r = client.post("/api/v1/sync/push", json={"device_id": monitor["device_id"], "errors": [make_error(geo) for _ in range(201)]}, headers=monitor["headers"])
     assert r.status_code == 413
+
+
+def test_resolution_from_a_tablet_survives_a_dashboard_edit_and_clock_skew(client, geo, monitor):
+    """A record edited on the dashboard carries the server's clock; a later resolution from a tablet whose
+    clock is behind used to be dropped as a duplicate. It is now merged: the tablet's action fields win,
+    the dashboard's other edits are kept."""
+    from app.db.session import SessionLocal
+    from sqlalchemy import select
+    from app.models import ErrorCategory, ErrorRecord
+
+    e = make_error(geo)
+    push(client, monitor, errors=[e])
+    db = SessionLocal()
+    try:
+        rec = db.get(ErrorRecord, e["id"])
+        other_category = db.execute(select(ErrorCategory.id).where(ErrorCategory.id != rec.category_id)).scalars().first() or rec.category_id
+        rec.category_id = other_category
+        rec.client_updated_at = datetime.now(timezone.utc) + timedelta(days=1)  # "edited on the dashboard" with a clock well ahead of the tablet
+        rec.version += 1
+        db.commit()
+    finally:
+        db.close()
+    now = datetime.now(timezone.utc)
+    resolved = dict(e, status="RESOLVED", resolved_at=now.isoformat(), last_action_at=now.isoformat(), action_taken="Fixed with the enumerator", client_updated_at=now.isoformat())
+    res = push(client, monitor, errors=[resolved])
+    r = res["receipts"][0]
+    assert r["result"] == "applied" and r["next_follow_up_at"] is None, res
+    pulled = pull(client, monitor)["errors"][0]
+    assert pulled["status"] == "RESOLVED" and pulled["action_taken"] == "Fixed with the enumerator" and pulled["category_id"] == other_category
+    # the same stale copy sent again is still a duplicate, and an older copy never downgrades the resolution
+    assert push(client, monitor, errors=[e])["receipts"][0]["result"] == "duplicate"
+    assert pull(client, monitor)["errors"][0]["status"] == "RESOLVED"

@@ -119,8 +119,9 @@ class SyncEngine @Inject constructor(
                             continue
                         }
                         val local = errors.get(dto.id)
-                        // Never overwrite a local change that has not been pushed yet.
-                        if (local == null || (!local.pending && local.clientUpdatedAt <= dto.clientUpdatedAt)) {
+                        // Never overwrite a local change that has not been pushed yet. A newer server version is
+                        // accepted even when this tablet's clock is ahead of the server's stamp.
+                        if (local == null || (!local.pending && (dto.version > local.serverVersion || local.clientUpdatedAt <= dto.clientUpdatedAt))) {
                             errors.upsert(dto.toEntity(local))
                         }
                         followUps.insertAll(dto.followUps.map { it.toEntity() })

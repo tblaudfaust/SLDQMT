@@ -62,6 +62,9 @@ def get_active_device(db: Session, user: User, device_id: str) -> Device:
     return device
 
 
+ACTION_FIELDS = ("status", "resolved_at", "action_taken", "comments", "support_method", "last_action_at", "lat", "lng", "accuracy_m", "gps_at")
+
+
 def _apply_error(db: Session, user: User, device: Device, item: ErrorIn, scope: list[int] | None, policy) -> Receipt:
     if scope is not None and item.district_id not in scope:
         return Receipt(kind="error", id=item.id, result="rejected", reason="NOT_IN_SCOPE")
@@ -78,22 +81,34 @@ def _apply_error(db: Session, user: User, device: Device, item: ErrorIn, scope: 
         return Receipt(kind="error", id=item.id, result="rejected", reason="DELETED")
 
     incoming_updated = _aware(item.client_updated_at)
+    merged = False
     if existing is not None and _aware(existing.client_updated_at) >= incoming_updated:
-        return Receipt(
-            kind="error",
-            id=item.id,
-            result="duplicate",
-            version=existing.version,
-            next_follow_up_at=existing.next_follow_up_at,
-        )
+        # The server copy is as new as, or newer than, this tablet copy: the same push sent again, or the record
+        # was edited on the dashboard (which stamps it with the server clock) or the tablet's clock is behind.
+        # A newer action on the tablet (a resolution, a follow-up note) must still count, so merge the action
+        # fields when the tablet's last action is more recent than what the server holds; otherwise duplicate.
+        if _aware(existing.client_updated_at) == incoming_updated or _aware(item.last_action_at) <= _aware(existing.last_action_at):
+            return Receipt(
+                kind="error",
+                id=item.id,
+                result="duplicate",
+                version=existing.version,
+                next_follow_up_at=existing.next_follow_up_at,
+            )
+        merged = True
 
     payload = item.model_dump(exclude={"id"})
     if existing is None:
         record = ErrorRecord(id=item.id, user_id=user.id, device_id=device.id, version=1, **payload)
         db.add(record)
     else:
-        for key, value in payload.items():
-            setattr(existing, key, value)
+        if merged:
+            for key in ACTION_FIELDS:  # the tablet's action wins; dashboard edits of the other fields are kept
+                setattr(existing, key, getattr(item, key))
+            existing.client_updated_at = _now()
+        else:
+            for key, value in payload.items():
+                setattr(existing, key, value)
         existing.device_id = device.id
         existing.version = existing.version + 1
         record = existing
