@@ -5,7 +5,7 @@ on:
   workflow_run:
     workflows: [Checks, Android APK]
     types: [completed]
-    branches: [main]
+    branches: [main, "v*"]  # a tag's APK build (head branch = the tag) must also publish the APKs
   workflow_dispatch:
 jobs:
   deploy:

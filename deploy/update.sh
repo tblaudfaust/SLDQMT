@@ -17,11 +17,14 @@ fetch_apks() {
   for name in SLPHC-FieldMonitor SLPHC-ME-FieldTool; do
     url=$(printf '%s' "$json" | grep -o "\"browser_download_url\": *\"[^\"]*/$name-[^\"]*\.apk\"" | head -1 | sed 's/.*"\(https[^"]*\)"/\1/')
     [ -n "$url" ] || { echo "   no $name asset in the latest release"; continue; }
-    # -z: only download when the asset is newer than the file we already serve
-    if curl -fsSL -z "downloads/$name.apk" -o "downloads/$name.apk.tmp" "$url" && [ -s "downloads/$name.apk.tmp" ]; then
-      mv -f "downloads/$name.apk.tmp" "downloads/$name.apk"; echo "   updated downloads/$name.apk from $url"
+    # download when the release asset differs from the one we already serve (recorded in a sidecar file)
+    if [ -f "downloads/$name.apk" ] && [ "$(cat "downloads/$name.apk.src" 2>/dev/null)" = "$url" ]; then
+      echo "   downloads/$name.apk is current ($url)"; continue
+    fi
+    if curl -fsSL -o "downloads/$name.apk.tmp" "$url" && [ -s "downloads/$name.apk.tmp" ]; then
+      mv -f "downloads/$name.apk.tmp" "downloads/$name.apk"; printf '%s' "$url" > "downloads/$name.apk.src"; echo "   updated downloads/$name.apk from $url"
     else
-      rm -f "downloads/$name.apk.tmp"; echo "   downloads/$name.apk is current"
+      rm -f "downloads/$name.apk.tmp"; echo "   could not download $url"
     fi
   done
 }
