@@ -155,6 +155,7 @@ fun ErrorFormScreen(onSaved: (String) -> Unit, onBack: () -> Unit, vm: ErrorForm
     val categories by vm.categories.collectAsStateWithLifecycle()
     val sources by vm.sources.collectAsStateWithLifecycle()
     var showDate by remember { mutableStateOf(false) }
+    val own = if (f.enumeratorId == null) emptyList() else eas.filter { it.enumeratorId == f.enumeratorId }
 
     Scaffold(
         topBar = {
@@ -174,11 +175,11 @@ fun ErrorFormScreen(onSaved: (String) -> Unit, onBack: () -> Unit, vm: ErrorForm
                     OutlinedTextField(f.supervisorName, { s -> vm.update { copy(supervisorName = s) } }, label = { Text("Supervisor") }, modifier = Modifier.weight(1f), singleLine = true)
                 }
                 if (enumerators.isNotEmpty()) {
-                    DropdownField("Enumerator", listOf(Option(null, "Not applicable")) + enumerators.map { Option(it.id, it.name) }, f.enumeratorId, { o -> val own = if (o.id == null) null else eas.firstOrNull { it.enumeratorId == o.id }; vm.update { copy(enumeratorId = o.id, enumeratorName = if (o.id == null) "" else o.label, eaId = own?.id ?: eaId) } }, Modifier.weight(1f), enabled = f.teamId != null)
+                    DropdownField("Enumerator", listOf(Option(null, "Not applicable")) + enumerators.map { Option(it.id, it.name) }, f.enumeratorId, { o -> val linked = if (o.id == null) null else eas.firstOrNull { it.enumeratorId == o.id }; vm.update { copy(enumeratorId = o.id, enumeratorName = if (o.id == null) "" else o.label, eaId = linked?.id ?: eaId) } }, Modifier.weight(1f), enabled = f.teamId != null)
                 } else {
                     OutlinedTextField(f.enumeratorName, { s -> vm.update { copy(enumeratorName = s) } }, label = { Text("Enumerator (optional)") }, modifier = Modifier.weight(1f), singleLine = true)
                 }
-                DropdownField("EA", listOf(Option(null, "Not applicable")) + eas.sortedBy { if (f.enumeratorId != null && it.enumeratorId == f.enumeratorId) 0 else 1 }.map { Option(it.id, "EA ${it.code.takeLast(4)} · ${it.name ?: ""}${it.locality?.let { l -> " ($l)" } ?: ""}${if (f.enumeratorId != null && it.enumeratorId == f.enumeratorId) " · this enumerator" else ""}") }, f.eaId, { o -> val en = eas.firstOrNull { it.id == o.id }?.enumeratorId?.let { id -> enumerators.firstOrNull { it.id == id } }; vm.update { copy(eaId = o.id, enumeratorId = en?.id ?: enumeratorId, enumeratorName = en?.name ?: enumeratorName) } }, Modifier.weight(1f), enabled = f.teamId != null)
+                DropdownField("EA", listOf(Option(null, "Not applicable")) + eas.filter { f.enumeratorId == null || own.isEmpty() || it.enumeratorId == f.enumeratorId }.map { Option(it.id, "EA ${it.code.takeLast(4)} · ${it.name ?: ""}${it.locality?.let { l -> " ($l)" } ?: ""}${if (f.enumeratorId != null && it.enumeratorId == f.enumeratorId) " · this enumerator" else ""}") }, f.eaId, { o -> val en = eas.firstOrNull { it.id == o.id }?.enumeratorId?.let { id -> enumerators.firstOrNull { it.id == id } }; vm.update { copy(eaId = o.id, enumeratorId = en?.id ?: enumeratorId, enumeratorName = en?.name ?: enumeratorName) } }, Modifier.weight(1f), enabled = f.teamId != null)
             }
 
             Text("What", style = MaterialTheme.typography.titleMedium)

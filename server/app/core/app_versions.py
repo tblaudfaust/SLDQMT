@@ -13,7 +13,7 @@ from app.core.config import settings
 
 APPS: dict[str, dict] = {
     "fieldtool": {"title": "SLPHC M&E Field Tool", "package": "sl.gov.statistics.mefieldtool", "version_code": 2, "version_name": "1.1.0", "file": "SLPHC-ME-FieldTool.apk", "notes": "EAs under the SA, GPS required, update check."},
-    "fieldmonitor": {"title": "SLPHC Field Monitor", "package": "sl.gov.statistics.fieldmonitor", "version_code": 6, "version_name": "0.4.2", "file": "SLPHC-FieldMonitor.apk", "notes": "In-app updates: the tablet downloads and installs new versions itself. SA filter, enumerator linked to the EA, no future date received."},
+    "fieldmonitor": {"title": "SLPHC Field Monitor", "package": "sl.gov.statistics.fieldmonitor", "version_code": 7, "version_name": "0.4.3", "file": "SLPHC-FieldMonitor.apk", "notes": "Choosing the enumerator fills the EA; the EA list shows only that enumerator's EA."},
 }
 
 

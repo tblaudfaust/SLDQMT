@@ -65,6 +65,36 @@ def test_frame_workbook_import(client, admin):
     assert client.get("/api/v1/admin/reference/teams", headers=admin).json()[0]["id"] == teams[0]["id"]
 
 
+def test_shipped_enumerator_links_backfill(client, admin):
+    """EAs imported without their enumerator get it from the shipped mapping (SA code -> EA code -> enumerator code)."""
+    from app.db.session import SessionLocal
+    from app.models import Enumerator, EnumerationArea, Setting
+    from app.services import ea_links
+
+    assert client.post("/api/v1/admin/reference/import", files={"file": ("FALABA_EA_FRAME_11_09_2026.xlsx", make_frame(), "application/octet-stream")}, headers=admin).status_code == 200
+    db = SessionLocal()
+    try:
+        eas = db.query(EnumerationArea).all()
+        wanted = {}
+        for ea in eas:
+            wanted[(ea.team.code, ea.code)] = db.get(Enumerator, ea.enumerator_id).code if ea.enumerator_id else None
+            ea.enumerator_id = None
+        db.commit()
+        mapping = {}
+        for (sa, code), en in wanted.items():
+            if en:
+                mapping.setdefault(sa, {})[code] = en
+        counts = ea_links.apply_links(db, mapping)
+        db.commit()
+        assert counts["linked"] == sum(1 for v in wanted.values() if v) and counts["no_enumerator"] == 0
+        assert all(ea.enumerator_id is not None for ea in db.query(EnumerationArea).all())
+        # the start-up hook already ran when the app started (marker set); it runs once per data version
+        assert db.get(Setting, ea_links.MARKER).value == ea_links.VERSION and ea_links.ensure_links(db) is None
+        assert ea_links.load_mapping() and len(ea_links.load_mapping()) > 4000  # the national frames
+    finally:
+        db.close()
+
+
 def test_names_can_be_added_afterwards(client, admin):
     client.post("/api/v1/admin/reference/import", files={"file": ("FALABA_EA_FRAME_11_09_2026.xlsx", make_frame(), "application/octet-stream")}, headers=admin)
     csv = "District Code,SA Code,Supervisor Code,Supervisor,Supervisor Phone\n22,22901001,1961,Mohamed Kamara,+23276000000\n"
