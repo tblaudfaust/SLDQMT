@@ -22,7 +22,7 @@ from app.models import Setting, Team
 log = logging.getLogger(__name__)
 DATA_FILE = Path(__file__).resolve().parent.parent / "data" / "workload.json"
 MARKER = "workload_version"
-VERSION = "main-distribution-2026-10-22"
+VERSION = "main-distribution-2026-10-22b"
 
 
 def load_mapping(path: Path = DATA_FILE) -> dict[str, dict[str, str]]:
