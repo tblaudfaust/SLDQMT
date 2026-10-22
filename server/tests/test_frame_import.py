@@ -104,3 +104,30 @@ def test_names_can_be_added_afterwards(client, admin):
     t1 = next(t for t in teams if t["code"] == "22901001")
     sups = client.get(f"/api/v1/admin/reference/supervisors?team_id={t1['id']}", headers=admin).json()
     assert sups[0]["name"] == "Mohamed Kamara" and sups[0]["phone"] == "+23276000000"
+
+
+def test_shipped_workload_distribution(client, admin):
+    """The shipped workload sets the Field Monitor and DQM of every SA it lists and clears SAs it dropped."""
+    from app.db.session import SessionLocal
+    from app.models import Setting, Team
+    from app.services import workload_data
+
+    assert client.post("/api/v1/admin/reference/import", files={"file": ("FALABA_EA_FRAME_11_09_2026.xlsx", make_frame(), "application/octet-stream")}, headers=admin).status_code == 200
+    db = SessionLocal()
+    try:
+        t2 = db.query(Team).filter(Team.code == "22901002").one()
+        t2.monitor_code, t2.dqm_code = "FM-Fal-009", "DQM-Fal-009"  # an old assignment the new file no longer has
+        db.commit()
+        counts = workload_data.apply_workload(db, {"22901001": {"fm": "FM-22-001", "dqm": "DQM-22-001"}, "99999999": {"fm": "FM-22-002", "dqm": "DQM-22-002"}})
+        db.commit()
+        t1 = db.query(Team).filter(Team.code == "22901001").one()
+        assert (t1.monitor_code, t1.dqm_code) == ("FM-Fal-001", "DQM-Fal-001")  # canonical district abbreviation
+        db.refresh(t2)
+        assert t2.monitor_code is None and t2.dqm_code is None
+        assert counts == {"assigned": 1, "unchanged": 0, "cleared": 1, "unknown_sa": 1}
+        # the start-up hook already applied the shipped file once (marker), and the file covers the whole country
+        assert db.get(Setting, workload_data.MARKER).value == workload_data.VERSION and workload_data.ensure_workload(db) is None
+        shipped = workload_data.load_mapping()
+        assert len(shipped) > 4700 and len({v["fm"] for v in shipped.values()}) == 486 and all(v["dqm"].startswith("DQM-") for v in shipped.values())
+    finally:
+        db.close()
