@@ -156,8 +156,10 @@ def submit(db: Session, user: User, perms: set[str], checkout_id: int) -> ExitCh
     r.submitted_by = user.id
     r.submitted_at = _now()
     approvals = _loads(r.approvals, ApprovalRow)
-    if not any(a.role == "DISTRICT_DQM" and a.name for a in approvals):
-        approvals = [a for a in approvals if a.role != "DISTRICT_DQM"] + [ApprovalRow(role="DISTRICT_DQM", name=user.full_name, signed_on=date.today())]
+    typed = next((a for a in approvals if a.role == "DISTRICT_DQM"), None)
+    if typed is None or not typed.name or not typed.signed_on:  # blanks are filled with the certifying officer and today
+        row = ApprovalRow(role="DISTRICT_DQM", name=(typed.name if typed and typed.name else user.full_name), comment=(typed.comment if typed else "") or "", signed_on=(typed.signed_on if typed and typed.signed_on else date.today()))
+        approvals = [a for a in approvals if a.role != "DISTRICT_DQM"] + [row]
         r.approvals = json.dumps([a.model_dump(mode="json") for a in approvals])
     db.commit()
     db.refresh(r)
@@ -178,8 +180,10 @@ def national_sign(db: Session, user: User, perms: set[str], checkout_id: int, co
     r.national_signed_name = user.full_name
     r.national_signed_at = _now()
     r.national_comment = comment
-    approvals = [a for a in _loads(r.approvals, ApprovalRow) if a.role != "NATIONAL_DQM"]
-    approvals.append(ApprovalRow(role="NATIONAL_DQM", name=user.full_name, comment=comment or "", signed_on=date.today()))
+    rows = _loads(r.approvals, ApprovalRow)
+    typed = next((a for a in rows if a.role == "NATIONAL_DQM"), None)  # a name, comment or date typed on the form is kept
+    approvals = [a for a in rows if a.role != "NATIONAL_DQM"]
+    approvals.append(ApprovalRow(role="NATIONAL_DQM", name=(typed.name if typed and typed.name else user.full_name), comment=comment or (typed.comment if typed else "") or "", signed_on=(typed.signed_on if typed and typed.signed_on else date.today())))
     r.approvals = json.dumps([a.model_dump(mode="json") for a in approvals])
     db.commit()
     db.refresh(r)

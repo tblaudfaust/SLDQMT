@@ -165,10 +165,10 @@ export default function ExitCheckoutFormPage() {
               const a = approval(role);
               return (
                 <tr key={role}>
-                  <td>{text}{inApp && <div className="text-xs text-slate-400">signed in the system</div>}</td>
-                  <td><input className={cell} disabled={ro || inApp} value={a.name} onChange={(e) => setApproval(role, { name: e.target.value })} /></td>
-                  <td><input className={cell} disabled={ro || inApp} value={a.comment} onChange={(e) => setApproval(role, { comment: e.target.value })} /></td>
-                  <td><input type="date" className={cell} disabled={ro || inApp} value={a.signed_on ?? ""} onChange={(e) => setApproval(role, { signed_on: e.target.value || null })} /></td>
+                  <td>{text}{inApp && <div className="text-xs text-slate-400">filled with the signer's name and date if left blank</div>}</td>
+                  <td><input className={cell} disabled={ro} value={a.name} onChange={(e) => setApproval(role, { name: e.target.value })} /></td>
+                  <td><input className={cell} disabled={ro} value={a.comment} onChange={(e) => setApproval(role, { comment: e.target.value })} /></td>
+                  <td><input type="date" className={cell} disabled={ro} value={a.signed_on ?? ""} onChange={(e) => setApproval(role, { signed_on: e.target.value || null })} /></td>
                 </tr>
               );
             })}
