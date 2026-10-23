@@ -36,6 +36,12 @@ export default function ExitCheckoutFormPage() {
   }, [existing.data]);
   useEffect(() => {
     if (isNew && user?.role === "DISTRICT_DQM" && user.district_ids?.length === 1) setForm((f) => ({ ...f, district_id: user.district_ids![0] }));
+    // a new check-out: the signed-in officer's row is prefilled with their name and today (editable)
+    if (isNew && user) {
+      const role = user.role === "NATIONAL_DQM" ? "NATIONAL_DQM" : "DISTRICT_DQM";
+      const today = new Date().toISOString().slice(0, 10);
+      setForm((f) => (f.approvals.some((a) => a.role === role && a.name) ? f : { ...f, approvals: [...f.approvals.filter((a) => a.role !== role), { role, name: user.full_name, comment: "", signed_on: today }] }));
+    }
   }, [isNew, user]);
 
   const c = existing.data;
