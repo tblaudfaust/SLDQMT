@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { api } from "../api/client";
 import type { District, PickList, Team } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
@@ -14,15 +15,15 @@ export function useReference() {
 
 export default function FiltersBar({ compact = false }: { compact?: boolean }) {
   const [f, update, clear] = useFilters();
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const { districts, teams, categories } = useReference();
   const assigned = user?.assigned_sas ?? 0;
   const myDistricts = user?.assigned_district_ids ?? [];
   // "My SAs only" with a district that holds none of them would show nothing: say so and offer the right district
-  const offMyDistrict = assigned > 0 && f.own_sas !== false && !!f.district_id?.length && !f.district_id.some((d) => myDistricts.includes(d));
+  const offMyDistrict = assigned > 0 && (f.own_sas !== false || !can("dashboard.whole_district")) && !!f.district_id?.length && !f.district_id.some((d) => myDistricts.includes(d));
   const myDistrictNames = districts.filter((d) => myDistricts.includes(d.id)).map((d) => d.name).join(", ");
   // Nearly 5,000 teams nationally: only list them once a district is chosen.
-  const visibleTeams = f.district_id?.length ? teams.filter((t) => f.district_id!.includes(t.district_id)) : [];
+  const visibleTeams = f.district_id?.length ? teams.filter((t) => f.district_id!.includes(t.district_id)) : teams;
   return (
     <div className="card mb-4">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
@@ -33,10 +34,7 @@ export default function FiltersBar({ compact = false }: { compact?: boolean }) {
           </select>
         </Field>
         <Field label="SA">
-          <select className="input" value={f.team_id ?? ""} disabled={!f.district_id?.length} onChange={(e) => update({ team_id: e.target.value ? Number(e.target.value) : undefined })}>
-            <option value="">{f.district_id?.length ? "All" : "Choose a district first"}</option>
-            {visibleTeams.map((t) => <option key={t.id} value={t.id}>{t.code} {t.name}</option>)}
-          </select>
+          <SaSearch teams={visibleTeams} value={f.team_id} onChange={(id) => update({ team_id: id, district_id: id ? [teams.find((t) => t.id === id)?.district_id ?? 0].filter(Boolean) : f.district_id })} placeholder={f.district_id?.length ? "Type the SA code or name" : "Type the SA code or name (any district)"} />
         </Field>
         <Field label="Category">
           <select className="input" value={f.category_id ?? ""} onChange={(e) => update({ category_id: e.target.value ? Number(e.target.value) : undefined })}>
@@ -72,7 +70,8 @@ export default function FiltersBar({ compact = false }: { compact?: boolean }) {
             <option value="ONSITE">Onsite</option>
           </select>
         </Field>
-        {assigned > 0 && (
+        {assigned > 0 && !can("dashboard.whole_district") && <div className="mt-5 text-sm text-slate-600" title="Your workload from the frame: the SAs that carry your staff code">Your {assigned} SAs</div>}
+        {assigned > 0 && can("dashboard.whole_district") && (
           <label className="mt-5 flex items-center gap-2 text-sm text-slate-700" title="Your workload from the frame: the SAs that carry your staff code">
             <input type="checkbox" checked={f.own_sas !== false} onChange={(e) => update({ own_sas: e.target.checked ? undefined : false })} /> My {assigned} SAs only
           </label>
@@ -83,8 +82,40 @@ export default function FiltersBar({ compact = false }: { compact?: boolean }) {
         <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
           Your {assigned} SAs are in {myDistrictNames || "another district"}, not in the district selected, so nothing matches.
           <button className="font-semibold underline" onClick={() => update({ district_id: myDistricts, team_id: undefined })}>Show my SAs</button>
-          <span>or untick "My {assigned} SAs only" to see the whole district.</span>
+          {can("dashboard.whole_district") && <span>or untick "My {assigned} SAs only" to see the whole district.</span>}
         </div>
+      )}
+    </div>
+  );
+}
+
+
+/** SA picker with a search box: type part of the code or name; the list shows the first 50 matches. */
+function SaSearch({ teams, value, onChange, placeholder }: { teams: Team[]; value: number | undefined; onChange: (id: number | undefined) => void; placeholder: string }) {
+  const selected = teams.find((t) => t.id === value);
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const q = query.trim().toLowerCase();
+  const matches = q ? teams.filter((t) => t.code.toLowerCase().includes(q) || t.name.toLowerCase().includes(q)).slice(0, 50) : teams.slice(0, 50);
+  return (
+    <div className="relative">
+      <input
+        className="input"
+        value={open ? query : selected ? `${selected.code} ${selected.name}` : ""}
+        placeholder={placeholder}
+        onFocus={() => { setOpen(true); setQuery(""); }}
+        onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        onKeyDown={(e) => { if (e.key === "Escape") setOpen(false); if (e.key === "Enter" && matches.length === 1) { onChange(matches[0].id); setOpen(false); } }}
+      />
+      {selected && !open && <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-700" title="Clear" onMouseDown={(e) => { e.preventDefault(); onChange(undefined); }}>✕</button>}
+      {open && (
+        <ul className="absolute z-30 mt-1 max-h-72 w-[28rem] max-w-[90vw] overflow-auto rounded-md border border-slate-200 bg-white py-1 text-sm shadow-lg">
+          <li className="cursor-pointer px-3 py-1.5 text-slate-500 hover:bg-slate-50" onMouseDown={(e) => { e.preventDefault(); onChange(undefined); setOpen(false); }}>All SAs</li>
+          {matches.map((t) => <li key={t.id} className="cursor-pointer px-3 py-1.5 hover:bg-sky-50" onMouseDown={(e) => { e.preventDefault(); onChange(t.id); setOpen(false); }}><b>{t.code}</b> {t.name}</li>)}
+          {matches.length === 0 && <li className="px-3 py-1.5 text-slate-400">No SA matches "{query}"</li>}
+          {teams.length > matches.length && !q && <li className="px-3 py-1.5 text-xs text-slate-400">{teams.length - matches.length} more: type to search</li>}
+        </ul>
       )}
     </div>
   );

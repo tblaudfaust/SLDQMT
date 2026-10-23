@@ -79,8 +79,20 @@ def test_dqm_dashboard_defaults_to_own_sas(client, admin, geo, monitor):
     dqm = auth(login(client, "dqm-wau-001", "Password123")["access_token"])
     own = client.get("/api/v1/errors", headers=dqm).json()
     assert own["total"] == 1 and own["items"][0]["team"].startswith("WAU-SA01")
-    whole = client.get("/api/v1/errors?own_sas=false", headers=dqm).json()
-    assert whole["total"] == 2
+    # a district officer cannot widen the view to the whole district ...
+    assert client.get("/api/v1/errors?own_sas=false", headers=dqm).json()["total"] == 1
+    assert [t["code"] for t in client.get("/api/v1/admin/reference/teams", headers=dqm).json()] == ["WAU-SA01"]
+    # ... unless the administrator grants the whole-district permission
+    uid = next(u["id"] for u in client.get("/api/v1/admin/users", headers=admin).json() if u["username"] == "dqm-wau-001")
+    assert client.put(f"/api/v1/admin/users/{uid}/permissions", json={"grant": ["dashboard.whole_district"], "revoke": []}, headers=admin).status_code == 200
+    assert client.get("/api/v1/errors?own_sas=false", headers=dqm).json()["total"] == 2
+    assert len(client.get("/api/v1/admin/reference/teams", headers=dqm).json()) > 1
+    # a regional user sees every district of the region
+    region_id = geo["districts"]["WAU"]["region_id"]
+    r = client.post("/api/v1/admin/users", json={"username": "reg-west", "password": "Password123", "full_name": "Regional West", "role": "REGIONAL", "region_ids": [region_id]}, headers=admin)
+    assert r.status_code == 201, r.text
+    reg = auth(login(client, "reg-west", "Password123")["access_token"])
+    assert client.get("/api/v1/errors", headers=reg).json()["total"] == 2
 
 
 def test_reassign_sas_within_district(client, admin, geo):

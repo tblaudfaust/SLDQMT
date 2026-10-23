@@ -11,6 +11,7 @@ from app.models.user import Role
 PERMISSIONS: dict[str, tuple[str, str]] = {
     "dashboard.view": ("Field Monitor errors", "View the dashboard, error lists and error details in scope"),
     "errors.edit": ("Field Monitor errors", "Edit an error record from the dashboard"),
+    "dashboard.whole_district": ("Field Monitor errors", "See every SA of the district, not only the SAs assigned in the workload"),
     "errors.delete": ("Field Monitor errors", "Delete and restore error records"),
     "reports.export": ("Field Monitor errors", "Generate the Excel and PDF reports"),
     "daily_reports.view": ("Daily DQM reporting", "View daily DQM reports in scope"),
@@ -65,12 +66,12 @@ _DISTRICT = [
     "exit_checkouts.view", "exit_checkouts.create", "exit_checkouts.edit", "exit_checkouts.submit", "exit_checkouts.delete",
 ]
 _REGIONAL = [
-    "dashboard.view", "errors.edit", "errors.delete", "reports.export",
+    "dashboard.view", "dashboard.whole_district", "errors.edit", "errors.delete", "reports.export",
     "daily_reports.view", "daily_reports.edit", "daily_reports.delete", "analytics.view",
     "exit_checkouts.view", "exit_checkouts.edit", "exit_checkouts.delete",
 ]
 _NATIONAL = [
-    "dashboard.view", "errors.edit", "errors.delete", "reports.export",
+    "dashboard.view", "dashboard.whole_district", "errors.edit", "errors.delete", "reports.export",
     "daily_reports.view", "daily_reports.create", "daily_reports.edit", "daily_reports.submit", "daily_reports.receive", "daily_reports.delete", "analytics.view",
     "exit_checkouts.view", "exit_checkouts.create", "exit_checkouts.edit", "exit_checkouts.submit", "exit_checkouts.sign", "exit_checkouts.clear", "exit_checkouts.delete",
     "devices.manage", "audit.view", "workload.assign",

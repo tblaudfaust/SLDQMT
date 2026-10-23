@@ -70,7 +70,7 @@ from app.schemas.reference import (
 )
 from app.services import import_service, permission_service
 from app.services.reference import current_settings
-from app.services.scope import district_ids_for
+from app.services.scope import assigned_team_ids_for, district_ids_for
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -546,6 +546,9 @@ def teams(district_id: int | None = None, db: Session = Depends(get_db), user: U
     scope = district_ids_for(db, user)
     if scope is not None:
         q = q.where(Team.district_id.in_(scope))
+    assigned = assigned_team_ids_for(db, user)
+    if assigned is not None and "dashboard.whole_district" not in permission_service.effective_permissions(db, user):
+        q = q.where(Team.id.in_(assigned))  # a district officer picks among their own SAs only
     if district_id:
         q = q.where(Team.district_id == district_id)
     return db.execute(q).scalars().all()
