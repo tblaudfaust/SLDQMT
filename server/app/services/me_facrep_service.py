@@ -277,3 +277,35 @@ def export(db: Session, r: MeFacRound, **filters) -> report_service.Report:
                                              "What worked well", "To repeat / share", "What did not work", "Difficult topics", "Difficult notes", "Recommended actions", "Gaps / errors", "Who should act", "Other actor", "Comments", "Sent", "Needs attention"], reg, landscape=True),
         ],
     )
+
+
+# ---- the ToT training shipped with the server ----------------------------------------------------
+
+TOT_MARKER = "me_facrep_tot_round"
+TOT_TITLE = "Training of Trainers (in-person), 2026"
+
+
+def ensure_tot_round(db: Session) -> MeFacRound | None:
+    """Start-up hook: the first time the server runs with this module, create the Training of Trainers entry
+    with the 2026 agenda so that the Daily Facilitator's Report link and QR code exist from day one (once only:
+    a training the M&E team renames, closes or deletes afterwards is not re-created)."""
+    from app.models import Setting
+
+    if db.get(Setting, TOT_MARKER) is not None:
+        return None
+    r = db.execute(select(MeFacRound).where(MeFacRound.phase == "TOT")).scalars().first()
+    if r is None:
+        from app.schemas.me_fac import AgendaItemIn
+
+        r = MeFacRound(title=TOT_TITLE, phase="TOT", description="Lead Facilitators: send one Daily Facilitator's Report per hall at the end of each training day.",
+                       token=secrets.token_urlsafe(18), status="OPEN")
+        db.add(r)
+        db.flush()
+        try:
+            t = me_fac_service.agenda_template("TRAINING_2026")
+            me_fac_service.set_agenda(db, r, [AgendaItemIn(day=i.day, topic=i.topic, details=i.details) for i in t.items])
+        except HTTPException:  # the bundled agenda is missing: the training still exists, chapters are typed later
+            pass
+    db.add(Setting(key=TOT_MARKER, value=date.today().isoformat()))
+    db.commit()
+    return r

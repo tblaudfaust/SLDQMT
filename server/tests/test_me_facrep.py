@@ -27,6 +27,11 @@ def report(**over):
 def test_public_report_summary_export_and_rights(client, admin):
     me = user(client, admin, "me.officer", "ME")
     dqm = user(client, admin, "dqm.wau", "NATIONAL_DQM")
+    # the Training of Trainers entry ships with the server: its form link exists before anyone creates a training
+    shipped = client.get("/api/v1/me/facreports/rounds", headers=me).json()
+    tot = [x for x in shipped if x["round"]["phase"] == "TOT"]
+    assert len(tot) == 1 and tot[0]["round"]["status"] == "OPEN" and tot[0]["round"]["agenda_days"] == 10 and tot[0]["reports"] == 0
+    assert client.get(f"/api/v1/public/facreport/{tot[0]['round']['token']}").status_code == 200
     r = client.post("/api/v1/me/facilitators/rounds", json={"title": "ToT in-person, October 2026", "phase": "TOT", "period_start": "2026-10-26", "agenda_template": "TRAINING_2026"}, headers=me)
     assert r.status_code == 201, r.text
     rd = r.json()

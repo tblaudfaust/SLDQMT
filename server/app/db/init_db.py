@@ -12,6 +12,7 @@ from app.db.session import engine
 from app.models import DEFAULT_SETTINGS, ErrorCategory, ErrorSource, Role, Setting, User
 from app.services.ea_links import ensure_links
 from app.services.workload_data import ensure_workload
+from app.services.me_facrep_service import ensure_tot_round
 from app.services.permission_service import seed_defaults
 
 DEFAULT_CATEGORIES = [
@@ -177,3 +178,4 @@ def _init_schema_and_seed(db: Session) -> None:
     db.commit()
     ensure_links(db)  # enumerator-to-EA links for EAs imported before the frame import recorded them
     ensure_workload(db)  # the shipped workload distribution (Field Monitor and DQM per SA), once per version
+    ensure_tot_round(db)  # the Training of Trainers entry for the Daily Facilitator's Report, created once
