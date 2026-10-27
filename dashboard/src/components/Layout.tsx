@@ -83,6 +83,7 @@ export default function Layout() {
               {can("me.view") && <NavLink to="/me/evaluations" className={link}><GraduationCap size={16} /> Training evaluations</NavLink>}
               {can("me_daily.view") && <NavLink to="/me/daily" className={link}><CalendarCheck size={16} /> Daily Evaluation</NavLink>}
               {can("me_fac.view") && <NavLink to="/me/facilitators" className={link}><ClipboardCheck size={16} /> Facilitator assessment</NavLink>}
+              {can("me_fac.view") && <NavLink to="/me/facreports" className={link}><FileText size={16} /> Facilitator daily report</NavLink>}
               {can("me_kpi.view") && <NavLink to="/me/kpi" className={link}><ClipboardList size={16} /> M&amp;E Field Tool (KPIs)</NavLink>}
               {can("mefm.view") && <NavLink to="/mefm" className={link}><Map size={16} /> Field monitoring</NavLink>}
             </>

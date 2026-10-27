@@ -37,6 +37,9 @@ import MeDailyResultsPage from "./pages/me/MeDailyResultsPage";
 import DailyPage from "./pages/public/DailyPage";
 import MeFacPage from "./pages/me/MeFacPage";
 import MeFacResultsPage from "./pages/me/MeFacResultsPage";
+import MeFacReportsPage from "./pages/me/MeFacReportsPage";
+import MeFacReportResultsPage from "./pages/me/MeFacReportResultsPage";
+import FacReportPage from "./pages/public/FacReportPage";
 import AssessPage from "./pages/public/AssessPage";
 import KpiHomePage from "./pages/me/kpi/KpiHomePage";
 import KpiFormPage from "./pages/me/kpi/KpiFormPage";
@@ -140,6 +143,7 @@ export default function App() {
             <Route path="/evaluate/:token" element={<EvaluatePage />} />
             <Route path="/daily/:token" element={<DailyPage />} />
             <Route path="/assess/:token" element={<AssessPage />} />
+            <Route path="/report/:token" element={<FacReportPage />} />
             <Route path="/report-incident" element={<ReportIncidentPage />} />
             <Route element={<RequireAuth />}>
               <Route element={<Layout />}>
@@ -176,6 +180,8 @@ export default function App() {
                 <Route element={<RequirePerm code="me_fac.view" />}>
                   <Route path="me/facilitators" element={<MeFacPage />} />
                   <Route path="me/facilitators/:id" element={<MeFacResultsPage />} />
+                  <Route path="me/facreports" element={<MeFacReportsPage />} />
+                  <Route path="me/facreports/:id" element={<MeFacReportResultsPage />} />
                 </Route>
                 <Route element={<RequirePerm code="me_kpi.view" />}>
                   <Route path="me/kpi" element={<KpiHomePage />} />

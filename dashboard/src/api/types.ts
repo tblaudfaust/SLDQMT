@@ -738,6 +738,31 @@ export interface MeFacRound {
   share_url: string | null; agenda_days: number; agenda_items: number; assessments: number; trainers: number; halls: number; districts: number; days: number; last_date: string | null; mean_pct: number | null; needs_improvement: number;
 }
 export interface MeFacSectionRating { topic: string; rating: number | null }
+
+// ---- Daily Facilitator's Report (ToT, in-person) ----
+export interface MeFacReportSpec {
+  version: number; title: string; subtitle: string; purpose: string; how_to: string[]; note: string; venues: string[]; days: number[]; scale: { value: number; label: string }[];
+  delivery: { value: string; label: string }[]; ratings: { key: string; label: string }[]; logistics: { key: string; label: string; type: string }[]; actors: { value: string; label: string }[]; sections: { code: string; title: string; note: string | null }[];
+}
+export interface MeFacReport {
+  id: number; round_id: number; report_date: string; training_day: number; venue: string; hall: string; lead_facilitator: string; other_facilitators: string | null; email: string | null; phone: string | null;
+  registered: number; present: number; attendance_pct: number | null; delivered: "FULL" | "PARTLY" | "NO"; delivered_label: string; missed_sessions: string[]; minutes_lost: number | null; missed_reason: string | null;
+  r_knowledge: number; r_engagement: number; r_illustrations: number; r_connectivity: number; r_coordination: number; mean_rating: number;
+  e_internet: number | null; e_internet_details: string | null; e_power: number | null; e_power_details: string | null; e_devices: string | null; e_devices_details: string | null; e_food: string | null; e_food_details: string | null;
+  went_right: string; repeat_share: string | null; went_wrong: string; difficult_topics: string[]; difficult_notes: string | null; recommendations: string; gaps: string; actors: string[]; actor_labels: string[]; actor_other: string | null; comments: string | null;
+  submitted_at: string; edited_by_name: string | null; reasons: string[];
+}
+export interface MeFacReportCount { code: string; label: string; count: number; pct: number | null }
+export interface MeFacReportGroup {
+  key: string; label: string; venue: string | null; hall: string | null; reports: number; halls: number; days: number; registered: number; present: number; attendance_pct: number | null; mean_rating: number | null;
+  ratings: Record<string, number | null>; delivered_full_pct: number | null; minutes_lost: number; internet: number | null; power: number | null; low_ratings: number; attention: number;
+}
+export interface MeFacReportRound { round: MeFacRound; reports: number; halls: number; venues: number; days: number; last_date: string | null; mean_rating: number | null; attendance_pct: number | null; attention: number; report_url: string | null }
+export interface MeFacReportSummary {
+  round: MeFacRound; report_url: string | null; reports: number; halls: number; venues: number; days: number; facilitators: number; registered: number; present: number; attendance_pct: number | null; mean_rating: number | null;
+  delivered: MeFacReportCount[]; minutes_lost: number; internet: number | null; power: number | null; criteria: { key: string; label: string; mean: number | null; distribution: MeFacReportCount[] }[]; low_ratings: number; attention: number;
+  by_venue: MeFacReportGroup[]; by_hall: MeFacReportGroup[]; by_day: MeFacReportGroup[]; actors: MeFacReportCount[]; difficult_topics: MeFacReportCount[]; missed_sessions: MeFacReportCount[]; needs_attention: MeFacReport[]; latest: MeFacReport[];
+}
 export interface MeFacAssessment {
   id: number; round_id: number; assessment_date: string; training_day: number; district: string | null; hall: string; monitor_name: string | null; trainer_name: string;
   s_technical: number; s_clarity: number; s_practical: number; s_participation: number; s_time: number; section_a_total: number; section_a_band: string;

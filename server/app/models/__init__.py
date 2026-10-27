@@ -18,6 +18,7 @@ from app.models.incident import Incident, IncidentSaCode, IncidentUpdate
 from app.models.me import MeEvaluation, MeRespondent, MeResponse
 from app.models.me_daily import MeDailyAgendaItem, MeDailyFacilitatorReport, MeDailyRound
 from app.models.me_fac import MeFacAgendaItem, MeFacAssessment, MeFacRound
+from app.models.me_facrep import MeFacReport
 from app.models.me_kpi import MeKpiReport
 from app.models.mefm import IssueStatus, MefmCheckin, MefmChiefdom, MefmFrameVersion, MefmIssue, MefmSection, MefmVisit, VisitStatus
 from app.models.setting import DEFAULT_SETTINGS, Setting
@@ -35,6 +36,7 @@ __all__ = [
     "MeFacRound",
     "MeFacAgendaItem",
     "MeFacAssessment",
+    "MeFacReport",
     "MeKpiReport",
     "MefmChiefdom",
     "MefmFrameVersion",

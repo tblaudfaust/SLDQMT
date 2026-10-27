@@ -32,7 +32,7 @@ export const KPIS = {
   support: { label: "Leaders support", good: 85, warn: 60, invert: false, help: "Leaders support participation" },
 } as const;
 
-export function Scorecard({ label, value, raw, good, warn, invert, help, count }: { label: string; value: string; raw: number | null | undefined; good: number; warn: number; invert?: boolean; help?: string; count?: ReactNode }) {
+export function Scorecard({ label, value, raw, good, warn, invert, help, count, targetText }: { label: string; value: string; raw: number | null | undefined; good: number; warn: number; invert?: boolean; help?: string; count?: ReactNode; targetText?: string }) {
   const st = status(raw, good, warn, invert);
   const width = raw === null || raw === undefined ? 0 : Math.max(2, Math.min(100, invert ? 100 - raw : raw));
   return (
@@ -43,7 +43,7 @@ export function Scorecard({ label, value, raw, good, warn, invert, help, count }
       </div>
       <div className="mt-1 text-3xl font-extrabold tabular-nums" style={{ color: statusColor[st] === SLATE ? NAVY : statusColor[st] }}>{value}</div>
       <div className="mt-2 h-1.5 rounded-full bg-slate-100"><div className="h-1.5 rounded-full" style={{ width: `${width}%`, background: statusColor[st] }} /></div>
-      <div className="mt-1 text-[11px] leading-tight text-slate-400"><div className="truncate" title={help}>{help}</div><div className="font-semibold text-slate-500">target {invert ? "≤" : "≥"} {good}%</div></div>
+      <div className="mt-1 text-[11px] leading-tight text-slate-400"><div className="truncate" title={help}>{help}</div><div className="font-semibold text-slate-500">{targetText ?? `target ${invert ? "≤" : "≥"} ${good}%`}</div></div>
       {count !== undefined && <div className="mt-1 text-xs text-slate-500">{count}</div>}
     </div>
   );
