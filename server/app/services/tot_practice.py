@@ -30,6 +30,14 @@ from app.models import Device, District, RefreshToken, Role, Team, User, UserPer
 from app.services.import_service import import_reference
 
 WORKBOOK = Path(__file__).resolve().parent.parent / "data" / "practice" / "tot_practice_workload.xlsx"
+# Start-up load on the production server (requested 2026-11-02): the set is loaded once, with the two shared class
+# passwords given by Statistics Sierra Leone, stored here only as bcrypt hashes (the plain passwords are handed to the
+# halls on the printed login sheets). Remove the set from Admin -> Reference after the training.
+MARKER, VERSION = "tot_practice_version", "tot-practice-2026-11-02"
+PRACTICE_HASHES = {
+    "DISTRICT_DQM": "$2b$12$9gh0vFXZhkyoAmqfFRjGQeJkBSnU6C/AiHbtE8HB.7qD18C5oOkCC",
+    "FIELD_MONITOR": "$2b$12$NywcoFuGDn8sExcC.z8LxO6gWcGtDSRatr.77dJrPQBAsc1TMBUDy",
+}
 CODE = re.compile(r"^(DQM|FM)-([A-Z]{2,4})-H(\d{1,2})-(\d{1,3})$")
 VENUES = {"WAU": "Western Area Urban", "WAR": "Western Area Rural", "PLO": "Port Loko", "BO": "Bo", "BOM": "Makeni", "KEN": "Kenema"}
 PRACTICE_USERNAME = User.username.like("dqm-%-h%-%") | User.username.like("fm-%-h%-%")
@@ -81,9 +89,13 @@ def status(db: Session) -> dict:
     }
 
 
-def load(db: Session, dqm_password: str, fm_password: str, reset_passwords: bool = False, path: Path | str | None = None) -> dict:
-    """Assign the practice workload and create (or, with reset_passwords, re-password) the practice accounts."""
+def load(db: Session, dqm_password: str | None = None, fm_password: str | None = None, reset_passwords: bool = False,
+         path: Path | str | None = None, hashes: dict[str, str] | None = None) -> dict:
+    """Assign the practice workload and create (or, with reset_passwords, re-password) the practice accounts.
+    Passwords come either in clear (typed by the administrator) or as ready bcrypt hashes per role."""
     path = Path(path) if path else WORKBOOK   # resolved at call time so tests can point WORKBOOK elsewhere
+    if hashes is None:
+        hashes = {"DISTRICT_DQM": hash_password(dqm_password or ""), "FIELD_MONITOR": hash_password(fm_password or "")}
     result = import_reference(db, path.name, path)
     officers = read_officers(path)
     districts = {d.code: d for d in db.execute(select(District)).scalars()}
@@ -92,10 +104,9 @@ def load(db: Session, dqm_password: str, fm_password: str, reset_passwords: bool
     missing: set[str] = set()
     for code, dcodes in officers.items():
         role = Role.DISTRICT_DQM if code.startswith("DQM-") else Role.FIELD_MONITOR
-        password = dqm_password if role == Role.DISTRICT_DQM else fm_password
         user = existing.get(code.lower())
         if user is None:
-            user = User(username=code.lower(), password_hash=hash_password(password), full_name=full_name(code), role=role,
+            user = User(username=code.lower(), password_hash=hashes[role.value], full_name=full_name(code), role=role,
                         staff_code=code, active=True, must_change_password=False)
             db.add(user)
             db.flush()
@@ -103,7 +114,7 @@ def load(db: Session, dqm_password: str, fm_password: str, reset_passwords: bool
         else:
             user.staff_code, user.role, user.active, user.must_change_password = code, role, True, False
             if reset_passwords:
-                user.password_hash = hash_password(password)
+                user.password_hash = hashes[role.value]
             updated += 1
         have = {s.district_id for s in user.scopes}
         for dc in sorted(dcodes):
@@ -120,6 +131,32 @@ def load(db: Session, dqm_password: str, fm_password: str, reset_passwords: bool
         "dqm_accounts": sum(1 for c in officers if c.startswith("DQM-")), "fm_accounts": sum(1 for c in officers if c.startswith("FM-")),
         "unknown_districts": sorted(missing), "passwords_reset": reset_passwords,
     }
+
+
+def ensure_practice_loaded(db: Session) -> dict | None:
+    """Start-up hook: on the production server, load the practice set once (marker Setting), like the resets."""
+    import json
+    import logging
+    from datetime import datetime, timezone
+
+    from app.core.config import settings
+    from app.models import AuditLog, Setting
+
+    if settings.ENVIRONMENT != "production" or not WORKBOOK.exists():
+        return None
+    marker = db.get(Setting, MARKER)
+    if marker is not None and marker.value == VERSION:
+        return None
+    counts = load(db, hashes=PRACTICE_HASHES)
+    if marker is None:
+        db.add(Setting(key=MARKER, value=VERSION))
+    else:
+        marker.value = VERSION
+    db.add(AuditLog(at=datetime.now(timezone.utc), user_id=None, action="practice.load", entity="system", entity_id=None,
+                    detail=json.dumps({"version": VERSION, **{k: v for k, v in counts.items() if k != "warnings"}})))
+    db.commit()
+    logging.getLogger(__name__).warning("practice.load %s: %s", VERSION, {k: v for k, v in counts.items() if k != "warnings"})
+    return counts
 
 
 def remove(db: Session) -> dict:

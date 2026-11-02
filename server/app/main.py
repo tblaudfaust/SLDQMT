@@ -39,4 +39,17 @@ app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "environment": settings.ENVIRONMENT}
+    # practice_loaded: whether the ToT class practice set is on this server (a plain yes/no for the trainers' checklist)
+    from sqlalchemy import select
+
+    from app.models import Setting
+    from app.services.tot_practice import VERSION
+
+    db = SessionLocal()
+    try:
+        loaded = db.execute(select(Setting.value).where(Setting.key == "tot_practice_version")).scalar_one_or_none() == VERSION
+    except Exception:  # health must answer even before the schema exists
+        loaded = False
+    finally:
+        db.close()
+    return {"status": "ok", "environment": settings.ENVIRONMENT, "practice_loaded": loaded}

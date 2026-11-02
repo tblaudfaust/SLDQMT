@@ -37,19 +37,19 @@ def test_load_sign_in_scope_and_remove(client, admin, geo, tmp_path, monkeypatch
     s = client.get("/api/v1/admin/reference/practice", headers=admin).json()
     assert s["loaded"] is False and s["sas_assigned"] == 0
 
-    r = client.post("/api/v1/admin/reference/practice", json={"dqm_password": "short", "fm_password": "A-Bo-Lefme"}, headers=admin)
+    r = client.post("/api/v1/admin/reference/practice", json={"dqm_password": "short", "fm_password": "FmClass2026"}, headers=admin)
     assert r.status_code == 422
-    r = client.post("/api/v1/admin/reference/practice", json={"dqm_password": "ChangeMeNow", "fm_password": "A-Bo-Lefme"}, headers=admin)
+    r = client.post("/api/v1/admin/reference/practice", json={"dqm_password": "DqmClass2026", "fm_password": "FmClass2026"}, headers=admin)
     assert r.status_code == 200, r.text
     out = r.json()
     assert out["sas_assigned"] == 3 and out["accounts_created"] == 3 and out["dqm_accounts"] == 2 and out["fm_accounts"] == 1 and out["unknown_districts"] == []
 
     # the practice FM signs in with the shared password, is not forced to change it, and sees exactly its two SAs
-    data = login(client, "FM-WAU-H1-01", "A-Bo-Lefme")
+    data = login(client, "FM-WAU-H1-01", "FmClass2026")
     assert data["user"]["must_change_password"] in (False, None)
     assert data["user"]["staff_code"] == "FM-WAU-H1-01" and data["user"]["assigned_sas"] == 2
     assert sorted(data["user"]["district_ids"]) == sorted([geo["districts"]["WAU"]["id"], geo["districts"]["WAR"]["id"]])
-    dqm = login(client, "dqm-wau-h1-02", "ChangeMeNow")["user"]
+    dqm = login(client, "dqm-wau-h1-02", "DqmClass2026")["user"]
     assert dqm["role"] == "DISTRICT_DQM" and dqm["assigned_sas"] == 1 and dqm["district_ids"] == [geo["districts"]["WAU"]["id"]]
 
     s = client.get("/api/v1/admin/reference/practice", headers=admin).json()
@@ -58,7 +58,7 @@ def test_load_sign_in_scope_and_remove(client, admin, geo, tmp_path, monkeypatch
     # loading again keeps the accounts; with reset_passwords the password changes
     r = client.post("/api/v1/admin/reference/practice", json={"dqm_password": "NewDqmPass1", "fm_password": "NewFmPass1", "reset_passwords": True}, headers=admin)
     assert r.status_code == 200 and r.json()["accounts_created"] == 0 and r.json()["accounts_updated"] == 3
-    assert client.post("/api/v1/auth/login", json={"username": "FM-WAU-H1-01", "password": "A-Bo-Lefme"}).status_code == 401
+    assert client.post("/api/v1/auth/login", json={"username": "FM-WAU-H1-01", "password": "FmClass2026"}).status_code == 401
     login(client, "FM-WAU-H1-01", "NewFmPass1")
 
     # a plain user manager without reference.manage may not load
@@ -80,3 +80,22 @@ def test_shipped_workbook_is_consistent():
     assert sum(1 for c in officers if c.startswith("DQM-")) == 689 and sum(1 for c in officers if c.startswith("FM-")) == 674
     assert all(tot_practice.is_practice_code(c) for c in officers)
     assert io  # keep the import used for editors that strip it
+
+
+def test_startup_hook_loads_once_on_production(client, admin, geo, tmp_path, monkeypatch):
+    from app.core.config import settings
+    from app.core.security import hash_password
+    from app.db.session import SessionLocal
+
+    monkeypatch.setattr(tot_practice, "WORKBOOK", _workbook(tmp_path))
+    monkeypatch.setattr(tot_practice, "PRACTICE_HASHES", {"DISTRICT_DQM": hash_password("DqmHook2026"), "FIELD_MONITOR": hash_password("FmHook2026")})
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+    db = SessionLocal()
+    try:
+        first = tot_practice.ensure_practice_loaded(db)
+        assert first and first["accounts_created"] == 3
+        assert tot_practice.ensure_practice_loaded(db) is None   # marker set: not again
+    finally:
+        db.close()
+    login(client, "FM-WAU-H1-01", "FmHook2026")
+    login(client, "DQM-WAU-H1-01", "DqmHook2026")
