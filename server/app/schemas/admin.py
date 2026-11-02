@@ -109,6 +109,40 @@ class UserImportResult(BaseModel):
     created_users: list[str]
 
 
+class PracticeStatus(BaseModel):
+    loaded: bool
+    dqm_accounts: int
+    fm_accounts: int
+    sas_assigned: int
+    logged_in: int
+    workbook: str | None
+
+
+class PracticeLoadIn(BaseModel):
+    dqm_password: str = Field(min_length=8, max_length=64)
+    fm_password: str = Field(min_length=8, max_length=64)
+    reset_passwords: bool = False  # also set the passwords of practice accounts that already exist
+
+
+class PracticeLoadOut(BaseModel):
+    sas_assigned: int
+    rows: int
+    warnings: list[str]
+    accounts_created: int
+    accounts_updated: int
+    dqm_accounts: int
+    fm_accounts: int
+    unknown_districts: list[str]
+    passwords_reset: bool
+
+
+class PracticeRemoveOut(BaseModel):
+    accounts: int
+    devices: int
+    sas_cleared: int
+    accounts_kept_with_other_records: int = 0
+
+
 class DeviceOut(ORMModel):
     id: str
     user_id: int

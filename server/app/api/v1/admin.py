@@ -43,6 +43,10 @@ from app.schemas.admin import (
     PasswordResetIn,
     PasswordResetOut, PinResetOut,
     PermissionInfo,
+    PracticeLoadIn,
+    PracticeLoadOut,
+    PracticeRemoveOut,
+    PracticeStatus,
     RoleMatrix,
     RolePermissionsIn,
     SettingsUpdate,
@@ -799,6 +803,47 @@ async def import_reference(
     audit(db, admin, "reference.import", "file", file.filename, f"rows={result.rows} teams={result.teams} eas={result.eas} chiefdoms={result.chiefdoms} sections={result.sections}", request)
     db.commit()
     return result
+
+
+# ---- ToT class practice set (practice workload + shared-password practice accounts) ----------
+
+
+@router.get("/reference/practice", response_model=PracticeStatus)
+def practice_status(db: Session = Depends(get_db), _: User = Depends(manage_reference)):
+    from app.services import tot_practice
+
+    return PracticeStatus(**tot_practice.status(db))
+
+
+manage_practice = require_perm("users.manage", "reference.manage")
+
+
+@router.post("/reference/practice", response_model=PracticeLoadOut)
+def practice_load(body: PracticeLoadIn, request: Request, db: Session = Depends(get_db), admin: User = Depends(manage_practice)):
+    """Assign the shipped practice workload to the SAs and create every practice DQM / FM account."""
+    import json as _json
+
+    from app.services import tot_practice
+
+    if not tot_practice.WORKBOOK.exists():
+        raise HTTPException(status_code=404, detail="The practice workbook is not on this server")
+    counts = tot_practice.load(db, body.dqm_password, body.fm_password, reset_passwords=body.reset_passwords)
+    db.add(MefmFrameVersion(filename=tot_practice.WORKBOOK.name, applied_by=admin.id, rows=counts["rows"],
+                            counts=_json.dumps({"assigned": counts["sas_assigned"]}), changes=_json.dumps({"practice_accounts": counts["accounts_created"]}), note="ToT practice set"))
+    audit(db, admin, "practice.load", "system", None, {k: v for k, v in counts.items() if k != "warnings"}, request)
+    db.commit()
+    return PracticeLoadOut(**counts)
+
+
+@router.delete("/reference/practice", response_model=PracticeRemoveOut)
+def practice_remove(request: Request, db: Session = Depends(get_db), admin: User = Depends(manage_practice)):
+    """After the training: delete the practice accounts and clear the practice codes from the SAs."""
+    from app.services import tot_practice
+
+    counts = tot_practice.remove(db)
+    audit(db, admin, "practice.remove", "system", None, counts, request)
+    db.commit()
+    return PracticeRemoveOut(**counts)
 
 
 @router.get("/reference/frame-versions", response_model=list[FrameVersionOut])

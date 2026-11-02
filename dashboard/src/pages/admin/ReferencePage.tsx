@@ -35,6 +35,61 @@ function PickListEditor({ kind, title }: { kind: "categories" | "sources"; title
   );
 }
 
+type PracticeStatus = { loaded: boolean; dqm_accounts: number; fm_accounts: number; sas_assigned: number; logged_in: number; workbook: string | null };
+type PracticeLoadOut = { sas_assigned: number; rows: number; warnings: string[]; accounts_created: number; accounts_updated: number; dqm_accounts: number; fm_accounts: number; unknown_districts: string[]; passwords_reset: boolean };
+type PracticeRemoveOut = { accounts: number; devices: number; sas_cleared: number; accounts_kept_with_other_records: number };
+
+function PracticeSet() {
+  const qc = useQueryClient();
+  const status = useQuery({ queryKey: ["ref", "practice"], queryFn: () => api.get<PracticeStatus>("/admin/reference/practice") });
+  const [dqmPw, setDqmPw] = useState("");
+  const [fmPw, setFmPw] = useState("");
+  const [resetPw, setResetPw] = useState(false);
+  const [out, setOut] = useState<PracticeLoadOut | null>(null);
+  const [removed, setRemoved] = useState<PracticeRemoveOut | null>(null);
+  const done = () => { qc.invalidateQueries({ queryKey: ["ref"] }); qc.invalidateQueries({ queryKey: ["users"] }); qc.invalidateQueries({ queryKey: ["mefm"] }); };
+  const load = useMutation({
+    mutationFn: () => api.post<PracticeLoadOut>("/admin/reference/practice", { dqm_password: dqmPw, fm_password: fmPw, reset_passwords: resetPw }),
+    onSuccess: (r) => { setOut(r); setRemoved(null); done(); },
+  });
+  const remove = useMutation({
+    mutationFn: () => api.delete<PracticeRemoveOut>("/admin/reference/practice"),
+    onSuccess: (r) => { setRemoved(r); setOut(null); done(); },
+  });
+  const s = status.data;
+  return (
+    <Card title="ToT class practice set (DQM and Field Monitor practice accounts)">
+      <p className="mb-3 text-sm text-slate-600">
+        The practice workload shipped with the server ({s?.workbook ?? "tot_practice_workload.xlsx"}) gives every hall seat of the regional ToT its own
+        officer code (<code>DQM-WAU-H1-01</code> with its pair <code>FM-WAU-H1-01</code>) and 6–8 SAs. Loading assigns those SAs and creates one account per code:
+        username and staff code = the code, district scope from its SAs, the shared password of its role, no forced password change. Loading again is safe
+        (existing practice accounts are kept; tick the box to set their passwords again). After the training, <b>Remove</b> deletes the practice accounts and clears their SAs.
+      </p>
+      {s && (
+        <p className="mb-3 text-sm">
+          {s.loaded ? <>Loaded: <b>{s.dqm_accounts}</b> DQM and <b>{s.fm_accounts}</b> Field Monitor practice accounts, <b>{s.sas_assigned}</b> SAs assigned, <b>{s.logged_in}</b> accounts have signed in.</> : <>Not loaded yet.</>}
+        </p>
+      )}
+      <div className="flex flex-wrap items-end gap-3">
+        <Field label="DQM practice password"><input className="input" type="text" autoComplete="off" value={dqmPw} onChange={(e) => setDqmPw(e.target.value)} placeholder="at least 8 characters" /></Field>
+        <Field label="Field Monitor practice password"><input className="input" type="text" autoComplete="off" value={fmPw} onChange={(e) => setFmPw(e.target.value)} placeholder="at least 8 characters" /></Field>
+        <label className="flex items-center gap-2 pb-2 text-sm"><input type="checkbox" checked={resetPw} onChange={(e) => setResetPw(e.target.checked)} /> Reset passwords of existing practice accounts</label>
+        <button className="btn-primary" disabled={dqmPw.length < 8 || fmPw.length < 8 || load.isPending} onClick={() => { if (confirm("Assign the practice workload to the SAs and create the practice accounts?")) load.mutate(); }}>{load.isPending ? "Loading…" : s?.loaded ? "Load again" : "Load practice set"}</button>
+        {s?.loaded && <button className="btn-outline" disabled={remove.isPending} onClick={() => { if (confirm("Delete every practice account and clear the practice codes from the SAs?")) remove.mutate(); }}>{remove.isPending ? "Removing…" : "Remove practice set"}</button>}
+      </div>
+      <ErrorBox error={load.error} /><ErrorBox error={remove.error} />
+      {out && (
+        <div className="mt-3 text-sm">
+          <p className="font-semibold text-green-800">Loaded. {out.sas_assigned} SAs assigned from {out.rows} rows; {out.accounts_created} accounts created, {out.accounts_updated} already existed{out.passwords_reset ? " (passwords reset)" : ""}; {out.dqm_accounts} DQM and {out.fm_accounts} Field Monitor codes in the workbook.</p>
+          {out.unknown_districts.length > 0 && <p className="text-amber-800">District codes not in the system (no scope given): {out.unknown_districts.join(", ")}</p>}
+          {out.warnings.length > 0 && <ul className="mt-2 list-disc pl-5 text-amber-800">{out.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>}
+        </div>
+      )}
+      {removed && <p className="mt-3 text-sm font-semibold text-green-800">Removed {removed.accounts} practice accounts ({removed.devices} tablets) and cleared {removed.sas_cleared} SAs.{removed.accounts_kept_with_other_records ? ` ${removed.accounts_kept_with_other_records} accounts were kept because other records still need them.` : ""}</p>}
+    </Card>
+  );
+}
+
 export default function ReferencePage() {
   const qc = useQueryClient();
   const districts = useQuery({ queryKey: ["ref", "districts"], queryFn: () => api.get<District[]>("/admin/reference/districts") });
@@ -81,6 +136,7 @@ export default function ReferencePage() {
           </div>
         )}
       </Card>
+      <PracticeSet />
       <Card title="Frame versions">
         {versions.data?.length ? (
           <table className="table">
